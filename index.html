@@ -38,17 +38,22 @@ input,select,textarea{
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 label{display:block;font-size:.78rem;color:var(--text-dim);margin:0 0 .3em;font-weight:500}
 .field{margin-bottom:.9em}
-.row{display:flex;gap:.7em;flex-wrap:wrap}
+.row{display:flex;gap:.7em;flex-wrap:wrap;align-items:flex-start}
 .row>.field{flex:1;min-width:140px}
+.row>.field label{min-height:2.5em}
 
 header.topbar{
   position:sticky;top:0;z-index:20;background:rgba(11,13,19,.92);backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--border);padding:.8em 1em;display:flex;align-items:center;gap:.6em;
+  border-bottom:1px solid var(--border);padding:.7em 1em;display:flex;align-items:center;gap:.6em;
 }
-header.topbar .logo{font-size:1.15rem;font-weight:700;display:flex;align-items:center;gap:.4em}
-header.topbar .logo small{font-weight:400;color:var(--text-dim);font-size:.7rem}
+header.topbar .logo{font-size:1.15rem;font-weight:700;line-height:1.15}
+header.topbar .logo .sub{display:block;font-weight:400;color:var(--text-dim);font-size:.7rem}
 header.topbar .spacer{flex:1}
-header.topbar .icon-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:.4em .8em;font-size:.78rem}
+header.topbar .icon-btn{
+  background:transparent;border:1px solid var(--border);border-radius:50%;width:2.2em;height:2.2em;
+  padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;flex:none;
+}
+header.topbar .icon-btn svg{width:1.1em;height:1.1em}
 
 nav.tabbar{
   position:fixed;bottom:0;left:0;right:0;z-index:20;background:rgba(11,13,19,.97);
@@ -106,6 +111,11 @@ main{max-width:920px;margin:0 auto;padding:1em;}
   border-radius:999px;padding:.25em .7em;font-size:.75rem;color:var(--text-dim);cursor:pointer;user-select:none}
 .chip.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-dim)}
 
+.cat-header{display:flex;justify-content:space-between;align-items:baseline;color:var(--text-faint);
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;margin:1.1em 0 .4em;padding:0 .1em}
+.cat-header:first-child{margin-top:0}
+.cat-header .cat-count{font-size:.7rem;color:var(--text-faint)}
+
 .obj-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:.6em;overflow:hidden}
 .obj-head{display:flex;align-items:center;gap:.6em;padding:.8em 1em;cursor:pointer}
 .obj-head .titles{flex:1;min-width:0}
@@ -125,7 +135,10 @@ table.sessions td{padding:.4em .35em;border-bottom:1px solid var(--border);color
 table.sessions td:nth-child(2){max-width:80px;overflow:hidden;text-overflow:ellipsis}
 table.sessions tr:last-child td{border-bottom:none}
 table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
+table.sessions tr.session-row{cursor:pointer}
+table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 .review-note{font-size:.72rem;color:var(--warn);margin-top:.15em}
+.obj-actions{display:flex;gap:.5em;flex-wrap:wrap;margin-top:.7em}
 
 .catalog-search{position:relative}
 .catalog-results{
@@ -140,18 +153,18 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
 .catalog-result .cr-name{font-weight:600}
 .catalog-result .cr-sub{font-size:.72rem;color:var(--text-dim)}
 
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;touch-action:none}
 @media(min-width:700px){.modal-overlay{align-items:center}}
 .modal-overlay[hidden]{display:none}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px 16px 0 0;max-width:760px;width:100%;
-  max-height:88vh;overflow:auto;padding:1.2em}
+  max-height:88vh;overflow-x:hidden;overflow-y:auto;touch-action:pan-y;padding:1.2em;overscroll-behavior:contain}
 @media(min-width:700px){.modal{border-radius:16px}}
 .modal-head{display:flex;align-items:center;margin-bottom:.8em;gap:.6em}
 .modal-head h2{flex:1;margin:0}
-.doc-content{font-size:.85rem;line-height:1.65;color:var(--text)}
+.doc-content{font-size:.85rem;line-height:1.65;color:var(--text);overflow-wrap:anywhere}
 .doc-content h3{margin-top:1.2em;color:var(--accent)}
-.doc-content code{background:var(--bg3);padding:.1em .4em;border-radius:5px;font-family:var(--mono);font-size:.85em}
-.doc-content pre{background:var(--bg3);padding:.8em;border-radius:8px;overflow:auto;font-size:.78rem}
+.doc-content code{background:var(--bg3);padding:.1em .4em;border-radius:5px;font-family:var(--mono);font-size:.85em;overflow-wrap:anywhere}
+.doc-content pre{background:var(--bg3);padding:.8em;border-radius:8px;overflow:auto;font-size:.78rem;max-width:100%}
 .doc-content ul{padding-left:1.3em}
 .doc-content table{width:100%;border-collapse:collapse;font-size:.8rem;margin:.5em 0}
 .doc-content th,.doc-content td{border:1px solid var(--border);padding:.3em .5em;text-align:left}
@@ -162,7 +175,7 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
 .banner.info{background:var(--accent-bg);color:var(--accent)}
 
 #map-wrap{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;aspect-ratio:1/1;max-width:520px;margin:0 auto}
-#skyCanvas{width:100%;height:100%;display:block}
+#skyCanvas{width:100%;height:100%;display:block;touch-action:none}
 #arVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 #arCanvas{position:absolute;inset:0;width:100%;height:100%;display:none}
 .map-controls{display:flex;gap:.5em;flex-wrap:wrap;justify-content:center;margin:.8em 0}
@@ -182,15 +195,19 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
 <body>
 
 <header class="topbar">
-  <div class="logo">Astro-Logbuch <small id="hdr-subtitle">lokal</small></div>
+  <div class="logo">Astro<span class="sub">Logbuch</span></div>
   <div class="spacer"></div>
-  <button class="icon-btn" id="btn-settings" title="Sync-Einstellungen">Einstellungen</button>
+  <button class="icon-btn" id="btn-search" title="Suche">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+  </button>
+  <button class="icon-btn" id="btn-settings" title="Einstellungen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  </button>
 </header>
 
 <main>
 
   <section class="view active" id="view-overview">
-    <div id="banner-area"></div>
     <div class="card apod-card" id="apod-card"></div>
     <div class="toolbar">
       <input type="search" id="search-input" placeholder="Suche (Name, Katalog, Ort, Sternbild) …">
@@ -199,6 +216,25 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
       <span class="chip" data-filter="multi">Mehrfach</span>
     </div>
     <div id="object-list"></div>
+  </section>
+
+  <section class="view" id="view-search">
+    <div class="view-head">
+      <h2>Suche</h2>
+      <button class="icon-btn" id="btn-close-search" title="Schließen">×</button>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="field"><label>Objekt</label><input id="fs-object" placeholder="z.B. M31, NGC 7000 …"></div>
+        <div class="field"><label>Ort der Aufnahme</label><input id="fs-location" placeholder="z.B. Bundesplatz"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Jahr der Aufnahme</label><input id="fs-year" type="number" placeholder="z.B. 2025"></div>
+        <div class="field"><label>Brennweite (mm)</label><input id="fs-focal" type="number" placeholder="z.B. 432"></div>
+        <div class="field"><label>ISO</label><input id="fs-iso" type="number" placeholder="z.B. 800"></div>
+      </div>
+    </div>
+    <div id="search-results"></div>
   </section>
 
   <section class="view" id="view-add">
@@ -301,6 +337,7 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
       <button class="small" id="btn-geo">Standort ermitteln</button>
       <input type="datetime-local" id="map-time" class="small" style="width:auto">
       <button class="small" id="btn-map-now">Jetzt</button>
+      <button class="small" id="btn-map-zoom-reset">Zoom zurücksetzen</button>
     </div>
     <div class="map-legend">
       <span class="lg-photo">fotografiert</span>
@@ -313,8 +350,8 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
 </main>
 
 <nav class="tabbar">
-  <button data-view="overview" class="active">Übersicht</button>
-  <button data-view="add">Neue Session</button>
+  <button data-view="overview" class="active">Home</button>
+  <button data-view="add">Neu</button>
   <button data-view="map">Karte</button>
   <button data-view="docs-btn">Doku</button>
 </nav>
@@ -359,7 +396,92 @@ table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
   </div>
 </div>
 
-<div class="footer-note">Astro-Logbuch · Daten bleiben in deinem Browser bzw. deinem GitHub-Repo · <span id="footer-count"></span></div>
+<div class="modal-overlay" id="object-edit-modal" hidden>
+  <div class="modal">
+    <div class="modal-head"><h2>Objekt bearbeiten</h2><button class="icon-btn" data-close="object-edit-modal">×</button></div>
+    <div class="row">
+      <div class="field"><label>Anzeigename *</label><input id="oe-display"></div>
+      <div class="field"><label>Typ *</label>
+        <select id="oe-type">
+          <option value="galaxy">Galaxie</option>
+          <option value="galaxy_group">Galaxiengruppe</option>
+          <option value="nebula">Nebel</option>
+          <option value="planetary_nebula">Planetarischer Nebel</option>
+          <option value="supernova_remnant">Supernova-Überrest</option>
+          <option value="open_cluster">Offener Sternhaufen</option>
+          <option value="globular_cluster">Kugelsternhaufen</option>
+          <option value="constellation">Sternbild (Widefield)</option>
+          <option value="mosaic">Mosaik</option>
+          <option value="milkyway">Milchstraße</option>
+          <option value="comet">Komet</option>
+          <option value="exoplanet">Exoplanet</option>
+          <option value="moon">Mond</option>
+          <option value="planet">Planet</option>
+          <option value="star">Stern</option>
+          <option value="double_star">Doppelstern</option>
+          <option value="asterism">Asterismus</option>
+          <option value="other">Sonstiges</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Messier</label><input id="oe-messier"></div>
+      <div class="field"><label>NGC</label><input id="oe-ngc"></div>
+      <div class="field"><label>IC</label><input id="oe-ic"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Sternbild</label><input id="oe-const"></div>
+      <div class="field"><label>Eigenname</label><input id="oe-common"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>RA</label><input id="oe-ra"></div>
+      <div class="field"><label>Dec</label><input id="oe-dec"></div>
+    </div>
+    <div class="field"><label>Beschreibung</label><textarea id="oe-desc" rows="2"></textarea></div>
+    <div class="row" style="align-items:center">
+      <label style="display:flex;align-items:center;gap:.5em;flex:none;margin:0"><input type="checkbox" id="oe-review" style="width:auto"> als „zu prüfen" markieren</label>
+    </div>
+    <div class="row" style="margin-top:.8em">
+      <button class="primary" id="btn-save-object-edit">Speichern</button>
+      <button class="danger" id="btn-delete-object">Objekt löschen</button>
+      <button data-close="object-edit-modal">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="session-edit-modal" hidden>
+  <div class="modal">
+    <div class="modal-head"><h2>Session bearbeiten</h2><button class="icon-btn" data-close="session-edit-modal">×</button></div>
+    <div class="row">
+      <div class="field"><label>Datum (Start) *</label><input type="date" id="se-date-start"></div>
+      <div class="field"><label>Datum (Ende, optional)</label><input type="date" id="se-date-end"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Ort *</label><input id="se-location"></div>
+      <div class="field"><label>Brennweite (mm)</label><input type="number" id="se-focal"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Anzahl Fotos *</label><input type="number" id="se-frames"></div>
+      <div class="field"><label>Belichtungszeit pro Foto (s) *</label><input type="number" step="any" id="se-exposure"></div>
+      <div class="field"><label>ISO</label><input type="number" id="se-iso"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Mosaik-Panels</label><input type="number" id="se-mosaic"></div>
+      <div class="field"><label>Objektiv/Sonstiges</label><input id="se-lens"></div>
+    </div>
+    <div class="field"><label>Notizen</label><textarea id="se-notes" rows="2"></textarea></div>
+    <div class="row" style="align-items:center">
+      <label style="display:flex;align-items:center;gap:.5em;flex:none;margin:0"><input type="checkbox" id="se-review" style="width:auto"> als „zu prüfen" markieren</label>
+    </div>
+    <div class="row" style="margin-top:.8em">
+      <button class="primary" id="btn-save-session-edit">Speichern</button>
+      <button class="danger" id="btn-delete-session">Session löschen</button>
+      <button data-close="session-edit-modal">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">Astro-Logbuch · Daten bleiben in deinem Browser bzw. deinem GitHub-Repo · <span id="footer-count"></span><div id="banner-area" style="margin-top:.6em"></div></div>
 
 <script>
 /* ======================= EMBEDDED SEED DATA ======================= */
@@ -4508,6 +4630,22 @@ const TYPE_META = {
 };
 function typeMeta(t){ return TYPE_META[t] || TYPE_META.other; }
 
+/* ======================= KATEGORIEN ======================= */
+const CATEGORIES = [
+  {key:"nebel", label:"Nebel", types:["nebula","planetary_nebula","supernova_remnant"]},
+  {key:"galaxien", label:"Galaxien", types:["galaxy","galaxy_group"]},
+  {key:"sternhaufen", label:"Sternhaufen", types:["open_cluster","globular_cluster"]},
+  {key:"exoplaneten", label:"Exoplaneten", types:["exoplanet"]},
+  {key:"kometen", label:"Kometen", types:["comet"]},
+  {key:"solarsystem", label:"Objekte des Solarsystems", types:["planet","moon"]},
+  {key:"konstellationen", label:"Konstellationen", types:["constellation","asterism","milkyway"]},
+  {key:"sonstiges", label:"Sonstiges", types:["star","double_star","mosaic","other"]},
+];
+function categoryOf(type){
+  const cat = CATEGORIES.find(c=>c.types.includes(type));
+  return cat ? cat.key : "sonstiges";
+}
+
 /* ======================= STATE / STORAGE ======================= */
 const LS_DATA_KEY = "astrolog_data_v1";
 const LS_CFG_KEY = "astrolog_cfg_v1";
@@ -4644,6 +4782,130 @@ async function dismissSessionReview(id, idx){
   renderAll();
 }
 
+/* ======================= OBJEKT BEARBEITEN / LÖSCHEN ======================= */
+let editingObjectId = null;
+function openObjectEditModal(id){
+  const o = DB.objects.find(x=>x.id===id);
+  if(!o) return;
+  editingObjectId = id;
+  const c = o.catalog || {};
+  document.getElementById("oe-display").value = o.displayName || "";
+  document.getElementById("oe-type").value = o.type in TYPE_META ? o.type : "other";
+  document.getElementById("oe-messier").value = c.messier || "";
+  document.getElementById("oe-ngc").value = c.ngc || "";
+  document.getElementById("oe-ic").value = c.ic || "";
+  document.getElementById("oe-const").value = o.constellation || "";
+  document.getElementById("oe-common").value = o.commonName || "";
+  document.getElementById("oe-ra").value = o.ra || "";
+  document.getElementById("oe-dec").value = o.dec || "";
+  document.getElementById("oe-desc").value = o.description || "";
+  document.getElementById("oe-review").checked = !!o.needsReview;
+  openModal("object-edit-modal");
+}
+document.getElementById("btn-save-object-edit").addEventListener("click", async ()=>{
+  const o = DB.objects.find(x=>x.id===editingObjectId);
+  if(!o) return;
+  const display = document.getElementById("oe-display").value.trim();
+  if(!display){ alert("Bitte einen Anzeigenamen angeben."); return; }
+  o.displayName = display;
+  o.type = document.getElementById("oe-type").value;
+  o.catalog = o.catalog || {};
+  o.catalog.messier = document.getElementById("oe-messier").value.trim() || null;
+  o.catalog.ngc = document.getElementById("oe-ngc").value.trim() || null;
+  o.catalog.ic = document.getElementById("oe-ic").value.trim() || null;
+  o.constellation = document.getElementById("oe-const").value.trim() || null;
+  o.commonName = document.getElementById("oe-common").value.trim() || null;
+  o.ra = document.getElementById("oe-ra").value.trim() || null;
+  o.dec = document.getElementById("oe-dec").value.trim() || null;
+  o.description = document.getElementById("oe-desc").value.trim() || null;
+  o.needsReview = document.getElementById("oe-review").checked;
+  if(!o.needsReview) o.reviewNote = null;
+  else if(!o.reviewNote) o.reviewNote = "Manuell als zu prüfen markiert.";
+  await persist("Objekt bearbeitet: " + o.displayName);
+  closeModal("object-edit-modal");
+  renderAll();
+});
+async function deleteObject(id){
+  const o = DB.objects.find(x=>x.id===id);
+  if(!o) return;
+  if(!confirm(`"${o.displayName}" inkl. aller ${o.sessions.length} Session(s) wirklich löschen?`)) return;
+  DB.objects = DB.objects.filter(x=>x.id!==id);
+  await persist("Objekt gelöscht: " + o.displayName);
+  closeModal("object-edit-modal");
+  renderAll();
+}
+document.getElementById("btn-delete-object").addEventListener("click", ()=>{
+  if(editingObjectId) deleteObject(editingObjectId);
+});
+
+/* ======================= SESSION BEARBEITEN / LÖSCHEN ======================= */
+let editingSession = null; // {objId, idx}
+function openSessionEditModal(objId, idx){
+  const o = DB.objects.find(x=>x.id===objId);
+  if(!o) return;
+  const s = o.sessions[idx];
+  if(!s) return;
+  editingSession = {objId, idx};
+  document.getElementById("se-date-start").value = /^\d{4}-\d{2}-\d{2}$/.test(s.dateStart) ? s.dateStart : "";
+  document.getElementById("se-date-end").value = s.dateEnd && /^\d{4}-\d{2}-\d{2}$/.test(s.dateEnd) ? s.dateEnd : "";
+  document.getElementById("se-location").value = s.location || "";
+  document.getElementById("se-focal").value = s.focalLengthMm ?? "";
+  document.getElementById("se-frames").value = s.frames ?? "";
+  document.getElementById("se-exposure").value = s.exposureSec ?? "";
+  document.getElementById("se-iso").value = s.iso ?? "";
+  document.getElementById("se-mosaic").value = s.mosaicPanels ?? "";
+  document.getElementById("se-lens").value = s.lens || "";
+  document.getElementById("se-notes").value = s.notes || "";
+  document.getElementById("se-review").checked = !!s.needsReview;
+  openModal("session-edit-modal");
+}
+document.getElementById("btn-save-session-edit").addEventListener("click", async ()=>{
+  if(!editingSession) return;
+  const o = DB.objects.find(x=>x.id===editingSession.objId);
+  if(!o) return;
+  const s = o.sessions[editingSession.idx];
+  if(!s) return;
+  const dateStart = document.getElementById("se-date-start").value;
+  const location = document.getElementById("se-location").value.trim();
+  const frames = parseFloat(document.getElementById("se-frames").value);
+  const exposureSec = parseFloat(document.getElementById("se-exposure").value);
+  if(!dateStart || !location || !frames || !exposureSec){
+    alert("Bitte Pflichtfelder ausfüllen: Datum, Ort, Anzahl Fotos, Belichtungszeit.");
+    return;
+  }
+  s.dateStart = dateStart;
+  s.dateEnd = document.getElementById("se-date-end").value || null;
+  s.location = location;
+  s.focalLengthMm = parseFloat(document.getElementById("se-focal").value) || null;
+  s.frames = frames;
+  s.exposureSec = exposureSec;
+  s.iso = parseInt(document.getElementById("se-iso").value) || null;
+  s.mosaicPanels = parseInt(document.getElementById("se-mosaic").value) || null;
+  s.lens = document.getElementById("se-lens").value.trim() || null;
+  s.notes = document.getElementById("se-notes").value.trim() || null;
+  s.needsReview = document.getElementById("se-review").checked;
+  if(!s.needsReview) s.reviewNote = null;
+  else if(!s.reviewNote) s.reviewNote = "Manuell als zu prüfen markiert.";
+  await persist("Session bearbeitet: " + o.displayName);
+  closeModal("session-edit-modal");
+  renderAll();
+  if(document.getElementById("view-search").classList.contains("active")) runFieldSearch();
+});
+async function deleteSession(){
+  if(!editingSession) return;
+  const o = DB.objects.find(x=>x.id===editingSession.objId);
+  if(!o) return;
+  const s = o.sessions[editingSession.idx];
+  if(!s) return;
+  if(!confirm(`Session vom ${fmtDate(s.dateStart)} (${o.displayName}) wirklich löschen?`)) return;
+  o.sessions.splice(editingSession.idx, 1);
+  await persist("Session gelöscht: " + o.displayName);
+  closeModal("session-edit-modal");
+  renderAll();
+  if(document.getElementById("view-search").classList.contains("active")) runFieldSearch();
+}
+document.getElementById("btn-delete-session").addEventListener("click", deleteSession);
+
 /* ======================= RENDER: STATS + OVERVIEW ======================= */
 function fmtDate(d){
   if(!d) return "–";
@@ -4662,8 +4924,6 @@ function fmtHours(sec){
 }
 
 function renderAll(){
-  document.getElementById("hdr-subtitle").textContent =
-    (CFG.owner && CFG.repo && CFG.token) ? `${CFG.owner}/${CFG.repo}` : "lokal (kein Sync)";
   renderObjectList();
   renderAddDatalists();
   document.getElementById("footer-count").textContent =
@@ -4693,15 +4953,28 @@ function objMatchesFilter(o, f){
 function renderObjectList(){
   const list = document.getElementById("object-list");
   const items = DB.objects
-    .filter(o=>objMatchesSearch(o,currentSearch) && objMatchesFilter(o,currentFilter))
-    .slice()
-    .sort((a,b)=>{
-      const da = a.sessions.map(s=>s.dateStart).sort().pop() || "";
-      const db_ = b.sessions.map(s=>s.dateStart).sort().pop() || "";
-      return db_.localeCompare(da);
-    });
+    .filter(o=>objMatchesSearch(o,currentSearch) && objMatchesFilter(o,currentFilter));
   if(items.length===0){ list.innerHTML = `<p style="color:var(--text-dim)">Keine Objekte gefunden.</p>`; return; }
-  list.innerHTML = items.map(o=>renderObjectItem(o)).join("");
+  const sortFn = (a,b)=>{
+    const da = a.sessions.map(s=>s.dateStart).sort().pop() || "";
+    const db_ = b.sessions.map(s=>s.dateStart).sort().pop() || "";
+    return db_.localeCompare(da);
+  };
+  const byCat = {};
+  CATEGORIES.forEach(c=>byCat[c.key]=[]);
+  items.forEach(o=>{ const k = categoryOf(o.type); (byCat[k] || (byCat[k]=[])).push(o); });
+  let html = "";
+  CATEGORIES.forEach(c=>{
+    const arr = (byCat[c.key]||[]).slice().sort(sortFn);
+    if(arr.length===0) return;
+    html += `<div class="cat-header"><span>${escapeHtml(c.label)}</span><span class="cat-count">${arr.length}</span></div>`;
+    html += arr.map(o=>renderObjectItem(o)).join("");
+  });
+  list.innerHTML = html || `<p style="color:var(--text-dim)">Keine Objekte gefunden.</p>`;
+  bindObjectListEvents(list);
+}
+
+function bindObjectListEvents(list){
   list.querySelectorAll(".obj-head").forEach(h=>{
     h.addEventListener("click", ()=>{
       const item = h.closest(".obj-item");
@@ -4720,6 +4993,11 @@ function renderObjectList(){
       if(!desc) return;
       desc.classList.toggle("open");
       if(desc.classList.contains("open")) descOpenIds.add(id); else descOpenIds.delete(id);
+    });
+  });
+  list.querySelectorAll(".session-row").forEach(row=>{
+    row.addEventListener("click", ()=>{
+      openSessionEditModal(row.dataset.objId, +row.dataset.idx);
     });
   });
 }
@@ -4749,9 +5027,9 @@ function renderObjectItem(o){
     const extraRow = extras.length
       ? `<tr class="${s.needsReview?'needs-review':''}"><td colspan="6" style="color:var(--text-dim);font-size:.75rem">${extras.join(' · ')}</td></tr>` : '';
     const reviewRow = s.needsReview
-      ? `<tr class="needs-review"><td colspan="6"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="dismissSessionReview('${o.id}', ${realIdx})">OK, geprüft</button></div></td></tr>` : '';
+      ? `<tr class="needs-review"><td colspan="6"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="event.stopPropagation();dismissSessionReview('${o.id}', ${realIdx})">OK, geprüft</button><button class="small" onclick="event.stopPropagation();openSessionEditModal('${o.id}', ${realIdx})">Bearbeiten</button></div></td></tr>` : '';
     return `
-    <tr class="${s.needsReview?'needs-review':''}">
+    <tr class="session-row${s.needsReview?' needs-review':''}" data-obj-id="${o.id}" data-idx="${realIdx}">
       <td>${fmtDate(s.dateStart)}${s.dateEnd?(' – '+fmtDate(s.dateEnd)):''}</td>
       <td>${escapeHtml(s.location||"")}</td>
       <td>${s.focalLengthMm?s.focalLengthMm+' mm':'–'}</td>
@@ -4776,15 +5054,17 @@ function renderObjectItem(o){
     </div>
     <div class="obj-body">
       ${o.description?`<div class="obj-desc${descOpen?' open':''}" id="desc-${o.id}">${escapeHtml(o.description)}</div>`:''}
-      ${o.needsReview?`<div class="review-panel"><span>${escapeHtml(o.reviewNote||'Objektangaben bitte prüfen.')}</span><button class="small" onclick="dismissObjectReview('${o.id}')">OK, geprüft</button></div>`:''}
+      ${o.needsReview?`<div class="review-panel"><span>${escapeHtml(o.reviewNote||'Objektangaben bitte prüfen.')}</span><button class="small" onclick="dismissObjectReview('${o.id}')">OK, geprüft</button><button class="small" onclick="openObjectEditModal('${o.id}')">Bearbeiten</button></div>`:''}
       <div style="overflow-x:auto">
       <table class="sessions">
         <thead><tr><th>Datum</th><th>Ort</th><th>Brennw.</th><th>Fotos</th><th>Belichtung</th><th>ISO</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       </div>
-      <div class="row" style="margin-top:.7em">
+      <div class="obj-actions">
         <button class="small" onclick="prefillAddForObject('${o.id}')">Weitere Session für dieses Objekt</button>
+        <button class="small" onclick="openObjectEditModal('${o.id}')">Objekt bearbeiten</button>
+        <button class="small danger" onclick="deleteObject('${o.id}')">Objekt löschen</button>
       </div>
     </div>
   </div>`;
@@ -4806,6 +5086,66 @@ document.querySelectorAll(".toolbar .chip").forEach(chip=>{
     renderObjectList();
   });
 });
+
+/* ======================= SUCHE (eigene Ansicht) ======================= */
+document.getElementById("btn-search").addEventListener("click", ()=>{
+  switchView("search");
+  runFieldSearch();
+  document.getElementById("fs-object").focus();
+});
+document.getElementById("btn-close-search").addEventListener("click", ()=>{
+  switchView("overview");
+});
+["fs-object","fs-location","fs-year","fs-focal","fs-iso"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", runFieldSearch);
+});
+function runFieldSearch(){
+  const qObj = document.getElementById("fs-object").value.trim().toLowerCase();
+  const qLoc = document.getElementById("fs-location").value.trim().toLowerCase();
+  const qYear = document.getElementById("fs-year").value.trim();
+  const qFocal = document.getElementById("fs-focal").value.trim();
+  const qIso = document.getElementById("fs-iso").value.trim();
+  const results = document.getElementById("search-results");
+  if(!qObj && !qLoc && !qYear && !qFocal && !qIso){
+    results.innerHTML = `<p style="color:var(--text-dim)">Suchbegriffe oben eingeben, um Sessions zu finden.</p>`;
+    return;
+  }
+  const rows = [];
+  DB.objects.forEach(o=>{
+    const objHay = [o.displayName, o.commonName,
+      o.catalog && Object.values(o.catalog).flat().filter(Boolean).join(" ")]
+      .filter(Boolean).join(" ").toLowerCase();
+    if(qObj && !objHay.includes(qObj)) return;
+    o.sessions.forEach((s,idx)=>{
+      if(qLoc && !(s.location||"").toLowerCase().includes(qLoc)) return;
+      if(qYear && !(s.dateStart||"").startsWith(qYear)) return;
+      if(qFocal && String(s.focalLengthMm||"") !== qFocal) return;
+      if(qIso && String(s.iso||"") !== qIso) return;
+      rows.push({o, s, idx});
+    });
+  });
+  if(rows.length===0){
+    results.innerHTML = `<p style="color:var(--text-dim)">Keine Treffer.</p>`;
+    return;
+  }
+  rows.sort((a,b)=> (b.s.dateStart||"").localeCompare(a.s.dateStart||""));
+  results.innerHTML = `<div style="overflow-x:auto"><table class="sessions">
+    <thead><tr><th>Objekt</th><th>Datum</th><th>Ort</th><th>Brennw.</th><th>Fotos</th><th>Belichtung</th><th>ISO</th></tr></thead>
+    <tbody>${rows.map(r=>`
+    <tr class="session-row" data-obj-id="${r.o.id}" data-idx="${r.idx}">
+      <td>${escapeHtml(r.o.displayName)}</td>
+      <td>${fmtDate(r.s.dateStart)}${r.s.dateEnd?(' – '+fmtDate(r.s.dateEnd)):''}</td>
+      <td>${escapeHtml(r.s.location||"")}</td>
+      <td>${r.s.focalLengthMm?r.s.focalLengthMm+' mm':'–'}</td>
+      <td>${r.s.frames ?? '–'}</td>
+      <td>${r.s.exposureSec!=null ? (r.s.exposureSec<1 ? ('1/'+Math.round(1/r.s.exposureSec)+'s') : r.s.exposureSec+'"') : '–'}</td>
+      <td>${r.s.iso ?? '–'}</td>
+    </tr>`).join("")}</tbody>
+  </table></div>`;
+  results.querySelectorAll(".session-row").forEach(row=>{
+    row.addEventListener("click", ()=> openSessionEditModal(row.dataset.objId, +row.dataset.idx));
+  });
+}
 
 /* ======================= ADD SESSION VIEW ======================= */
 function renderAddDatalists(){
@@ -5034,7 +5374,8 @@ function switchView(name){
   document.querySelectorAll("nav.tabbar button").forEach(b=>b.classList.remove("active"));
   if(name==="docs-btn"){ openModal("docs-modal"); return; }
   document.getElementById("view-"+name).classList.add("active");
-  document.querySelector(`nav.tabbar button[data-view="${name}"]`).classList.add("active");
+  const navBtn = document.querySelector(`nav.tabbar button[data-view="${name}"]`);
+  if(navBtn) navBtn.classList.add("active");
   if(name==="map") initMapViewOnce();
 }
 document.querySelectorAll("nav.tabbar button").forEach(b=>{
@@ -5117,13 +5458,14 @@ document.getElementById("import-file").addEventListener("change", async (e)=>{
 });
 
 /* ======================= DOCS CONTENT ======================= */
-document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong> (für Menschen &amp; KI-Assistenten gleichermaßen lesbar). Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Brennweite in mm, falls im Ordnernamen angegeben</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n";
+document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong> (für Menschen &amp; KI-Assistenten gleichermaßen lesbar). Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Brennweite in mm, falls im Ordnernamen angegeben</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n\n<h3>13. Kategorien in der Übersicht</h3>\n<p>Die Objektliste ist nach <code>type</code> in feste Kategorien gruppiert: Nebel (<code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>), Galaxien (<code>galaxy</code>, <code>galaxy_group</code>), Sternhaufen (<code>open_cluster</code>, <code>globular_cluster</code>), Exoplaneten (<code>exoplanet</code>), Kometen (<code>comet</code>), Objekte des Solarsystems (<code>planet</code>, <code>moon</code>), Konstellationen (<code>constellation</code>, <code>asterism</code>, <code>milkyway</code>) sowie eine Sonstiges-Kategorie als Auffangbecken (<code>star</code>, <code>double_star</code>, <code>mosaic</code>, <code>other</code>). Die Zuordnung erfolgt automatisch anhand von <code>type</code>, ist also nicht separat in <code>data.json</code> gespeichert.</p>\n\n<h3>14. Suche</h3>\n<p>Über das Lupen-Symbol oben rechts öffnet sich eine eigene Suchansicht mit den Feldern Objekt, Ort der Aufnahme, Jahr der Aufnahme, Brennweite und ISO. Treffer werden – anders als in der Übersicht – als flache Liste einzelner Sessions ohne Kategorie-Gruppierung angezeigt, da hier auf Session-Ebene gefiltert wird.</p>\n\n<h3>15. Bearbeiten &amp; Löschen</h3>\n<p>Sowohl Objekte (über „Objekt bearbeiten\"/„Objekt löschen\" unterhalb der Session-Tabelle bzw. den Bearbeiten-Button im Prüfen-Hinweis) als auch einzelne Sessions (per Klick auf eine Zeile der Session-Tabelle, oder über den Bearbeiten-Button im Prüfen-Hinweis einer Session) lassen sich nachträglich ändern oder entfernen. Löschen fragt vorher per Bestätigungsdialog nach. Änderungen werden wie neue Sessions über <code>persist()</code> lokal gespeichert und – falls konfiguriert – zu GitHub synchronisiert.</p>\n\n<h3>16. Sternkarte – Zoom</h3>\n<p>Die 2D-Himmelskarte lässt sich zoomen: am Desktop per Mausrad (Zoom zentriert auf die Cursor-Position), am Handy per Zwei-Finger-Pinch-Geste (Zoom zentriert auf den Mittelpunkt der beiden Finger); mit einem Finger lässt sich die Karte verschieben (Pan). Der Button „Zoom zurücksetzen\" setzt Zoomstufe und Verschiebung auf den Ausgangszustand zurück.</p>\n";
 
 /* ======================= STAR MAP ======================= */
 let mapMode = "2d";
 let userLat = null, userLon = null;
 let mapTimeOverride = null;
 let mapInited = false;
+let mapZoom = 1, mapPanX = 0, mapPanY = 0;
 
 document.querySelectorAll('[data-mapmode]').forEach(chip=>{
   chip.addEventListener('click', ()=>{
@@ -5240,7 +5582,9 @@ function drawSky2D(){
   const W = canvas.width, H = canvas.height;
   const R = Math.min(W,H)/2 - 10;
   const cx = W/2, cy = H/2;
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.fillStyle = '#05060a'; ctx.fillRect(0,0,W,H);
+  ctx.setTransform(mapZoom,0,0,mapZoom, cx*(1-mapZoom)+mapPanX, cy*(1-mapZoom)+mapPanY);
   ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.strokeStyle='#262c3a'; ctx.stroke();
 
   function project(alt, az){
@@ -5258,7 +5602,7 @@ function drawSky2D(){
   });
 
   const date = currentMapDate();
-  if(userLat==null) return;
+  if(userLat==null){ ctx.setTransform(1,0,0,1,0,0); return; }
 
   // Sterne + Linien
   const starPos = {};
@@ -5294,6 +5638,7 @@ function drawSky2D(){
     t._screen = p;
   });
   window._mapTargets = getPhotographedTargets();
+  ctx.setTransform(1,0,0,1,0,0);
 }
 
 function onSkyCanvasClick(e){
@@ -5301,10 +5646,13 @@ function onSkyCanvasClick(e){
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX-rect.left) * (canvas.width/rect.width);
   const y = (e.clientY-rect.top) * (canvas.height/rect.height);
-  let best=null, bestD=18;
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const bx = (x - (cx*(1-mapZoom)+mapPanX)) / mapZoom;
+  const by = (y - (cy*(1-mapZoom)+mapPanY)) / mapZoom;
+  let best=null, bestD=18/mapZoom;
   (window._mapTargets||[]).forEach(t=>{
     if(!t._screen) return;
-    const d = Math.hypot(t._screen.x-x, t._screen.y-y);
+    const d = Math.hypot(t._screen.x-bx, t._screen.y-by);
     if(d<bestD){ bestD=d; best=t; }
   });
   const info = document.getElementById('map-object-info');
@@ -5316,6 +5664,70 @@ function onSkyCanvasClick(e){
   }else{ info.hidden=true; }
 }
 setInterval(()=>{ if(mapMode==='2d' && document.getElementById('view-map').classList.contains('active')) drawSky2D(); }, 60000);
+
+/* ---- Zoom & Pan (Maus-Rad am Desktop, Pinch/Pan per Touch am Handy) ---- */
+function clampMapZoom(z){ return Math.max(1, Math.min(6, z)); }
+function zoomMapAt(px, py, factor){
+  const canvas = document.getElementById('skyCanvas');
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const newZoom = clampMapZoom(mapZoom * factor);
+  if(newZoom === mapZoom) return;
+  const baseX = (px - (cx*(1-mapZoom)+mapPanX)) / mapZoom;
+  const baseY = (py - (cy*(1-mapZoom)+mapPanY)) / mapZoom;
+  mapPanX = px - newZoom*baseX - cx*(1-newZoom);
+  mapPanY = py - newZoom*baseY - cy*(1-newZoom);
+  mapZoom = newZoom;
+  drawSky2D();
+}
+function mapCanvasPoint(canvas, clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+  return {x:(clientX-rect.left)*(canvas.width/rect.width), y:(clientY-rect.top)*(canvas.height/rect.height)};
+}
+const skyCanvasEl = document.getElementById('skyCanvas');
+skyCanvasEl.addEventListener('wheel', e=>{
+  if(mapMode!=='2d') return;
+  e.preventDefault();
+  const p = mapCanvasPoint(skyCanvasEl, e.clientX, e.clientY);
+  zoomMapAt(p.x, p.y, e.deltaY < 0 ? 1.15 : (1/1.15));
+}, {passive:false});
+
+let mapTouchState = null;
+skyCanvasEl.addEventListener('touchstart', e=>{
+  if(mapMode!=='2d') return;
+  if(e.touches.length===2){
+    const p0 = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
+    const p1 = mapCanvasPoint(skyCanvasEl, e.touches[1].clientX, e.touches[1].clientY);
+    mapTouchState = {mode:'pinch', dist: Math.hypot(p0.x-p1.x, p0.y-p1.y), mid:{x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2}};
+  }else if(e.touches.length===1){
+    mapTouchState = {mode:'pan', last: mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY)};
+  }
+}, {passive:true});
+skyCanvasEl.addEventListener('touchmove', e=>{
+  if(mapMode!=='2d' || !mapTouchState) return;
+  e.preventDefault();
+  if(mapTouchState.mode==='pinch' && e.touches.length===2){
+    const p0 = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
+    const p1 = mapCanvasPoint(skyCanvasEl, e.touches[1].clientX, e.touches[1].clientY);
+    const newDist = Math.hypot(p0.x-p1.x, p0.y-p1.y);
+    const mid = {x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2};
+    zoomMapAt(mid.x, mid.y, newDist / mapTouchState.dist);
+    mapTouchState.dist = newDist;
+  }else if(mapTouchState.mode==='pan' && e.touches.length===1){
+    const p = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
+    mapPanX += (p.x - mapTouchState.last.x);
+    mapPanY += (p.y - mapTouchState.last.y);
+    mapTouchState.last = p;
+    drawSky2D();
+  }
+}, {passive:false});
+skyCanvasEl.addEventListener('touchend', e=>{
+  if(e.touches.length===0) mapTouchState = null;
+  else if(e.touches.length===1) mapTouchState = {mode:'pan', last: mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY)};
+});
+document.getElementById('btn-map-zoom-reset').addEventListener('click', ()=>{
+  mapZoom = 1; mapPanX = 0; mapPanY = 0;
+  if(mapMode==='2d') drawSky2D();
+});
 
 /* ---- AR Kamera-Overlay ---- */
 let arStream = null, arOrientationHandler = null;
