@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T21:42:45.005Z",
+  "generatedAt": "2026-08-18T21:43:25.106Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1769,7 +1769,7 @@
           "dateStart": "2025-09-12",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 60,
           "exposureSec": 60,
@@ -1779,7 +1779,21 @@
           "notes": null,
           "rawFolderName": "20250912_Mahlsdorf_60 pcs_60\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ngc7000-20250912-niiteu.jpg",
+          "photoSha": "0c09bc7f536ac7887d12b7056455077240b33984",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2026-08-13",
