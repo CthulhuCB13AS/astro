@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T15:24:49.112Z",
+  "generatedAt": "2026-08-18T16:02:16.806Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1755,7 +1755,20 @@
           "notes": null,
           "rawFolderName": "20260813_Mahlsdorf...mm_116 pcs_60\"_640",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ngc7000-20260813-76qp8w.jpg",
+          "photoSha": "acd0b486cd3208c6e1f44a5cd85382d6249d85fd",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "camera": "Fujifilm XT-30",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
