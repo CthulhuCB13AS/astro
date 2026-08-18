@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T16:06:58.597Z",
+  "generatedAt": "2026-08-18T17:36:16.071Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1678,7 +1678,7 @@
           "dateStart": "2024-12-26",
           "dateEnd": null,
           "location": "La Gomera",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 61,
           "exposureSec": 60,
@@ -1691,7 +1691,20 @@
           "reviewNote": null,
           "photoPath": "images/ngc7000-20241226-980rd6.jpg",
           "photoSha": "be69b68d964b6e85e597db9f5e9e2ba4b55bbba6",
-          "photoDataUrl": null
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "cameraId": "cam-default",
+          "mountId": "mount-ioptron-skyguider",
+          "camera": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2024-12-30",
@@ -1869,5 +1882,62 @@
   ],
   "repoOwner": "Cthulhucb13as",
   "repoName": "Astro",
-  "repoBranch": "main"
+  "repoBranch": "main",
+  "equipment": {
+    "cameras": [
+      {
+        "id": "cam-default",
+        "brand": "Fujifilm",
+        "model": "XT-30",
+        "type": "DSLM/APS-C",
+        "pixelSize": 3.78,
+        "cooled": false
+      }
+    ],
+    "telescopes": [
+      {
+        "id": "tel-sw-n2001000",
+        "brand": "Skywatcher",
+        "model": "N 200/1000",
+        "kind": "Reflektor",
+        "design": "Newton",
+        "apertureMm": 200,
+        "focalLengthMm": 1000,
+        "focalRatio": 5
+      },
+      {
+        "id": "tel-omegon-72432",
+        "brand": "Omegon",
+        "model": "APO AP Photography Scope 72/432",
+        "kind": "Refraktor",
+        "design": "Apochromat",
+        "apertureMm": 72,
+        "focalLengthMm": 432,
+        "focalRatio": 6
+      }
+    ],
+    "mounts": [
+      {
+        "id": "mount-none",
+        "brand": "",
+        "model": "ohne Nachführung",
+        "mode": "",
+        "goto": false
+      },
+      {
+        "id": "mount-sw-eq6r",
+        "brand": "Skywatcher",
+        "model": "EQ6-R PRO Synscan",
+        "mode": "parallaktisch",
+        "goto": true
+      },
+      {
+        "id": "mount-ioptron-skyguider",
+        "brand": "iOptron",
+        "model": "SkyGuider Pro",
+        "mode": "parallaktisch",
+        "goto": false
+      }
+    ]
+  }
 }
