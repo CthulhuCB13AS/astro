@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T21:44:46.452Z",
+  "generatedAt": "2026-08-18T21:45:35.507Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1620,7 +1620,7 @@
           "dateStart": "2025-12-24",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 130,
           "exposureSec": 60,
@@ -1630,7 +1630,21 @@
           "notes": null,
           "rawFolderName": "20251224_Mahlsdorf_130 pcs_60\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ngc2237-20251224-0rosd7.jpg",
+          "photoSha": "fefe6c7106610daa2011c488be8dfebf8e15a27c",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
