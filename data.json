@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T21:43:25.106Z",
+  "generatedAt": "2026-08-18T21:44:28.255Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1197,7 +1197,7 @@
           "dateStart": "2026-01-20",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 330,
           "exposureSec": 60,
@@ -1207,7 +1207,18 @@
           "notes": null,
           "rawFolderName": "20260120_Mahlsdorf_330 pcs_60\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2026-03-10",
