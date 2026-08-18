@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T17:36:16.071Z",
+  "generatedAt": "2026-08-18T20:29:50.837Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1774,14 +1774,17 @@
           "photoDataUrl": null,
           "timeStart": null,
           "timeEnd": null,
-          "camera": "Fujifilm XT-30",
+          "camera": null,
           "filter": null,
           "calibration": {
             "used": true,
             "darks": 20,
             "flats": 20,
             "biases": 20
-          }
+          },
+          "telescopeId": "tel-sw-n2001000",
+          "cameraId": "cam-default",
+          "mountId": "mount-sw-eq6r"
         }
       ]
     },
