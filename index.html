@@ -1,0 +1,5449 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Astro-Logbuch</title>
+<meta name="description" content="Persönliches Astrofotografie-Logbuch mit Sternkarte">
+<style>
+:root{
+  --bg:#0b0d13; --bg2:#12151d; --bg3:#1a1f2b; --border:#262c3a;
+  --text:#e8ecf4; --text-dim:#9aa4b8; --text-faint:#5c6579;
+  --accent:#6ea8fe; --accent-dim:#3a5a8f; --accent-bg:#152238;
+  --warn:#f5c451; --warn-bg:#3a2f10; --danger:#f2777a; --ok:#7ee0a0;
+  --radius:10px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;}
+body{padding-bottom:70px;}
+a{color:var(--accent)}
+h1,h2,h3{font-weight:600;margin:0 0 .5em}
+button, .btn{
+  font-family:inherit;font-size:.92rem;background:var(--bg3);color:var(--text);
+  border:1px solid var(--border);border-radius:var(--radius);padding:.55em 1em;
+  cursor:pointer;transition:background .15s,border-color .15s;
+}
+button:hover,.btn:hover{background:#232a3a;border-color:#33405a}
+button.primary{background:var(--accent);color:#0b0d13;border-color:var(--accent);font-weight:600}
+button.primary:hover{background:#8ab7ff}
+button.danger{color:var(--danger);border-color:#5a2f30}
+button.small{padding:.3em .7em;font-size:.8rem}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{
+  font-family:inherit;font-size:.92rem;background:var(--bg2);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;padding:.55em .7em;width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+label{display:block;font-size:.78rem;color:var(--text-dim);margin:0 0 .3em;font-weight:500}
+.field{margin-bottom:.9em}
+.row{display:flex;gap:.7em;flex-wrap:wrap}
+.row>.field{flex:1;min-width:140px}
+
+header.topbar{
+  position:sticky;top:0;z-index:20;background:rgba(11,13,19,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);padding:.8em 1em;display:flex;align-items:center;gap:.6em;
+}
+header.topbar .logo{font-size:1.15rem;font-weight:700;display:flex;align-items:center;gap:.4em}
+header.topbar .logo small{font-weight:400;color:var(--text-dim);font-size:.7rem}
+header.topbar .spacer{flex:1}
+header.topbar .icon-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:.4em .8em;font-size:.78rem}
+
+nav.tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:20;background:rgba(11,13,19,.97);
+  border-top:1px solid var(--border);display:flex;padding:.35em .3em calc(.35em + env(safe-area-inset-bottom));
+  backdrop-filter:blur(8px);
+}
+nav.tabbar button{
+  flex:1;background:transparent;border:none;border-radius:8px;padding:.6em .2em;
+  color:var(--text-dim);font-size:.75rem;
+}
+nav.tabbar button.active{color:var(--accent);font-weight:600}
+
+/* kleiner Info-Knopf ("i"), einzige zulässige Ausnahme neben Warndreieck */
+.info-btn{
+  display:inline-flex;align-items:center;justify-content:center;width:1.4em;height:1.4em;
+  border-radius:50%;border:1px solid var(--text-faint);color:var(--text-faint);
+  font-size:.68rem;font-style:italic;font-family:Georgia,serif;background:transparent;
+  cursor:pointer;flex:none;padding:0;line-height:1;
+}
+.info-btn:hover{border-color:var(--accent);color:var(--accent)}
+.expand-toggle{color:var(--text-faint);font-size:.85rem;font-weight:600;flex:none;width:1.2em;text-align:center}
+
+.review-flag{
+  display:inline-flex;align-items:center;gap:.3em;background:transparent;border:none;color:var(--warn);
+  font-size:.85rem;cursor:pointer;padding:0;flex:none;
+}
+.review-panel{
+  background:var(--warn-bg);border:1px solid #5c4a1a;border-radius:8px;padding:.6em .8em;margin:.4em 0;
+  font-size:.78rem;color:var(--warn);display:flex;align-items:center;gap:.7em;flex-wrap:wrap;
+}
+.review-panel button{flex:none}
+
+main{max-width:920px;margin:0 auto;padding:1em;}
+.view{display:none}
+.view.active{display:block}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1em;margin-bottom:.8em}
+.card h3{margin-bottom:.2em}
+
+.apod-card{padding:0;overflow:hidden}
+.apod-head{display:flex;align-items:center;gap:.5em;padding:.8em 1em .5em}
+.apod-title{flex:1;font-weight:600;font-size:.92rem}
+.apod-img{width:100%;display:block;max-height:360px;object-fit:cover}
+.apod-media-link{display:block;padding:1.5em 1em;text-align:center;color:var(--accent)}
+.apod-explain{padding:0 1em .8em;font-size:.8rem;color:var(--text-dim);line-height:1.55}
+.apod-date{padding:.5em 1em .8em;font-size:.7rem;color:var(--text-faint)}
+.apod-fallback{padding:1em}
+
+.view-head{display:flex;align-items:center;gap:.6em;margin-bottom:.8em}
+.view-head h2{flex:1;margin:0}
+
+.toolbar{display:flex;gap:.5em;flex-wrap:wrap;align-items:center;margin-bottom:.8em}
+.toolbar input[type=search]{flex:1;min-width:160px}
+.chip{display:inline-flex;align-items:center;gap:.3em;background:var(--bg3);border:1px solid var(--border);
+  border-radius:999px;padding:.25em .7em;font-size:.75rem;color:var(--text-dim);cursor:pointer;user-select:none}
+.chip.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-dim)}
+
+.obj-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:.6em;overflow:hidden}
+.obj-head{display:flex;align-items:center;gap:.6em;padding:.8em 1em;cursor:pointer}
+.obj-head .titles{flex:1;min-width:0}
+.obj-head .titles .t1{font-weight:600;font-size:.98rem;display:flex;align-items:center;gap:.4em}
+.obj-head .titles .t1 .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.obj-head .titles .t2{font-size:.76rem;color:var(--text-dim)}
+.obj-head .meta{display:flex;flex-direction:column;align-items:flex-end;gap:.2em;font-size:.72rem;color:var(--text-faint)}
+.badge{display:inline-block;font-size:.65rem;padding:.12em .5em;border-radius:6px;background:var(--bg3);color:var(--text-dim);border:1px solid var(--border);margin-right:.25em}
+.badge.review{background:transparent;color:var(--warn);border:none;padding:0;font-size:.9rem}
+.obj-body{display:none;padding:0 1em 1em}
+.obj-item.open .obj-body{display:block}
+.obj-desc{font-size:.82rem;color:var(--text-dim);margin-bottom:.7em;line-height:1.5;display:none}
+.obj-desc.open{display:block}
+table.sessions{width:100%;border-collapse:collapse;font-size:.74rem}
+table.sessions th{text-align:left;color:var(--text-faint);font-weight:500;padding:.3em .35em;border-bottom:1px solid var(--border);white-space:nowrap}
+table.sessions td{padding:.4em .35em;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap}
+table.sessions td:nth-child(2){max-width:80px;overflow:hidden;text-overflow:ellipsis}
+table.sessions tr:last-child td{border-bottom:none}
+table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
+.review-note{font-size:.72rem;color:var(--warn);margin-top:.15em}
+
+.catalog-search{position:relative}
+.catalog-results{
+  position:absolute;left:0;right:0;top:100%;margin-top:.25em;background:var(--bg3);
+  border:1px solid var(--border);border-radius:8px;max-height:260px;overflow:auto;z-index:10;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.catalog-results[hidden]{display:none}
+.catalog-result{padding:.55em .8em;cursor:pointer;border-bottom:1px solid var(--border);font-size:.85rem}
+.catalog-result:last-child{border-bottom:none}
+.catalog-result:hover,.catalog-result.active{background:var(--bg2)}
+.catalog-result .cr-name{font-weight:600}
+.catalog-result .cr-sub{font-size:.72rem;color:var(--text-dim)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:700px){.modal-overlay{align-items:center}}
+.modal-overlay[hidden]{display:none}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px 16px 0 0;max-width:760px;width:100%;
+  max-height:88vh;overflow:auto;padding:1.2em}
+@media(min-width:700px){.modal{border-radius:16px}}
+.modal-head{display:flex;align-items:center;margin-bottom:.8em;gap:.6em}
+.modal-head h2{flex:1;margin:0}
+.doc-content{font-size:.85rem;line-height:1.65;color:var(--text)}
+.doc-content h3{margin-top:1.2em;color:var(--accent)}
+.doc-content code{background:var(--bg3);padding:.1em .4em;border-radius:5px;font-family:var(--mono);font-size:.85em}
+.doc-content pre{background:var(--bg3);padding:.8em;border-radius:8px;overflow:auto;font-size:.78rem}
+.doc-content ul{padding-left:1.3em}
+.doc-content table{width:100%;border-collapse:collapse;font-size:.8rem;margin:.5em 0}
+.doc-content th,.doc-content td{border:1px solid var(--border);padding:.3em .5em;text-align:left}
+
+.banner{padding:.6em .9em;border-radius:8px;font-size:.8rem;margin-bottom:.8em;display:flex;gap:.5em;align-items:center}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}
+.banner.ok{background:#123324;color:var(--ok)}
+.banner.info{background:var(--accent-bg);color:var(--accent)}
+
+#map-wrap{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;aspect-ratio:1/1;max-width:520px;margin:0 auto}
+#skyCanvas{width:100%;height:100%;display:block}
+#arVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+#arCanvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+.map-controls{display:flex;gap:.5em;flex-wrap:wrap;justify-content:center;margin:.8em 0}
+.map-legend{display:flex;flex-wrap:wrap;gap:1em;justify-content:center;font-size:.72rem;margin-top:.5em}
+.map-legend .lg-photo{color:var(--accent)}
+.map-legend .lg-review{color:var(--warn)}
+.map-legend .lg-star{color:var(--text-faint)}
+
+.footer-note{text-align:center;color:var(--text-faint);font-size:.72rem;margin:2em 0 1em}
+.hidden{display:none !important}
+.sync-status{font-size:.72rem;color:var(--text-faint)}
+.sync-status.ok{color:var(--ok)}
+.sync-status.err{color:var(--danger)}
+::selection{background:var(--accent-dim)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">Astro-Logbuch <small id="hdr-subtitle">lokal</small></div>
+  <div class="spacer"></div>
+  <button class="icon-btn" id="btn-settings" title="Sync-Einstellungen">Einstellungen</button>
+</header>
+
+<main>
+
+  <section class="view active" id="view-overview">
+    <div id="banner-area"></div>
+    <div class="card apod-card" id="apod-card"></div>
+    <div class="toolbar">
+      <input type="search" id="search-input" placeholder="Suche (Name, Katalog, Ort, Sternbild) …">
+      <span class="chip active" data-filter="all">Alle</span>
+      <span class="chip" data-filter="review">Zu prüfen</span>
+      <span class="chip" data-filter="multi">Mehrfach</span>
+    </div>
+    <div id="object-list"></div>
+  </section>
+
+  <section class="view" id="view-add">
+    <div class="view-head">
+      <h2>Neue Session eintragen</h2>
+      <button class="icon-btn" id="btn-close-add" title="Schließen ohne zu speichern">×</button>
+    </div>
+    <div class="card">
+      <div class="field catalog-search">
+        <label>Objekt (Name oder Katalognummer, z.B. M31 / NGC 7000 / IC 405 / C33)</label>
+        <input id="add-object-search" autocomplete="off" placeholder="Suchen oder auswählen …">
+        <div class="catalog-results" id="catalog-results" hidden></div>
+      </div>
+      <div id="add-object-hint" class="review-note" style="color:var(--text-dim)"></div>
+    </div>
+
+    <div class="card" id="new-object-card" hidden>
+      <h3>Neues Objekt anlegen</h3>
+      <div class="row">
+        <div class="field"><label>Anzeigename *</label><input id="no-display" placeholder="z.B. M27 (Hantelnebel)"></div>
+        <div class="field"><label>Typ *</label>
+          <select id="no-type">
+            <option value="galaxy">Galaxie</option>
+            <option value="galaxy_group">Galaxiengruppe</option>
+            <option value="nebula">Nebel</option>
+            <option value="planetary_nebula">Planetarischer Nebel</option>
+            <option value="supernova_remnant">Supernova-Überrest</option>
+            <option value="open_cluster">Offener Sternhaufen</option>
+            <option value="globular_cluster">Kugelsternhaufen</option>
+            <option value="constellation">Sternbild (Widefield)</option>
+            <option value="mosaic">Mosaik</option>
+            <option value="milkyway">Milchstraße</option>
+            <option value="comet">Komet</option>
+            <option value="exoplanet">Exoplanet</option>
+            <option value="moon">Mond</option>
+            <option value="planet">Planet</option>
+            <option value="star">Stern</option>
+            <option value="other">Sonstiges</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Messier</label><input id="no-messier" placeholder="M31"></div>
+        <div class="field"><label>NGC</label><input id="no-ngc" placeholder="NGC 224"></div>
+        <div class="field"><label>IC</label><input id="no-ic" placeholder="IC 434"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Sternbild</label><input id="no-const" placeholder="Andromeda"></div>
+        <div class="field"><label>Eigenname</label><input id="no-common" placeholder="Andromedagalaxie"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>RA (z.B. 00h42m44s)</label><input id="no-ra" placeholder="optional"></div>
+        <div class="field"><label>Dec (z.B. +41°16'09")</label><input id="no-dec" placeholder="optional"></div>
+      </div>
+      <div class="field"><label>Beschreibung</label><textarea id="no-desc" rows="2" placeholder="optional"></textarea></div>
+      <div class="banner info" id="messier-autofill-hint" hidden>Katalogdaten automatisch vorgeschlagen – bitte prüfen.</div>
+    </div>
+
+    <div class="card">
+      <h3>Session-Daten</h3>
+      <div class="row">
+        <div class="field"><label>Datum (Start) *</label><input type="date" id="s-date-start"></div>
+        <div class="field"><label>Datum (Ende, optional bei Mehrnächter)</label><input type="date" id="s-date-end"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Ort *</label><input id="s-location" placeholder="z.B. Bundesplatz, Mahlsdorf, Gomera …" list="location-datalist"><datalist id="location-datalist"></datalist></div>
+        <div class="field"><label>Brennweite (mm)</label><input type="number" id="s-focal" placeholder="optional"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Anzahl Fotos *</label><input type="number" id="s-frames" placeholder="z.B. 120"></div>
+        <div class="field"><label>Belichtungszeit pro Foto (s) *</label><input type="number" step="any" id="s-exposure" placeholder="z.B. 60"></div>
+        <div class="field"><label>ISO *</label><input type="number" id="s-iso" placeholder="z.B. 800"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Mosaik-Panels (falls Mosaik)</label><input type="number" id="s-mosaic" placeholder="optional"></div>
+        <div class="field"><label>Objektiv/Sonstiges</label><input id="s-lens" placeholder="z.B. 50mm f/1.4"></div>
+      </div>
+      <div class="field"><label>Notizen</label><textarea id="s-notes" rows="2" placeholder="optional"></textarea></div>
+      <div class="row" style="align-items:center">
+        <label style="display:flex;align-items:center;gap:.5em;flex:none;margin:0"><input type="checkbox" id="s-review" style="width:auto"> als „zu prüfen" markieren</label>
+      </div>
+      <button class="primary" id="btn-save-session" style="width:100%;margin-top:.5em">Session speichern</button>
+      <div id="add-status" style="margin-top:.6em"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-map">
+    <h2>Sternkarte</h2>
+    <div class="toolbar" style="justify-content:center">
+      <span class="chip active" data-mapmode="2d">2D-Himmelskarte</span>
+      <span class="chip" data-mapmode="ar">AR-Kamera</span>
+    </div>
+    <div id="map-status" class="banner info" style="max-width:520px;margin:0 auto .8em"></div>
+    <div id="map-wrap">
+      <canvas id="skyCanvas" width="600" height="600"></canvas>
+      <video id="arVideo" autoplay playsinline muted></video>
+      <canvas id="arCanvas"></canvas>
+    </div>
+    <div class="map-controls">
+      <button class="small" id="btn-geo">Standort ermitteln</button>
+      <input type="datetime-local" id="map-time" class="small" style="width:auto">
+      <button class="small" id="btn-map-now">Jetzt</button>
+    </div>
+    <div class="map-legend">
+      <span class="lg-photo">fotografiert</span>
+      <span class="lg-review">zu prüfen</span>
+      <span class="lg-star">Sterne</span>
+    </div>
+    <div id="map-object-info" class="card" hidden></div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button data-view="overview" class="active">Übersicht</button>
+  <button data-view="add">Neue Session</button>
+  <button data-view="map">Karte</button>
+  <button data-view="docs-btn">Doku</button>
+</nav>
+
+<div class="modal-overlay" id="docs-modal" hidden>
+  <div class="modal">
+    <div class="modal-head"><h2>Dokumentation</h2><button class="icon-btn" data-close="docs-modal">×</button></div>
+    <div class="doc-content" id="docs-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settings-modal" hidden>
+  <div class="modal">
+    <div class="modal-head"><h2>Sync-Einstellungen</h2><button class="icon-btn" data-close="settings-modal">×</button></div>
+    <div class="doc-content">
+      <p>Für automatische Synchronisation zwischen Desktop und Handy wird <code>data.json</code> direkt in dein GitHub-Repo committet. Der Token wird ausschließlich lokal in diesem Browser gespeichert (<code>localStorage</code>) und nirgendwo sonst hin übertragen außer an <code>api.github.com</code>.</p>
+      <div class="field"><label>GitHub Benutzername/Organisation</label><input id="cfg-owner" placeholder="z.B. aracari"></div>
+      <div class="field"><label>Repository-Name</label><input id="cfg-repo" placeholder="z.B. astro-logbuch"></div>
+      <div class="field"><label>Branch</label><input id="cfg-branch" placeholder="main" value="main"></div>
+      <div class="field"><label>Personal Access Token (fine-grained, Contents: Read & Write)</label><input id="cfg-token" type="password" placeholder="github_pat_…"></div>
+      <div class="row">
+        <button id="btn-test-sync">Verbindung testen</button>
+        <button class="primary" id="btn-save-sync">Speichern</button>
+        <button class="danger" id="btn-clear-sync">Token entfernen</button>
+      </div>
+      <div id="sync-test-result" class="sync-status"></div>
+      <hr style="border-color:var(--border);margin:1.2em 0">
+      <h3 style="margin-top:0">Astronomy Picture of the Day</h3>
+      <div class="field"><label>NASA API-Key (optional, sonst gemeinsamer DEMO_KEY mit Limit)</label><input id="cfg-nasa-key" placeholder="z.B. von api.nasa.gov/signup"></div>
+      <hr style="border-color:var(--border);margin:1.2em 0">
+      <h3 style="margin-top:0">Manueller Export / Import</h3>
+      <p>Alternative bzw. Backup zum automatischen Sync: JSON-Datei exportieren und z.B. manuell im Repo ersetzen, oder eine Datei importieren.</p>
+      <div class="row">
+        <button id="btn-export">data.json exportieren</button>
+        <button id="btn-import-trigger">JSON importieren</button>
+        <input type="file" id="import-file" accept="application/json" hidden>
+      </div>
+      <hr style="border-color:var(--border);margin:1.2em 0">
+      <h3 style="margin-top:0">Sichtbare Objekte in der Kamera-Ansicht</h3>
+      <div class="field"><label>Kamera-Sichtfeld (° horizontal, ungefähr)</label><input type="number" id="cfg-fov" value="65"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">Astro-Logbuch · Daten bleiben in deinem Browser bzw. deinem GitHub-Repo · <span id="footer-count"></span></div>
+
+<script>
+/* ======================= EMBEDDED SEED DATA ======================= */
+const SEED_DATA = {
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-18T08:01:30Z",
+  "objectCount": 34,
+  "sessionCount": 66,
+  "objects": [
+    {
+      "id": "wasp33b",
+      "displayName": "WASP-33 b",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": [
+          "WASP-33"
+        ]
+      },
+      "commonName": "WASP-33 b",
+      "type": "exoplanet",
+      "constellation": "Andromeda",
+      "ra": "02h26m51s",
+      "dec": "+37°33'02\"",
+      "magnitude": 8.3,
+      "angularSize": null,
+      "distanceLy": 400,
+      "description": "Exoplanet-Transit des Hauptreihensterns WASP-33 (heißer Jupiter). Aufnahmen dienen der Transit-Photometrie.",
+      "needsReview": true,
+      "reviewNote": "RA/Dec des Wirtssterns aus Gedächtnis ergänzt – bitte gegen aktuellen Katalog (z.B. SIMBAD/Exoplanet Archive) prüfen.",
+      "sessions": [
+        {
+          "dateStart": "2026-08-14",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": 200,
+          "lens": null,
+          "frames": 118,
+          "exposureSec": 60,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260814_Mahlsdorf_200mm_118 pcs_60\"_640",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "xo1b",
+      "displayName": "XO-1 b",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": [
+          "XO-1"
+        ]
+      },
+      "commonName": "XO-1 b",
+      "type": "exoplanet",
+      "constellation": "Corona Borealis",
+      "ra": "16h02m12s",
+      "dec": "+28°50'48\"",
+      "magnitude": 11.3,
+      "angularSize": null,
+      "distanceLy": 600,
+      "description": "Exoplanet-Transit des Sterns XO-1 (heißer Jupiter).",
+      "needsReview": true,
+      "reviewNote": "RA/Dec des Wirtssterns aus Gedächtnis ergänzt – bitte gegen aktuellen Katalog (z.B. SIMBAD/Exoplanet Archive) prüfen.",
+      "sessions": [
+        {
+          "dateStart": "2026-08-02",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": 432,
+          "lens": null,
+          "frames": 400,
+          "exposureSec": 30,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260802_Bundesplatz_432mm_400 pcs_30\"_640",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m31",
+      "displayName": "M31 (Andromedagalaxie)",
+      "catalog": {
+        "messier": "M31",
+        "ngc": "NGC 224",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Andromedagalaxie",
+      "type": "galaxy",
+      "constellation": "Andromeda",
+      "ra": "00h42m44.3s",
+      "dec": "+41°16'09\"",
+      "magnitude": 3.4,
+      "angularSize": "190' x 60'",
+      "distanceLy": 2500000,
+      "description": "Große Spiralgalaxie, nächste große Nachbargalaxie der Milchstraße.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2024-12-24",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 100,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241224_Gomera_100 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-01-06",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 132,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250106_Bundesplatz_132 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-18",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 62,
+          "exposureSec": 60,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250218_Bundesplatz_62 pcs_60\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-08-23",
+          "dateEnd": null,
+          "location": "WHAT",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 49,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250823_WHAT_49 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m51",
+      "displayName": "M51 (Whirlpool-Galaxie)",
+      "catalog": {
+        "messier": "M51",
+        "ngc": "NGC 5194/5195",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Whirlpool-Galaxie",
+      "type": "galaxy",
+      "constellation": "Canes Venatici",
+      "ra": "13h29m52.7s",
+      "dec": "+47°11'43\"",
+      "magnitude": 8.4,
+      "angularSize": "11' x 7'",
+      "distanceLy": 23000000,
+      "description": "Wechselwirkendes Galaxienpaar (NGC 5194 & NGC 5195), klassisches Spiralgalaxien-Beispiel.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-17",
+          "dateEnd": null,
+          "location": "Braunsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 120,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250317_Braunsdorf_120 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m64",
+      "displayName": "M64 (Blackeye-Galaxie)",
+      "catalog": {
+        "messier": "M64",
+        "ngc": "NGC 4826",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Blackeye-Galaxie",
+      "type": "galaxy",
+      "constellation": "Coma Berenices",
+      "ra": "12h56m43.7s",
+      "dec": "+21°40'58\"",
+      "magnitude": 8.5,
+      "angularSize": "9.3' x 5.4'",
+      "distanceLy": 17000000,
+      "description": "Spiralgalaxie mit markantem dunklem Staubband vor dem Kern.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-05-23",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 149,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250523_Bundesplatz_149 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m66group",
+      "displayName": "M66-Gruppe (Leo-Triplet)",
+      "catalog": {
+        "messier": "M65/M66",
+        "ngc": "NGC 3623/3627/3628",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Leo-Triplet",
+      "type": "galaxy_group",
+      "constellation": "Leo",
+      "ra": "11h20m15s",
+      "dec": "+12°59'30\"",
+      "magnitude": 8.9,
+      "angularSize": "20' x 4'",
+      "distanceLy": 35000000,
+      "description": "Gruppe dreier Spiralgalaxien (M65, M66, NGC 3628), beliebtes Widefield-Ziel.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-08",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 296,
+          "exposureSec": 40,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250308_Mahlsdorf_296 pcs_40\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-04-30",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 25,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250430_Bundesplatz_25 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m81",
+      "displayName": "M81 (Bode-Galaxie)",
+      "catalog": {
+        "messier": "M81",
+        "ngc": "NGC 3031",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Bode-Galaxie",
+      "type": "galaxy",
+      "constellation": "Ursa Major",
+      "ra": "09h55m33.2s",
+      "dec": "+69°03'55\"",
+      "magnitude": 6.9,
+      "angularSize": "27' x 14'",
+      "distanceLy": 12000000,
+      "description": "Große Spiralgalaxie, oft zusammen mit M82 (Zigarrengalaxie) im selben Feld fotografiert.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-04-26",
+          "dateEnd": null,
+          "location": "Xanten",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 120,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250426_Xanten_120 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m87",
+      "displayName": "M87",
+      "catalog": {
+        "messier": "M87",
+        "ngc": "NGC 4486",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Virgo A",
+      "type": "galaxy",
+      "constellation": "Virgo",
+      "ra": "12h30m49.4s",
+      "dec": "+12°23'28\"",
+      "magnitude": 8.6,
+      "angularSize": "7' x 7'",
+      "distanceLy": 53000000,
+      "description": "Riesige elliptische Galaxie im Virgo-Galaxienhaufen mit supermassivem Schwarzem Loch (erstes je abgebildetes SL, EHT 2019).",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2026-01-20",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 180,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260120_Mahlsdorf_180 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m99",
+      "displayName": "M99 (St. Catherine's Wheel)",
+      "catalog": {
+        "messier": "M99",
+        "ngc": "NGC 4254",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "St. Catherine's Wheel / Pinwheel of Coma",
+      "type": "galaxy",
+      "constellation": "Coma Berenices",
+      "ra": "12h18m49.6s",
+      "dec": "+14°24'59\"",
+      "magnitude": 9.9,
+      "angularSize": "5.4' x 4.7'",
+      "distanceLy": 50000000,
+      "description": "Face-on-Spiralgalaxie im Coma-Virgo-Galaxienhaufen.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-05-01",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 352,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250501_Bundesplatz_352 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m104",
+      "displayName": "M104 (Sombrero-Galaxie)",
+      "catalog": {
+        "messier": "M104",
+        "ngc": "NGC 4594",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Sombrero-Galaxie",
+      "type": "galaxy",
+      "constellation": "Virgo",
+      "ra": "12h39m59.4s",
+      "dec": "-11°37'23\"",
+      "magnitude": 8.0,
+      "angularSize": "9' x 4'",
+      "distanceLy": 30000000,
+      "description": "Linsenförmige Galaxie mit markantem Staubring, sieht wie ein Sombrero-Hut aus.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-04-28",
+          "dateEnd": null,
+          "location": "Deinsberg",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 150,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250428_Deinsberg_150 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "milkyway",
+      "displayName": "Milchstraße",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Milchstraße",
+      "type": "milkyway",
+      "constellation": "diverse (galaktische Ebene)",
+      "ra": null,
+      "dec": null,
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": "Weitwinkelaufnahmen des Milchstraßenbandes, nicht an ein festes Objekt/Koordinaten gebunden.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-01-18",
+          "dateEnd": null,
+          "location": "Geigelstein",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 30,
+          "exposureSec": 60,
+          "iso": 3200,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250118_Geigelstein_30 pcs_60\"_3200",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-01-18",
+          "dateEnd": null,
+          "location": "Geigelstein",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 32,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250118_Geigelstein_32 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-01-18",
+          "dateEnd": null,
+          "location": "Geigelstein",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 60,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250118_Geigelstein_60 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc4725",
+      "displayName": "NGC 4725",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 4725",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "NGC 4725",
+      "type": "galaxy",
+      "constellation": "Coma Berenices",
+      "ra": "12h50m26.6s",
+      "dec": "+25°30'03\"",
+      "magnitude": 9.4,
+      "angularSize": "10.7' x 7.6'",
+      "distanceLy": 40000000,
+      "description": "Balkenspiralgalaxie mit nur einem sichtbaren Spiralarm (ringförmige Struktur).",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2026-05-25",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 174,
+          "exposureSec": 60,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260525_NGC 4725_Bundesplatz_174 pcs_60\"_640",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "comet-lemmon",
+      "displayName": "C/2025 A6 (Lemmon)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": [
+          "C/2025 A6 (Lemmon)"
+        ]
+      },
+      "commonName": "Komet Lemmon",
+      "type": "comet",
+      "constellation": "wechselnd (Kometenbahn)",
+      "ra": null,
+      "dec": null,
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": "Komet C/2025 A6 (Lemmon), Position am Himmel ändert sich täglich – hier nur die Position zum jeweiligen Aufnahmezeitpunkt relevant.",
+      "needsReview": true,
+      "reviewNote": "Sternbild/Position am 18.10.2025 nicht sicher aus Gedächtnis bekannt – bitte Ephemeride (z.B. TheSkyLive) für den Aufnahmezeitpunkt prüfen.",
+      "sessions": [
+        {
+          "dateStart": "2025-10-18",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 52,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "C/2025 A6 (Lemmon)_20251018_Mahlsdorf_52 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "auriga-mosaic",
+      "displayName": "Auriga (Mosaik)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Fuhrmann (Widefield-Mosaik)",
+      "type": "mosaic",
+      "constellation": "Auriga",
+      "ra": "06h00m00s",
+      "dec": "+42°00'00\"",
+      "magnitude": null,
+      "angularSize": "weites Mosaikfeld",
+      "distanceLy": null,
+      "description": "Mehrteiliges Mosaik des Sternbilds Fuhrmann (Auriga) über mehrere Nächte, u.a. mit IC 405, IC 410 und den offenen Sternhaufen M36/M37/M38 im Feld.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2026-03-01",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 1257,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": 17,
+          "isMosaicSummary": true,
+          "notes": "Nur Monat (März 2026) im Ordnernamen angegeben, exaktes Startdatum geschätzt (1. des Monats).",
+          "rawFolderName": "202603_Mosaik_Bundesplatz 17_1257 pcs_30\"_800",
+          "needsReview": true,
+          "reviewNote": "Summenordner für ein 17-teiliges Mosaik über mehrere Nächte im März 2026 (1257 Frames gesamt). Einzelne Nächte/Panel-Daten nicht aus dem Ordnernamen ablesbar – bitte falls gewünscht einzeln ergänzen."
+        }
+      ]
+    },
+    {
+      "id": "cepheus",
+      "displayName": "Kepheus (Sternbild)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Kepheus",
+      "type": "constellation",
+      "constellation": "Cepheus",
+      "ra": "22h00m00s",
+      "dec": "+70°00'00\"",
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": "Weitwinkelaufnahme des Sternbilds Kepheus.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-09-21",
+          "dateEnd": null,
+          "location": "Ebenreuth",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 75,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250921_Ebenreuth_75 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "cassiopeia",
+      "displayName": "Cassiopeia (Sternbild)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Cassiopeia",
+      "type": "constellation",
+      "constellation": "Cassiopeia",
+      "ra": "01h00m00s",
+      "dec": "+60°00'00\"",
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": "Weitwinkelaufnahme des Sternbilds Cassiopeia (markantes 'W').",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-09-21",
+          "dateEnd": null,
+          "location": "Ebenreuth",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 97,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250921_Ebenreuth_97 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-12-16",
+          "dateEnd": null,
+          "location": "La Palma",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 75,
+          "exposureSec": 120,
+          "iso": 2000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20251216_La Palma_75 pcs_120\"_2000",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m45",
+      "displayName": "M45 (Plejaden)",
+      "catalog": {
+        "messier": "M45",
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Plejaden / Siebengestirn",
+      "type": "open_cluster",
+      "constellation": "Taurus",
+      "ra": "03h47m24s",
+      "dec": "+24°07'00\"",
+      "magnitude": 1.6,
+      "angularSize": "110'",
+      "distanceLy": 440,
+      "description": "Offener Sternhaufen mit charakteristischen blauen Reflexionsnebeln um die Haufensterne.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2024-12-23",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 20,
+          "exposureSec": 15,
+          "iso": 2500,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241223_Gomera_20 pcs_15\"_2500",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2024-12-23",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 21,
+          "exposureSec": 15,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241223_Gomera_21 pcs_15\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2024-12-24",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 97,
+          "exposureSec": 20,
+          "iso": 2500,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241224_Gomera_97 pcs_20\"_2500",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-12-11",
+          "dateEnd": null,
+          "location": "La Palma",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 60,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20251211_La Palma_60 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "orion-constellation",
+      "displayName": "Orion (Sternbild)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Orion",
+      "type": "constellation",
+      "constellation": "Orion",
+      "ra": "05h30m00s",
+      "dec": "+05°00'00\"",
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": "Weitwinkelaufnahme des Sternbilds Orion (Gürtel, Schwertregion).",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-01-18",
+          "dateEnd": null,
+          "location": "Geigelstein",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 32,
+          "exposureSec": 30,
+          "iso": 4000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250118_Geigelstein_32 pcs_30\"_4000",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "polaris",
+      "displayName": "Polaris",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Polarstern",
+      "type": "star",
+      "constellation": "Ursa Minor",
+      "ra": "02h31m49s",
+      "dec": "+89°15'51\"",
+      "magnitude": 2.0,
+      "angularSize": null,
+      "distanceLy": 430,
+      "description": "Polarstern, u.a. für Polausrichtung/Startrails fotografiert.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-08-08",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 180,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250808_Mahlsdorf_180 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-12-15",
+          "dateEnd": null,
+          "location": "La Palma",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 137,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20251215_La Palma_137 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-12-15",
+          "dateEnd": null,
+          "location": "La Palma",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 215,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20251215_La Palma_215 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "moon",
+      "displayName": "Mond",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Mond",
+      "type": "moon",
+      "constellation": null,
+      "ra": null,
+      "dec": null,
+      "magnitude": null,
+      "angularSize": "31'",
+      "distanceLy": 0.00257,
+      "description": "Mondaufnahmen (Planetenmodus, kurze Belichtungen / Serienbilder).",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-02",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 200,
+          "exposureSec": 0.05,
+          "iso": 160,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250302_Bundesplatz_200pcs_20_13",
+          "needsReview": true,
+          "reviewNote": "Ordnername weicht vom Standardmuster ab ('200pcs_20_13'). Interpretiert als Belichtung 1/20 s; ISO vermutlich 160 statt '13' (möglicher Tippfehler) – bitte prüfen."
+        },
+        {
+          "dateStart": "2025-03-02",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 200,
+          "exposureSec": 0.0167,
+          "iso": 160,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250302_Bundesplatz_200pcs_60_160",
+          "needsReview": true,
+          "reviewNote": "Interpretiert als Belichtung 1/60 s, ISO 160 – bitte gegen Originalquelle prüfen."
+        },
+        {
+          "dateStart": "2025-03-02",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 200,
+          "exposureSec": 0.008,
+          "iso": 160,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250302_Bundesplatz_200pcs_125_160",
+          "needsReview": true,
+          "reviewNote": "Interpretiert als Belichtung 1/125 s, ISO 160 – bitte gegen Originalquelle prüfen."
+        }
+      ]
+    },
+    {
+      "id": "ic405",
+      "displayName": "IC 405 (Flammensternnebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": "IC 405",
+        "other": []
+      },
+      "commonName": "Flaming Star Nebula",
+      "type": "nebula",
+      "constellation": "Auriga",
+      "ra": "05h16m12s",
+      "dec": "+34°16'00\"",
+      "magnitude": null,
+      "angularSize": "37' x 19'",
+      "distanceLy": 1500,
+      "description": "Emissions-/Reflexionsnebel um den Stern AE Aurigae.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-02-01",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 528,
+          "exposureSec": 60,
+          "iso": null,
+          "mosaicPanels": null,
+          "isMosaicSummary": true,
+          "notes": null,
+          "rawFolderName": "202502_Bundesplatz_528 pcs_60\" (2 Nächte)",
+          "needsReview": true,
+          "reviewNote": "Nur Monat (Februar 2025) angegeben, Summe über 2 Nächte ('2 Nächte' im Ordnernamen). Exakte Einzeldaten und ISO nicht aus dem Ordnernamen ablesbar – Startdatum auf den 1. des Monats geschätzt."
+        },
+        {
+          "dateStart": "2025-02-03",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 176,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250203_Bundesplatz_176 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-08",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 224,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250208_Bundesplatz_224 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-16",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 180,
+          "exposureSec": 60,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250216_Bundesplatz_180 pcs_60\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-17",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 180,
+          "exposureSec": 60,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250217_Bundesplatz_180 pcs_60\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-19",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 180,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250219_Bundesplatz_180 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ic410",
+      "displayName": "IC 410 (Tadpole Nebula)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": "IC 410",
+        "other": []
+      },
+      "commonName": "Tadpole Nebula (Kaulquappennebel)",
+      "type": "nebula",
+      "constellation": "Auriga",
+      "ra": "05h22m36s",
+      "dec": "+33°30'00\"",
+      "magnitude": null,
+      "angularSize": "40' x 30'",
+      "distanceLy": 12000,
+      "description": "Emissionsnebel mit offenem Sternhaufen NGC 1893 und den namensgebenden 'Kaulquappen'-Gasstrukturen.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-08",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 300,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250308_Mahlsdorf_300 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ic443",
+      "displayName": "IC 443 (Quallennebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": "IC 443",
+        "other": []
+      },
+      "commonName": "Jellyfish Nebula (Quallennebel)",
+      "type": "supernova_remnant",
+      "constellation": "Gemini",
+      "ra": "06h17m13s",
+      "dec": "+22°31'00\"",
+      "magnitude": null,
+      "angularSize": "50' x 40'",
+      "distanceLy": 5000,
+      "description": "Supernova-Überrest im Sternbild Zwillinge.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2026-01-20",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 330,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260120_Mahlsdorf_330 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2026-03-10",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 450,
+          "exposureSec": 20,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260310_Bundesplatz_450 pcs_20\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ic434",
+      "displayName": "IC 434 (Pferdekopfnebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 2023 (Umgebung)",
+        "ic": "IC 434",
+        "other": []
+      },
+      "commonName": "Horsehead Nebula (Pferdekopfnebel)",
+      "type": "nebula",
+      "constellation": "Orion",
+      "ra": "05h40m59s",
+      "dec": "-02°27'30\"",
+      "magnitude": null,
+      "angularSize": "60' x 10'",
+      "distanceLy": 1500,
+      "description": "Dunkelnebel vor dem Emissionsnebel IC 434, nahe Alnitak im Orion-Gürtel.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2024-12-29",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 90,
+          "exposureSec": 120,
+          "iso": 3200,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241229_Gomera_90 pcs_120\"_3200",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2024-12-30",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 45,
+          "exposureSec": 120,
+          "iso": 4000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241230_Gomera_45 pcs_120\"_4000",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2024-12-31",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 120,
+          "exposureSec": 120,
+          "iso": 5000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241231_Gomera_120 pcs_120\"_5000",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m42",
+      "displayName": "M42 (Orionnebel)",
+      "catalog": {
+        "messier": "M42",
+        "ngc": "NGC 1976",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Orionnebel",
+      "type": "nebula",
+      "constellation": "Orion",
+      "ra": "05h35m17.3s",
+      "dec": "-05°23'28\"",
+      "magnitude": 4.0,
+      "angularSize": "85' x 60'",
+      "distanceLy": 1344,
+      "description": "Hellster diffuser Emissionsnebel am Himmel, Sternentstehungsgebiet im Schwert des Orion.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2024-12-25",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 120,
+          "exposureSec": 60,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241225_Gomera_120 pcs_60\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m57",
+      "displayName": "M57 (Ringnebel)",
+      "catalog": {
+        "messier": "M57",
+        "ngc": "NGC 6720",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Ringnebel",
+      "type": "planetary_nebula",
+      "constellation": "Lyra",
+      "ra": "18h53m35.1s",
+      "dec": "+33°01'45\"",
+      "magnitude": 8.8,
+      "angularSize": "1.4' x 1'",
+      "distanceLy": 2300,
+      "description": "Planetarischer Nebel, Überrest eines sonnenähnlichen Sterns.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-08-23",
+          "dateEnd": null,
+          "location": "WHAT",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 60,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250823_WHAT_60 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc281",
+      "displayName": "NGC 281 (Pacman-Nebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 281",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Pacman Nebula",
+      "type": "nebula",
+      "constellation": "Cassiopeia",
+      "ra": "00h52m59.5s",
+      "dec": "+56°37'19\"",
+      "magnitude": null,
+      "angularSize": "35' x 30'",
+      "distanceLy": 9500,
+      "description": "Emissionsnebel mit eingebettetem offenen Sternhaufen IC 1590.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-02-03",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 201,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250203_Bundesplatz_201 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-15",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 105,
+          "exposureSec": 60,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250215_Bundesplatz_105 pcs_60\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-02-16",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 139,
+          "exposureSec": 60,
+          "iso": 1600,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250216_Bundesplatz_139 pcs_60\"_1600",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc1499",
+      "displayName": "NGC 1499 (Kaliforniennebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 1499",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "California Nebula",
+      "type": "nebula",
+      "constellation": "Perseus",
+      "ra": "04h03m18s",
+      "dec": "+36°25'00\"",
+      "magnitude": null,
+      "angularSize": "160' x 40'",
+      "distanceLy": 1000,
+      "description": "Sehr ausgedehnter, lichtschwacher Emissionsnebel nahe Menkib (Xi Persei).",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-10",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 349,
+          "exposureSec": 30,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250310_Bundesplatz_349 pcs_30\"_640",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-03-22",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 271,
+          "exposureSec": 20,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250322_Bundesplatz_271 pcs_20\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-03-28",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 197,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250328_Bundesplatz_197 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc2174",
+      "displayName": "NGC 2174 (Affenkopfnebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 2174",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Monkey Head Nebula",
+      "type": "nebula",
+      "constellation": "Orion",
+      "ra": "06h09m42s",
+      "dec": "+20°30'30\"",
+      "magnitude": null,
+      "angularSize": "40' x 30'",
+      "distanceLy": 6400,
+      "description": "Emissionsnebel mit Sternentstehungsgebiet an der Grenze Orion/Zwillinge.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-15",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 305,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250315_Bundesplatz_305 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-03-21",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 294,
+          "exposureSec": 20,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250321_Bundesplatz_294 pcs_20\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc2237",
+      "displayName": "NGC 2237 (Rosettennebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 2237",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Rosette Nebula",
+      "type": "nebula",
+      "constellation": "Monoceros",
+      "ra": "06h33m45s",
+      "dec": "+04°59'54\"",
+      "magnitude": null,
+      "angularSize": "80' x 60'",
+      "distanceLy": 5200,
+      "description": "Großer Emissionsnebel mit zentralem offenen Sternhaufen NGC 2244.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-12-24",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 130,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20251224_Mahlsdorf_130 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc6992",
+      "displayName": "NGC 6992 (Cirrusnebel / Östlicher Schleiernebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 6992",
+        "ic": null,
+        "other": [
+          "Veil Nebula (East)"
+        ]
+      },
+      "commonName": "Eastern Veil Nebula",
+      "type": "supernova_remnant",
+      "constellation": "Cygnus",
+      "ra": "20h56m24s",
+      "dec": "+31°43'00\"",
+      "magnitude": null,
+      "angularSize": "60' x 8'",
+      "distanceLy": 2400,
+      "description": "Östlicher Teil des Cygnus-Loop-Supernovaüberrests (Schleiernebel).",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-10-18",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 60,
+          "exposureSec": 120,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20251018_Mahlsdorf_60 pcs_120\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "ngc7000",
+      "displayName": "NGC 7000 (Nordamerikanebel)",
+      "catalog": {
+        "messier": null,
+        "ngc": "NGC 7000",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "North America Nebula",
+      "type": "nebula",
+      "constellation": "Cygnus",
+      "ra": "20h58m48s",
+      "dec": "+44°20'00\"",
+      "magnitude": null,
+      "angularSize": "120' x 100'",
+      "distanceLy": 2200,
+      "description": "Großer Emissionsnebel, dessen Form an Nordamerika erinnert.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2024-12-26",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 61,
+          "exposureSec": 60,
+          "iso": 2500,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241226_Gomera_61 pcs_60\"_2500",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2024-12-30",
+          "dateEnd": null,
+          "location": "Gomera",
+          "focalLengthMm": null,
+          "lens": "50mm f/1.4",
+          "frames": 90,
+          "exposureSec": 60,
+          "iso": 3200,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20241230_Gomera_9...60\"_3200 (50mm f1.4)",
+          "needsReview": true,
+          "reviewNote": "Ordnername im Screenshot abgeschnitten ('9...60\"_3200'), Anzahl Fotos als 90 geschätzt (Bereich anderer Gomera-Sessions dieser Nächte) – bitte exakten Wert prüfen. Aufnahme mit 50mm-Objektiv (f/1.4) statt Teleskop."
+        },
+        {
+          "dateStart": "2025-08-30",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 125,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250830_Mahlsdorf_125 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2025-09-12",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 60,
+          "exposureSec": 60,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250912_Mahlsdorf_60 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2026-08-13",
+          "dateEnd": null,
+          "location": "Mahlsdorf",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 116,
+          "exposureSec": 60,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260813_Mahlsdorf...mm_116 pcs_60\"_640",
+          "needsReview": true,
+          "reviewNote": "Brennweite im Ordnernamen abgeschnitten ('...mm_116 pcs'), Wert unbekannt – bitte ergänzen."
+        }
+      ]
+    },
+    {
+      "id": "m13",
+      "displayName": "M13 (Hercules-Kugelsternhaufen)",
+      "catalog": {
+        "messier": "M13",
+        "ngc": "NGC 6205",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "Hercules Globular Cluster",
+      "type": "globular_cluster",
+      "constellation": "Hercules",
+      "ra": "16h41m41.2s",
+      "dec": "+36°27'37\"",
+      "magnitude": 5.8,
+      "angularSize": "20'",
+      "distanceLy": 22200,
+      "description": "Einer der hellsten Kugelsternhaufen am Nordhimmel.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2026-07-11",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": 432,
+          "lens": null,
+          "frames": 400,
+          "exposureSec": 15,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260711_Bundesplatz_432mm_400 pcs_15\"_640",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "dateStart": "2026-07-25",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": 432,
+          "lens": null,
+          "frames": 200,
+          "exposureSec": 60,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20260725_Bundesplatz_432mm_200 pcs_60\"_640",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "m35",
+      "displayName": "M35",
+      "catalog": {
+        "messier": "M35",
+        "ngc": "NGC 2168",
+        "ic": null,
+        "other": []
+      },
+      "commonName": "M35",
+      "type": "open_cluster",
+      "constellation": "Gemini",
+      "ra": "06h09m00s",
+      "dec": "+24°21'00\"",
+      "magnitude": 5.1,
+      "angularSize": "28'",
+      "distanceLy": 2800,
+      "description": "Offener Sternhaufen im Sternbild Zwillinge.",
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "dateStart": "2025-03-19",
+          "dateEnd": null,
+          "location": "Bundesplatz",
+          "focalLengthMm": null,
+          "lens": null,
+          "frames": 150,
+          "exposureSec": 20,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "notes": null,
+          "rawFolderName": "20250319_Bundesplatz_150 pcs_20\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    }
+  ]
+};
+const STAR_CATALOG = {
+ "stars": [
+  {
+   "name": "Dubhe",
+   "con": "UMa",
+   "ra": 165.933,
+   "dec": 61.751,
+   "mag": 1.8
+  },
+  {
+   "name": "Merak",
+   "con": "UMa",
+   "ra": 165.458,
+   "dec": 56.383,
+   "mag": 2.4
+  },
+  {
+   "name": "Phecda",
+   "con": "UMa",
+   "ra": 178.458,
+   "dec": 53.695,
+   "mag": 2.4
+  },
+  {
+   "name": "Megrez",
+   "con": "UMa",
+   "ra": 183.858,
+   "dec": 57.032,
+   "mag": 3.3
+  },
+  {
+   "name": "Alioth",
+   "con": "UMa",
+   "ra": 193.508,
+   "dec": 55.96,
+   "mag": 1.8
+  },
+  {
+   "name": "Mizar",
+   "con": "UMa",
+   "ra": 200.983,
+   "dec": 54.925,
+   "mag": 2.2
+  },
+  {
+   "name": "Alkaid",
+   "con": "UMa",
+   "ra": 206.883,
+   "dec": 49.313,
+   "mag": 1.9
+  },
+  {
+   "name": "Polaris",
+   "con": "UMi",
+   "ra": 37.954,
+   "dec": 89.264,
+   "mag": 2.0
+  },
+  {
+   "name": "Kochab",
+   "con": "UMi",
+   "ra": 222.675,
+   "dec": 74.156,
+   "mag": 2.1
+  },
+  {
+   "name": "Pherkad",
+   "con": "UMi",
+   "ra": 230.183,
+   "dec": 71.834,
+   "mag": 3.0
+  },
+  {
+   "name": "Schedar",
+   "con": "Cas",
+   "ra": 10.125,
+   "dec": 56.537,
+   "mag": 2.2
+  },
+  {
+   "name": "Caph",
+   "con": "Cas",
+   "ra": 2.296,
+   "dec": 59.15,
+   "mag": 2.3
+  },
+  {
+   "name": "Gamma Cas",
+   "con": "Cas",
+   "ra": 14.175,
+   "dec": 60.717,
+   "mag": 2.5
+  },
+  {
+   "name": "Ruchbah",
+   "con": "Cas",
+   "ra": 21.454,
+   "dec": 60.235,
+   "mag": 2.7
+  },
+  {
+   "name": "Segin",
+   "con": "Cas",
+   "ra": 28.6,
+   "dec": 63.67,
+   "mag": 3.4
+  },
+  {
+   "name": "Alderamin",
+   "con": "Cep",
+   "ra": 319.646,
+   "dec": 62.586,
+   "mag": 2.4
+  },
+  {
+   "name": "Alfirk",
+   "con": "Cep",
+   "ra": 322.167,
+   "dec": 70.561,
+   "mag": 3.2
+  },
+  {
+   "name": "Errai",
+   "con": "Cep",
+   "ra": 354.837,
+   "dec": 77.632,
+   "mag": 3.2
+  },
+  {
+   "name": "Zeta Cep",
+   "con": "Cep",
+   "ra": 332.713,
+   "dec": 58.201,
+   "mag": 3.4
+  },
+  {
+   "name": "Eltanin",
+   "con": "Dra",
+   "ra": 269.15,
+   "dec": 51.489,
+   "mag": 2.2
+  },
+  {
+   "name": "Thuban",
+   "con": "Dra",
+   "ra": 211.096,
+   "dec": 64.376,
+   "mag": 3.7
+  },
+  {
+   "name": "Rastaban",
+   "con": "Dra",
+   "ra": 262.608,
+   "dec": 52.301,
+   "mag": 2.8
+  },
+  {
+   "name": "Deneb",
+   "con": "Cyg",
+   "ra": 310.358,
+   "dec": 45.28,
+   "mag": 1.3
+  },
+  {
+   "name": "Sadr",
+   "con": "Cyg",
+   "ra": 305.558,
+   "dec": 40.257,
+   "mag": 2.2
+  },
+  {
+   "name": "Gienah Cygni",
+   "con": "Cyg",
+   "ra": 311.554,
+   "dec": 33.97,
+   "mag": 2.5
+  },
+  {
+   "name": "Delta Cyg",
+   "con": "Cyg",
+   "ra": 296.242,
+   "dec": 45.131,
+   "mag": 2.9
+  },
+  {
+   "name": "Albireo",
+   "con": "Cyg",
+   "ra": 292.679,
+   "dec": 27.96,
+   "mag": 3.1
+  },
+  {
+   "name": "Vega",
+   "con": "Lyr",
+   "ra": 279.233,
+   "dec": 38.784,
+   "mag": 0.0
+  },
+  {
+   "name": "Sheliak",
+   "con": "Lyr",
+   "ra": 282.521,
+   "dec": 33.363,
+   "mag": 3.5
+  },
+  {
+   "name": "Sulafat",
+   "con": "Lyr",
+   "ra": 284.733,
+   "dec": 32.689,
+   "mag": 3.2
+  },
+  {
+   "name": "Altair",
+   "con": "Aql",
+   "ra": 297.696,
+   "dec": 8.868,
+   "mag": 0.8
+  },
+  {
+   "name": "Tarazed",
+   "con": "Aql",
+   "ra": 296.567,
+   "dec": 10.613,
+   "mag": 2.7
+  },
+  {
+   "name": "Alshain",
+   "con": "Aql",
+   "ra": 298.829,
+   "dec": 6.407,
+   "mag": 3.7
+  },
+  {
+   "name": "Alpheratz",
+   "con": "And",
+   "ra": 2.096,
+   "dec": 29.091,
+   "mag": 2.1
+  },
+  {
+   "name": "Mirach",
+   "con": "And",
+   "ra": 17.433,
+   "dec": 35.621,
+   "mag": 2.1
+  },
+  {
+   "name": "Almach",
+   "con": "And",
+   "ra": 30.975,
+   "dec": 42.33,
+   "mag": 2.3
+  },
+  {
+   "name": "Mirfak",
+   "con": "Per",
+   "ra": 51.079,
+   "dec": 49.861,
+   "mag": 1.8
+  },
+  {
+   "name": "Algol",
+   "con": "Per",
+   "ra": 47.042,
+   "dec": 40.956,
+   "mag": 2.1
+  },
+  {
+   "name": "Zeta Per",
+   "con": "Per",
+   "ra": 58.533,
+   "dec": 31.884,
+   "mag": 2.9
+  },
+  {
+   "name": "Epsilon Per",
+   "con": "Per",
+   "ra": 59.463,
+   "dec": 40.01,
+   "mag": 2.9
+  },
+  {
+   "name": "Capella",
+   "con": "Aur",
+   "ra": 79.171,
+   "dec": 45.998,
+   "mag": 0.1
+  },
+  {
+   "name": "Menkalinan",
+   "con": "Aur",
+   "ra": 89.883,
+   "dec": 44.947,
+   "mag": 1.9
+  },
+  {
+   "name": "Theta Aur",
+   "con": "Aur",
+   "ra": 89.929,
+   "dec": 37.213,
+   "mag": 2.6
+  },
+  {
+   "name": "Hassaleh",
+   "con": "Aur",
+   "ra": 74.25,
+   "dec": 33.172,
+   "mag": 2.7
+  },
+  {
+   "name": "Almaaz",
+   "con": "Aur",
+   "ra": 75.492,
+   "dec": 43.823,
+   "mag": 3.0
+  },
+  {
+   "name": "Aldebaran",
+   "con": "Tau",
+   "ra": 68.979,
+   "dec": 16.509,
+   "mag": 0.9
+  },
+  {
+   "name": "Elnath",
+   "con": "Tau",
+   "ra": 81.575,
+   "dec": 28.608,
+   "mag": 1.7
+  },
+  {
+   "name": "Alcyone",
+   "con": "Tau",
+   "ra": 56.871,
+   "dec": 24.105,
+   "mag": 2.9
+  },
+  {
+   "name": "Tau Zeta",
+   "con": "Tau",
+   "ra": 84.413,
+   "dec": 21.142,
+   "mag": 3.0
+  },
+  {
+   "name": "Betelgeuse",
+   "con": "Ori",
+   "ra": 88.792,
+   "dec": 7.407,
+   "mag": 0.5
+  },
+  {
+   "name": "Rigel",
+   "con": "Ori",
+   "ra": 78.633,
+   "dec": -8.202,
+   "mag": 0.1
+  },
+  {
+   "name": "Bellatrix",
+   "con": "Ori",
+   "ra": 81.283,
+   "dec": 6.35,
+   "mag": 1.6
+  },
+  {
+   "name": "Mintaka",
+   "con": "Ori",
+   "ra": 83.0,
+   "dec": 0.299,
+   "mag": 2.2
+  },
+  {
+   "name": "Alnilam",
+   "con": "Ori",
+   "ra": 84.054,
+   "dec": -1.202,
+   "mag": 1.7
+  },
+  {
+   "name": "Alnitak",
+   "con": "Ori",
+   "ra": 85.192,
+   "dec": -1.943,
+   "mag": 1.8
+  },
+  {
+   "name": "Saiph",
+   "con": "Ori",
+   "ra": 86.938,
+   "dec": -9.67,
+   "mag": 2.1
+  },
+  {
+   "name": "Pollux",
+   "con": "Gem",
+   "ra": 116.329,
+   "dec": 28.026,
+   "mag": 1.1
+  },
+  {
+   "name": "Castor",
+   "con": "Gem",
+   "ra": 113.65,
+   "dec": 31.888,
+   "mag": 1.6
+  },
+  {
+   "name": "Alhena",
+   "con": "Gem",
+   "ra": 99.429,
+   "dec": 16.399,
+   "mag": 1.9
+  },
+  {
+   "name": "Wasat",
+   "con": "Gem",
+   "ra": 110.029,
+   "dec": 21.982,
+   "mag": 3.5
+  },
+  {
+   "name": "Mebsuta",
+   "con": "Gem",
+   "ra": 95.742,
+   "dec": 25.131,
+   "mag": 3.1
+  },
+  {
+   "name": "Sirius",
+   "con": "CMa",
+   "ra": 101.288,
+   "dec": -16.716,
+   "mag": -1.5
+  },
+  {
+   "name": "Adhara",
+   "con": "CMa",
+   "ra": 104.658,
+   "dec": -28.972,
+   "mag": 1.5
+  },
+  {
+   "name": "Wezen",
+   "con": "CMa",
+   "ra": 107.096,
+   "dec": -26.393,
+   "mag": 1.8
+  },
+  {
+   "name": "Mirzam",
+   "con": "CMa",
+   "ra": 95.675,
+   "dec": -17.956,
+   "mag": 2.0
+  },
+  {
+   "name": "Procyon",
+   "con": "CMi",
+   "ra": 114.825,
+   "dec": 5.225,
+   "mag": 0.4
+  },
+  {
+   "name": "Regulus",
+   "con": "Leo",
+   "ra": 152.092,
+   "dec": 11.967,
+   "mag": 1.4
+  },
+  {
+   "name": "Denebola",
+   "con": "Leo",
+   "ra": 177.262,
+   "dec": 14.572,
+   "mag": 2.1
+  },
+  {
+   "name": "Algieba",
+   "con": "Leo",
+   "ra": 154.992,
+   "dec": 19.841,
+   "mag": 2.6
+  },
+  {
+   "name": "Zosma",
+   "con": "Leo",
+   "ra": 168.525,
+   "dec": 20.524,
+   "mag": 2.6
+  },
+  {
+   "name": "Spica",
+   "con": "Vir",
+   "ra": 201.3,
+   "dec": -11.161,
+   "mag": 1.0
+  },
+  {
+   "name": "Vindemiatrix",
+   "con": "Vir",
+   "ra": 195.546,
+   "dec": 10.959,
+   "mag": 2.8
+  },
+  {
+   "name": "Arcturus",
+   "con": "Boo",
+   "ra": 213.917,
+   "dec": 19.183,
+   "mag": -0.1
+  },
+  {
+   "name": "Izar",
+   "con": "Boo",
+   "ra": 221.246,
+   "dec": 27.074,
+   "mag": 2.4
+  },
+  {
+   "name": "Seginus",
+   "con": "Boo",
+   "ra": 218.021,
+   "dec": 38.308,
+   "mag": 3.0
+  },
+  {
+   "name": "Alphecca",
+   "con": "CrB",
+   "ra": 233.671,
+   "dec": 26.715,
+   "mag": 2.2
+  },
+  {
+   "name": "Kornephoros",
+   "con": "Her",
+   "ra": 247.554,
+   "dec": 21.49,
+   "mag": 2.8
+  },
+  {
+   "name": "Zeta Her",
+   "con": "Her",
+   "ra": 250.321,
+   "dec": 31.603,
+   "mag": 2.8
+  },
+  {
+   "name": "Rasalgethi",
+   "con": "Her",
+   "ra": 258.663,
+   "dec": 14.39,
+   "mag": 3.1
+  },
+  {
+   "name": "Pi Her",
+   "con": "Her",
+   "ra": 258.762,
+   "dec": 36.809,
+   "mag": 3.2
+  },
+  {
+   "name": "Kaus Australis",
+   "con": "Sgr",
+   "ra": 276.042,
+   "dec": -34.385,
+   "mag": 1.8
+  },
+  {
+   "name": "Nunki",
+   "con": "Sgr",
+   "ra": 283.817,
+   "dec": -26.297,
+   "mag": 2.0
+  },
+  {
+   "name": "Ascella",
+   "con": "Sgr",
+   "ra": 283.817,
+   "dec": -40.616,
+   "mag": 2.6
+  },
+  {
+   "name": "Kaus Media",
+   "con": "Sgr",
+   "ra": 275.413,
+   "dec": -29.828,
+   "mag": 2.7
+  },
+  {
+   "name": "Kaus Borealis",
+   "con": "Sgr",
+   "ra": 277.0,
+   "dec": -25.422,
+   "mag": 2.8
+  },
+  {
+   "name": "Phi Sgr",
+   "con": "Sgr",
+   "ra": 281.413,
+   "dec": -26.991,
+   "mag": 3.2
+  },
+  {
+   "name": "Antares",
+   "con": "Sco",
+   "ra": 247.35,
+   "dec": -26.432,
+   "mag": 1.0
+  },
+  {
+   "name": "Shaula",
+   "con": "Sco",
+   "ra": 263.404,
+   "dec": -37.104,
+   "mag": 1.6
+  },
+  {
+   "name": "Sargas",
+   "con": "Sco",
+   "ra": 264.329,
+   "dec": -42.998,
+   "mag": 1.9
+  },
+  {
+   "name": "Dschubba",
+   "con": "Sco",
+   "ra": 240.083,
+   "dec": -22.622,
+   "mag": 2.3
+  },
+  {
+   "name": "Enif",
+   "con": "Peg",
+   "ra": 326.046,
+   "dec": 9.875,
+   "mag": 2.4
+  },
+  {
+   "name": "Scheat",
+   "con": "Peg",
+   "ra": 345.942,
+   "dec": 28.083,
+   "mag": 2.4
+  },
+  {
+   "name": "Markab",
+   "con": "Peg",
+   "ra": 346.192,
+   "dec": 15.205,
+   "mag": 2.5
+  },
+  {
+   "name": "Algenib",
+   "con": "Peg",
+   "ra": 3.308,
+   "dec": 15.184,
+   "mag": 2.8
+  },
+  {
+   "name": "Hamal",
+   "con": "Ari",
+   "ra": 31.792,
+   "dec": 23.462,
+   "mag": 2.0
+  },
+  {
+   "name": "Sheratan",
+   "con": "Ari",
+   "ra": 28.658,
+   "dec": 20.808,
+   "mag": 2.6
+  },
+  {
+   "name": "Acubens",
+   "con": "Cnc",
+   "ra": 134.621,
+   "dec": 11.858,
+   "mag": 4.3
+  },
+  {
+   "name": "Gienah Corvi",
+   "con": "Crv",
+   "ra": 183.95,
+   "dec": -17.542,
+   "mag": 2.6
+  },
+  {
+   "name": "Kraz",
+   "con": "Crv",
+   "ra": 187.467,
+   "dec": -23.397,
+   "mag": 2.7
+  },
+  {
+   "name": "Algorab",
+   "con": "Crv",
+   "ra": 187.462,
+   "dec": -16.516,
+   "mag": 3.0
+  },
+  {
+   "name": "Minkar",
+   "con": "Crv",
+   "ra": 182.529,
+   "dec": -22.62,
+   "mag": 3.0
+  }
+ ],
+ "lines": [
+  [
+   "Dubhe",
+   "Merak"
+  ],
+  [
+   "Merak",
+   "Phecda"
+  ],
+  [
+   "Phecda",
+   "Megrez"
+  ],
+  [
+   "Megrez",
+   "Dubhe"
+  ],
+  [
+   "Megrez",
+   "Alioth"
+  ],
+  [
+   "Alioth",
+   "Mizar"
+  ],
+  [
+   "Mizar",
+   "Alkaid"
+  ],
+  [
+   "Polaris",
+   "Errai"
+  ],
+  [
+   "Polaris",
+   "Pherkad"
+  ],
+  [
+   "Pherkad",
+   "Kochab"
+  ],
+  [
+   "Kochab",
+   "Zeta Cep"
+  ],
+  [
+   "Zeta Cep",
+   "Errai"
+  ],
+  [
+   "Caph",
+   "Schedar"
+  ],
+  [
+   "Schedar",
+   "Gamma Cas"
+  ],
+  [
+   "Gamma Cas",
+   "Ruchbah"
+  ],
+  [
+   "Ruchbah",
+   "Segin"
+  ],
+  [
+   "Alderamin",
+   "Alfirk"
+  ],
+  [
+   "Alfirk",
+   "Errai"
+  ],
+  [
+   "Errai",
+   "Zeta Cep"
+  ],
+  [
+   "Zeta Cep",
+   "Alderamin"
+  ],
+  [
+   "Alfirk",
+   "Zeta Cep"
+  ],
+  [
+   "Deneb",
+   "Sadr"
+  ],
+  [
+   "Sadr",
+   "Delta Cyg"
+  ],
+  [
+   "Delta Cyg",
+   "Gienah Cygni"
+  ],
+  [
+   "Sadr",
+   "Albireo"
+  ],
+  [
+   "Vega",
+   "Sheliak"
+  ],
+  [
+   "Sheliak",
+   "Sulafat"
+  ],
+  [
+   "Sulafat",
+   "Vega"
+  ],
+  [
+   "Altair",
+   "Tarazed"
+  ],
+  [
+   "Altair",
+   "Alshain"
+  ],
+  [
+   "Alpheratz",
+   "Mirach"
+  ],
+  [
+   "Mirach",
+   "Almach"
+  ],
+  [
+   "Mirfak",
+   "Algol"
+  ],
+  [
+   "Mirfak",
+   "Zeta Per"
+  ],
+  [
+   "Zeta Per",
+   "Epsilon Per"
+  ],
+  [
+   "Capella",
+   "Menkalinan"
+  ],
+  [
+   "Menkalinan",
+   "Theta Aur"
+  ],
+  [
+   "Theta Aur",
+   "Hassaleh"
+  ],
+  [
+   "Hassaleh",
+   "Almaaz"
+  ],
+  [
+   "Almaaz",
+   "Capella"
+  ],
+  [
+   "Aldebaran",
+   "Elnath"
+  ],
+  [
+   "Aldebaran",
+   "Tau Zeta"
+  ],
+  [
+   "Betelgeuse",
+   "Bellatrix"
+  ],
+  [
+   "Betelgeuse",
+   "Alnitak"
+  ],
+  [
+   "Bellatrix",
+   "Mintaka"
+  ],
+  [
+   "Mintaka",
+   "Alnilam"
+  ],
+  [
+   "Alnilam",
+   "Alnitak"
+  ],
+  [
+   "Alnitak",
+   "Saiph"
+  ],
+  [
+   "Mintaka",
+   "Rigel"
+  ],
+  [
+   "Saiph",
+   "Rigel"
+  ],
+  [
+   "Castor",
+   "Pollux"
+  ],
+  [
+   "Pollux",
+   "Wasat"
+  ],
+  [
+   "Wasat",
+   "Alhena"
+  ],
+  [
+   "Castor",
+   "Mebsuta"
+  ],
+  [
+   "Mebsuta",
+   "Wasat"
+  ],
+  [
+   "Sirius",
+   "Mirzam"
+  ],
+  [
+   "Sirius",
+   "Adhara"
+  ],
+  [
+   "Adhara",
+   "Wezen"
+  ],
+  [
+   "Regulus",
+   "Algieba"
+  ],
+  [
+   "Algieba",
+   "Zosma"
+  ],
+  [
+   "Zosma",
+   "Denebola"
+  ],
+  [
+   "Arcturus",
+   "Seginus"
+  ],
+  [
+   "Seginus",
+   "Izar"
+  ],
+  [
+   "Izar",
+   "Arcturus"
+  ],
+  [
+   "Arcturus",
+   "Alphecca"
+  ],
+  [
+   "Kornephoros",
+   "Zeta Her"
+  ],
+  [
+   "Zeta Her",
+   "Pi Her"
+  ],
+  [
+   "Pi Her",
+   "Rasalgethi"
+  ],
+  [
+   "Rasalgethi",
+   "Kornephoros"
+  ],
+  [
+   "Kaus Australis",
+   "Kaus Media"
+  ],
+  [
+   "Kaus Media",
+   "Kaus Borealis"
+  ],
+  [
+   "Kaus Borealis",
+   "Phi Sgr"
+  ],
+  [
+   "Phi Sgr",
+   "Nunki"
+  ],
+  [
+   "Nunki",
+   "Ascella"
+  ],
+  [
+   "Ascella",
+   "Kaus Australis"
+  ],
+  [
+   "Nunki",
+   "Kaus Media"
+  ],
+  [
+   "Dschubba",
+   "Antares"
+  ],
+  [
+   "Antares",
+   "Sargas"
+  ],
+  [
+   "Sargas",
+   "Shaula"
+  ],
+  [
+   "Scheat",
+   "Markab"
+  ],
+  [
+   "Markab",
+   "Algenib"
+  ],
+  [
+   "Algenib",
+   "Alpheratz"
+  ],
+  [
+   "Alpheratz",
+   "Scheat"
+  ],
+  [
+   "Scheat",
+   "Enif"
+  ],
+  [
+   "Hamal",
+   "Sheratan"
+  ],
+  [
+   "Gienah Corvi",
+   "Algorab"
+  ],
+  [
+   "Algorab",
+   "Kraz"
+  ],
+  [
+   "Kraz",
+   "Minkar"
+  ],
+  [
+   "Minkar",
+   "Gienah Corvi"
+  ]
+ ]
+};
+const MESSIER_LOOKUP = {
+ "1": [
+  "Krebsnebel (Crab Nebula)",
+  "supernova_remnant",
+  "Taurus"
+ ],
+ "2": [
+  "M2",
+  "globular_cluster",
+  "Aquarius"
+ ],
+ "3": [
+  "M3",
+  "globular_cluster",
+  "Canes Venatici"
+ ],
+ "4": [
+  "M4",
+  "globular_cluster",
+  "Scorpius"
+ ],
+ "5": [
+  "M5",
+  "globular_cluster",
+  "Serpens"
+ ],
+ "6": [
+  "Schmetterlingshaufen (Butterfly Cluster)",
+  "open_cluster",
+  "Scorpius"
+ ],
+ "7": [
+  "Ptolemäus-Haufen",
+  "open_cluster",
+  "Scorpius"
+ ],
+ "8": [
+  "Lagunennebel (Lagoon Nebula)",
+  "nebula",
+  "Sagittarius"
+ ],
+ "9": [
+  "M9",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "10": [
+  "M10",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "11": [
+  "Wildentenhaufen (Wild Duck Cluster)",
+  "open_cluster",
+  "Scutum"
+ ],
+ "12": [
+  "M12",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "13": [
+  "Hercules-Kugelsternhaufen",
+  "globular_cluster",
+  "Hercules"
+ ],
+ "14": [
+  "M14",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "15": [
+  "M15",
+  "globular_cluster",
+  "Pegasus"
+ ],
+ "16": [
+  "Adlernebel (Eagle Nebula)",
+  "nebula",
+  "Serpens"
+ ],
+ "17": [
+  "Omeganebel (Omega/Schwan-Nebel)",
+  "nebula",
+  "Sagittarius"
+ ],
+ "18": [
+  "M18",
+  "open_cluster",
+  "Sagittarius"
+ ],
+ "19": [
+  "M19",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "20": [
+  "Trifidnebel (Trifid Nebula)",
+  "nebula",
+  "Sagittarius"
+ ],
+ "21": [
+  "M21",
+  "open_cluster",
+  "Sagittarius"
+ ],
+ "22": [
+  "M22",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "23": [
+  "M23",
+  "open_cluster",
+  "Sagittarius"
+ ],
+ "24": [
+  "Sagittarius-Sternwolke",
+  "open_cluster",
+  "Sagittarius"
+ ],
+ "25": [
+  "M25",
+  "open_cluster",
+  "Sagittarius"
+ ],
+ "26": [
+  "M26",
+  "open_cluster",
+  "Scutum"
+ ],
+ "27": [
+  "Hantelnebel (Dumbbell Nebula)",
+  "planetary_nebula",
+  "Vulpecula"
+ ],
+ "28": [
+  "M28",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "29": [
+  "M29",
+  "open_cluster",
+  "Cygnus"
+ ],
+ "30": [
+  "M30",
+  "globular_cluster",
+  "Capricornus"
+ ],
+ "31": [
+  "Andromedagalaxie",
+  "galaxy",
+  "Andromeda"
+ ],
+ "32": [
+  "M32",
+  "galaxy",
+  "Andromeda"
+ ],
+ "33": [
+  "Dreiecksgalaxie (Triangulum Galaxy)",
+  "galaxy",
+  "Triangulum"
+ ],
+ "34": [
+  "M34",
+  "open_cluster",
+  "Perseus"
+ ],
+ "35": [
+  "M35",
+  "open_cluster",
+  "Gemini"
+ ],
+ "36": [
+  "M36",
+  "open_cluster",
+  "Auriga"
+ ],
+ "37": [
+  "M37",
+  "open_cluster",
+  "Auriga"
+ ],
+ "38": [
+  "M38",
+  "open_cluster",
+  "Auriga"
+ ],
+ "39": [
+  "M39",
+  "open_cluster",
+  "Cygnus"
+ ],
+ "40": [
+  "M40 (Winnecke 4)",
+  "double_star",
+  "Ursa Major"
+ ],
+ "41": [
+  "M41",
+  "open_cluster",
+  "Canis Major"
+ ],
+ "42": [
+  "Orionnebel",
+  "nebula",
+  "Orion"
+ ],
+ "43": [
+  "M43 (Teil Orionnebel)",
+  "nebula",
+  "Orion"
+ ],
+ "44": [
+  "Praesepe (Beehive Cluster)",
+  "open_cluster",
+  "Cancer"
+ ],
+ "45": [
+  "Plejaden (Siebengestirn)",
+  "open_cluster",
+  "Taurus"
+ ],
+ "46": [
+  "M46",
+  "open_cluster",
+  "Puppis"
+ ],
+ "47": [
+  "M47",
+  "open_cluster",
+  "Puppis"
+ ],
+ "48": [
+  "M48",
+  "open_cluster",
+  "Hydra"
+ ],
+ "49": [
+  "M49",
+  "galaxy",
+  "Virgo"
+ ],
+ "50": [
+  "M50",
+  "open_cluster",
+  "Monoceros"
+ ],
+ "51": [
+  "Whirlpool-Galaxie",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "52": [
+  "M52",
+  "open_cluster",
+  "Cassiopeia"
+ ],
+ "53": [
+  "M53",
+  "globular_cluster",
+  "Coma Berenices"
+ ],
+ "54": [
+  "M54",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "55": [
+  "M55",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "56": [
+  "M56",
+  "globular_cluster",
+  "Lyra"
+ ],
+ "57": [
+  "Ringnebel (Ring Nebula)",
+  "planetary_nebula",
+  "Lyra"
+ ],
+ "58": [
+  "M58",
+  "galaxy",
+  "Virgo"
+ ],
+ "59": [
+  "M59",
+  "galaxy",
+  "Virgo"
+ ],
+ "60": [
+  "M60",
+  "galaxy",
+  "Virgo"
+ ],
+ "61": [
+  "M61",
+  "galaxy",
+  "Virgo"
+ ],
+ "62": [
+  "M62",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "63": [
+  "Sonnenblumengalaxie (Sunflower Galaxy)",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "64": [
+  "Blackeye-Galaxie",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "65": [
+  "M65 (Leo-Triplet)",
+  "galaxy",
+  "Leo"
+ ],
+ "66": [
+  "M66 (Leo-Triplet)",
+  "galaxy",
+  "Leo"
+ ],
+ "67": [
+  "M67",
+  "open_cluster",
+  "Cancer"
+ ],
+ "68": [
+  "M68",
+  "globular_cluster",
+  "Hydra"
+ ],
+ "69": [
+  "M69",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "70": [
+  "M70",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "71": [
+  "M71",
+  "globular_cluster",
+  "Sagitta"
+ ],
+ "72": [
+  "M72",
+  "globular_cluster",
+  "Aquarius"
+ ],
+ "73": [
+  "M73",
+  "asterism",
+  "Aquarius"
+ ],
+ "74": [
+  "M74 (Phantomgalaxie)",
+  "galaxy",
+  "Pisces"
+ ],
+ "75": [
+  "M75",
+  "globular_cluster",
+  "Sagittarius"
+ ],
+ "76": [
+  "Kleiner Hantelnebel (Little Dumbbell)",
+  "planetary_nebula",
+  "Perseus"
+ ],
+ "77": [
+  "M77",
+  "galaxy",
+  "Cetus"
+ ],
+ "78": [
+  "M78",
+  "nebula",
+  "Orion"
+ ],
+ "79": [
+  "M79",
+  "globular_cluster",
+  "Lepus"
+ ],
+ "80": [
+  "M80",
+  "globular_cluster",
+  "Scorpius"
+ ],
+ "81": [
+  "Bode-Galaxie",
+  "galaxy",
+  "Ursa Major"
+ ],
+ "82": [
+  "Zigarrengalaxie (Cigar Galaxy)",
+  "galaxy",
+  "Ursa Major"
+ ],
+ "83": [
+  "Südlicher Feuerrad (Southern Pinwheel)",
+  "galaxy",
+  "Hydra"
+ ],
+ "84": [
+  "M84",
+  "galaxy",
+  "Virgo"
+ ],
+ "85": [
+  "M85",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "86": [
+  "M86",
+  "galaxy",
+  "Virgo"
+ ],
+ "87": [
+  "Virgo A",
+  "galaxy",
+  "Virgo"
+ ],
+ "88": [
+  "M88",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "89": [
+  "M89",
+  "galaxy",
+  "Virgo"
+ ],
+ "90": [
+  "M90",
+  "galaxy",
+  "Virgo"
+ ],
+ "91": [
+  "M91",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "92": [
+  "M92",
+  "globular_cluster",
+  "Hercules"
+ ],
+ "93": [
+  "M93",
+  "open_cluster",
+  "Puppis"
+ ],
+ "94": [
+  "M94",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "95": [
+  "M95",
+  "galaxy",
+  "Leo"
+ ],
+ "96": [
+  "M96",
+  "galaxy",
+  "Leo"
+ ],
+ "97": [
+  "Eulennebel (Owl Nebula)",
+  "planetary_nebula",
+  "Ursa Major"
+ ],
+ "98": [
+  "M98",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "99": [
+  "St. Catherine's Wheel / Pinwheel of Coma",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "100": [
+  "M100",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "101": [
+  "Feuerradgalaxie (Pinwheel Galaxy)",
+  "galaxy",
+  "Ursa Major"
+ ],
+ "102": [
+  "M102 (Spindelgalaxie, str.)",
+  "galaxy",
+  "Draco"
+ ],
+ "103": [
+  "M103",
+  "open_cluster",
+  "Cassiopeia"
+ ],
+ "104": [
+  "Sombrero-Galaxie",
+  "galaxy",
+  "Virgo"
+ ],
+ "105": [
+  "M105",
+  "galaxy",
+  "Leo"
+ ],
+ "106": [
+  "M106",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "107": [
+  "M107",
+  "globular_cluster",
+  "Ophiuchus"
+ ],
+ "108": [
+  "M108",
+  "galaxy",
+  "Ursa Major"
+ ],
+ "109": [
+  "M109",
+  "galaxy",
+  "Ursa Major"
+ ],
+ "110": [
+  "M110",
+  "galaxy",
+  "Andromeda"
+ ]
+};
+const CALDWELL_LOOKUP = {
+ "1": [
+  "NGC 188",
+  "C1",
+  "open_cluster",
+  "Cepheus"
+ ],
+ "2": [
+  "NGC 40",
+  "Bow-Tie Nebula",
+  "planetary_nebula",
+  "Cepheus"
+ ],
+ "3": [
+  "NGC 4236",
+  "C3",
+  "galaxy",
+  "Draco"
+ ],
+ "4": [
+  "NGC 7023",
+  "Iris Nebula",
+  "nebula",
+  "Cepheus"
+ ],
+ "5": [
+  "IC 342",
+  "Hidden Galaxy",
+  "galaxy",
+  "Camelopardalis"
+ ],
+ "6": [
+  "NGC 6543",
+  "Cat's Eye Nebula",
+  "planetary_nebula",
+  "Draco"
+ ],
+ "7": [
+  "NGC 2403",
+  "C7",
+  "galaxy",
+  "Camelopardalis"
+ ],
+ "8": [
+  "NGC 559",
+  "C8",
+  "open_cluster",
+  "Cassiopeia"
+ ],
+ "9": [
+  "Sh2-155",
+  "Cave Nebula",
+  "nebula",
+  "Cepheus"
+ ],
+ "10": [
+  "NGC 663",
+  "C10",
+  "open_cluster",
+  "Cassiopeia"
+ ],
+ "11": [
+  "NGC 7635",
+  "Bubble Nebula",
+  "nebula",
+  "Cassiopeia"
+ ],
+ "12": [
+  "NGC 6946",
+  "Fireworks Galaxy",
+  "galaxy",
+  "Cepheus"
+ ],
+ "13": [
+  "NGC 457",
+  "Owl Cluster (ET-Cluster)",
+  "open_cluster",
+  "Cassiopeia"
+ ],
+ "14": [
+  "NGC 869/884",
+  "Double Cluster",
+  "open_cluster",
+  "Perseus"
+ ],
+ "15": [
+  "NGC 6826",
+  "Blinking Planetary",
+  "planetary_nebula",
+  "Cygnus"
+ ],
+ "16": [
+  "NGC 7243",
+  "C16",
+  "open_cluster",
+  "Lacerta"
+ ],
+ "17": [
+  "NGC 147",
+  "C17",
+  "galaxy",
+  "Cassiopeia"
+ ],
+ "18": [
+  "NGC 185",
+  "C18",
+  "galaxy",
+  "Cassiopeia"
+ ],
+ "19": [
+  "IC 5146",
+  "Cocoon Nebula",
+  "nebula",
+  "Cygnus"
+ ],
+ "20": [
+  "NGC 7000",
+  "North America Nebula",
+  "nebula",
+  "Cygnus"
+ ],
+ "21": [
+  "NGC 4449",
+  "C21",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "22": [
+  "NGC 7662",
+  "Blue Snowball",
+  "planetary_nebula",
+  "Andromeda"
+ ],
+ "23": [
+  "NGC 891",
+  "C23",
+  "galaxy",
+  "Andromeda"
+ ],
+ "24": [
+  "NGC 1275",
+  "Perseus A",
+  "galaxy",
+  "Perseus"
+ ],
+ "25": [
+  "NGC 2419",
+  "Intergalactic Wanderer",
+  "globular_cluster",
+  "Lynx"
+ ],
+ "26": [
+  "NGC 4244",
+  "C26",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "27": [
+  "NGC 6888",
+  "Crescent Nebula",
+  "nebula",
+  "Cygnus"
+ ],
+ "28": [
+  "NGC 752",
+  "C28",
+  "open_cluster",
+  "Andromeda"
+ ],
+ "29": [
+  "NGC 5005",
+  "C29",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "30": [
+  "NGC 7331",
+  "C30",
+  "galaxy",
+  "Pegasus"
+ ],
+ "31": [
+  "IC 405",
+  "Flaming Star Nebula",
+  "nebula",
+  "Auriga"
+ ],
+ "32": [
+  "NGC 4631",
+  "Whale Galaxy",
+  "galaxy",
+  "Canes Venatici"
+ ],
+ "33": [
+  "NGC 6992",
+  "Östlicher Schleiernebel (East Veil)",
+  "supernova_remnant",
+  "Cygnus"
+ ],
+ "34": [
+  "NGC 6960",
+  "Westlicher Schleiernebel (West Veil)",
+  "supernova_remnant",
+  "Cygnus"
+ ],
+ "35": [
+  "NGC 4889",
+  "C35",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "36": [
+  "NGC 4559",
+  "C36",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "37": [
+  "NGC 6885",
+  "C37",
+  "open_cluster",
+  "Vulpecula"
+ ],
+ "38": [
+  "NGC 4565",
+  "Needle Galaxy",
+  "galaxy",
+  "Coma Berenices"
+ ],
+ "39": [
+  "NGC 2392",
+  "Eskimo Nebula",
+  "planetary_nebula",
+  "Gemini"
+ ],
+ "40": [
+  "NGC 3626",
+  "C40",
+  "galaxy",
+  "Leo"
+ ],
+ "41": [
+  "Melotte 25",
+  "Hyaden (Hyades)",
+  "open_cluster",
+  "Taurus"
+ ],
+ "42": [
+  "NGC 7006",
+  "C42",
+  "globular_cluster",
+  "Delphinus"
+ ],
+ "43": [
+  "NGC 7814",
+  "C43",
+  "galaxy",
+  "Pegasus"
+ ],
+ "44": [
+  "NGC 7479",
+  "C44",
+  "galaxy",
+  "Pegasus"
+ ],
+ "45": [
+  "NGC 5248",
+  "C45",
+  "galaxy",
+  "Boötes"
+ ],
+ "46": [
+  "NGC 2261",
+  "Hubble's Variable Nebula",
+  "nebula",
+  "Monoceros"
+ ],
+ "47": [
+  "NGC 6934",
+  "C47",
+  "globular_cluster",
+  "Delphinus"
+ ],
+ "48": [
+  "NGC 2775",
+  "C48",
+  "galaxy",
+  "Cancer"
+ ],
+ "49": [
+  "NGC 2237",
+  "Rosettennebel",
+  "nebula",
+  "Monoceros"
+ ],
+ "50": [
+  "NGC 2244",
+  "Rosetten-Haufen",
+  "open_cluster",
+  "Monoceros"
+ ],
+ "51": [
+  "IC 1613",
+  "C51",
+  "galaxy",
+  "Cetus"
+ ],
+ "52": [
+  "NGC 4697",
+  "C52",
+  "galaxy",
+  "Virgo"
+ ],
+ "53": [
+  "NGC 3115",
+  "Spindle Galaxy",
+  "galaxy",
+  "Sextans"
+ ],
+ "54": [
+  "NGC 2506",
+  "C54",
+  "open_cluster",
+  "Monoceros"
+ ],
+ "55": [
+  "NGC 7009",
+  "Saturn Nebula",
+  "planetary_nebula",
+  "Aquarius"
+ ],
+ "56": [
+  "NGC 246",
+  "C56",
+  "planetary_nebula",
+  "Cetus"
+ ],
+ "57": [
+  "NGC 6822",
+  "Barnard's Galaxy",
+  "galaxy",
+  "Sagittarius"
+ ],
+ "58": [
+  "NGC 2360",
+  "C58",
+  "open_cluster",
+  "Canis Major"
+ ],
+ "59": [
+  "NGC 3242",
+  "Ghost of Jupiter",
+  "planetary_nebula",
+  "Hydra"
+ ],
+ "60": [
+  "NGC 4038",
+  "Antennae-Galaxien (Nord)",
+  "galaxy",
+  "Corvus"
+ ],
+ "61": [
+  "NGC 4039",
+  "Antennae-Galaxien (Süd)",
+  "galaxy",
+  "Corvus"
+ ],
+ "62": [
+  "NGC 247",
+  "C62",
+  "galaxy",
+  "Cetus"
+ ],
+ "63": [
+  "NGC 7293",
+  "Helixnebel",
+  "planetary_nebula",
+  "Aquarius"
+ ],
+ "64": [
+  "NGC 2362",
+  "C64",
+  "open_cluster",
+  "Canis Major"
+ ],
+ "65": [
+  "NGC 253",
+  "Sculptor-Galaxie",
+  "galaxy",
+  "Sculptor"
+ ],
+ "66": [
+  "NGC 5694",
+  "C66",
+  "globular_cluster",
+  "Hydra"
+ ],
+ "67": [
+  "NGC 1097",
+  "C67",
+  "galaxy",
+  "Fornax"
+ ],
+ "68": [
+  "NGC 6729",
+  "C68",
+  "nebula",
+  "Corona Australis"
+ ],
+ "69": [
+  "NGC 6302",
+  "Bug Nebula",
+  "planetary_nebula",
+  "Scorpius"
+ ],
+ "70": [
+  "NGC 300",
+  "C70",
+  "galaxy",
+  "Sculptor"
+ ],
+ "71": [
+  "NGC 2477",
+  "C71",
+  "open_cluster",
+  "Puppis"
+ ],
+ "72": [
+  "NGC 55",
+  "C72",
+  "galaxy",
+  "Sculptor"
+ ],
+ "73": [
+  "NGC 1851",
+  "C73",
+  "globular_cluster",
+  "Columba"
+ ],
+ "74": [
+  "NGC 3132",
+  "Eight-Burst Nebula",
+  "planetary_nebula",
+  "Vela"
+ ],
+ "75": [
+  "NGC 6124",
+  "C75",
+  "open_cluster",
+  "Scorpius"
+ ],
+ "76": [
+  "NGC 6231",
+  "C76",
+  "open_cluster",
+  "Scorpius"
+ ],
+ "77": [
+  "NGC 5128",
+  "Centaurus A",
+  "galaxy",
+  "Centaurus"
+ ],
+ "78": [
+  "NGC 6541",
+  "C78",
+  "globular_cluster",
+  "Corona Australis"
+ ],
+ "79": [
+  "NGC 3201",
+  "C79",
+  "globular_cluster",
+  "Vela"
+ ],
+ "80": [
+  "NGC 5139",
+  "Omega Centauri",
+  "globular_cluster",
+  "Centaurus"
+ ],
+ "81": [
+  "NGC 6352",
+  "C81",
+  "globular_cluster",
+  "Ara"
+ ],
+ "82": [
+  "NGC 6193",
+  "C82",
+  "open_cluster",
+  "Ara"
+ ],
+ "83": [
+  "NGC 4945",
+  "C83",
+  "galaxy",
+  "Centaurus"
+ ],
+ "84": [
+  "NGC 5286",
+  "C84",
+  "globular_cluster",
+  "Centaurus"
+ ],
+ "85": [
+  "IC 2391",
+  "C85",
+  "open_cluster",
+  "Vela"
+ ],
+ "86": [
+  "NGC 6397",
+  "C86",
+  "globular_cluster",
+  "Ara"
+ ],
+ "87": [
+  "NGC 1261",
+  "C87",
+  "globular_cluster",
+  "Horologium"
+ ],
+ "88": [
+  "NGC 5823",
+  "C88",
+  "open_cluster",
+  "Circinus"
+ ],
+ "89": [
+  "NGC 6087",
+  "C89",
+  "open_cluster",
+  "Norma"
+ ],
+ "90": [
+  "NGC 2867",
+  "C90",
+  "planetary_nebula",
+  "Carina"
+ ],
+ "91": [
+  "NGC 3532",
+  "C91",
+  "open_cluster",
+  "Carina"
+ ],
+ "92": [
+  "NGC 3372",
+  "Eta-Carinae-Nebel",
+  "nebula",
+  "Carina"
+ ],
+ "93": [
+  "NGC 6752",
+  "C93",
+  "globular_cluster",
+  "Pavo"
+ ],
+ "94": [
+  "NGC 4755",
+  "Jewel Box",
+  "open_cluster",
+  "Crux"
+ ],
+ "95": [
+  "NGC 6025",
+  "C95",
+  "open_cluster",
+  "Triangulum Australe"
+ ],
+ "96": [
+  "NGC 2516",
+  "C96",
+  "open_cluster",
+  "Carina"
+ ],
+ "97": [
+  "NGC 3766",
+  "C97",
+  "open_cluster",
+  "Centaurus"
+ ],
+ "98": [
+  "NGC 4609",
+  "C98",
+  "open_cluster",
+  "Crux"
+ ],
+ "99": [
+  "Coalsack",
+  "Kohlensack-Nebel",
+  "nebula",
+  "Crux"
+ ],
+ "100": [
+  "IC 2944",
+  "Running Chicken Nebula",
+  "nebula",
+  "Centaurus"
+ ],
+ "101": [
+  "NGC 6744",
+  "C101",
+  "galaxy",
+  "Pavo"
+ ],
+ "102": [
+  "IC 2602",
+  "Südliche Plejaden",
+  "open_cluster",
+  "Carina"
+ ],
+ "103": [
+  "NGC 2070",
+  "Tarantelnebel",
+  "nebula",
+  "Dorado"
+ ],
+ "104": [
+  "NGC 362",
+  "C104",
+  "globular_cluster",
+  "Tucana"
+ ],
+ "105": [
+  "NGC 4833",
+  "C105",
+  "globular_cluster",
+  "Musca"
+ ],
+ "106": [
+  "NGC 104",
+  "47 Tucanae",
+  "globular_cluster",
+  "Tucana"
+ ],
+ "107": [
+  "NGC 6101",
+  "C107",
+  "globular_cluster",
+  "Apus"
+ ],
+ "108": [
+  "NGC 4372",
+  "C108",
+  "globular_cluster",
+  "Musca"
+ ],
+ "109": [
+  "NGC 3195",
+  "C109",
+  "planetary_nebula",
+  "Chamaeleon"
+ ]
+};
+
+/* ======================= TYPE LABELS ======================= */
+const TYPE_META = {
+  galaxy:{label:"Galaxie"}, galaxy_group:{label:"Galaxiengruppe"},
+  nebula:{label:"Nebel"}, planetary_nebula:{label:"Planetarischer Nebel"},
+  supernova_remnant:{label:"Supernova-Überrest"}, open_cluster:{label:"Offener Sternhaufen"},
+  globular_cluster:{label:"Kugelsternhaufen"}, constellation:{label:"Sternbild"},
+  mosaic:{label:"Mosaik"}, milkyway:{label:"Milchstraße"}, comet:{label:"Komet"},
+  exoplanet:{label:"Exoplanet"}, moon:{label:"Mond"}, planet:{label:"Planet"},
+  star:{label:"Stern"}, double_star:{label:"Doppelstern"}, asterism:{label:"Asterismus"},
+  other:{label:"Sonstiges"}
+};
+function typeMeta(t){ return TYPE_META[t] || TYPE_META.other; }
+
+/* ======================= STATE / STORAGE ======================= */
+const LS_DATA_KEY = "astrolog_data_v1";
+const LS_CFG_KEY = "astrolog_cfg_v1";
+
+function loadConfig(){
+  try{ return JSON.parse(localStorage.getItem(LS_CFG_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveConfig(cfg){ localStorage.setItem(LS_CFG_KEY, JSON.stringify(cfg)); }
+
+let CFG = loadConfig();
+let DB = null;          // aktuelle Arbeitskopie
+let DB_SHA = null;      // GitHub blob sha (falls Sync aktiv)
+
+function loadLocalDB(){
+  try{
+    const raw = localStorage.getItem(LS_DATA_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function saveLocalDB(db){
+  localStorage.setItem(LS_DATA_KEY, JSON.stringify(db));
+}
+
+async function initData(){
+  // 1. Wenn GitHub-Sync konfiguriert: versuche aktuelle data.json vom Repo zu laden (Quelle der Wahrheit).
+  if(CFG.owner && CFG.repo && CFG.token){
+    try{
+      const res = await githubGetFile();
+      DB = res.data; DB_SHA = res.sha;
+      saveLocalDB(DB);
+      setSyncBanner("ok", "✅ Verbunden mit GitHub – Daten aktuell.");
+      renderAll();
+      return;
+    }catch(e){
+      console.warn("GitHub-Sync fehlgeschlagen, nutze lokalen Cache:", e);
+      setSyncBanner("warn", "⚠️ GitHub nicht erreichbar – zeige zwischengespeicherte Daten. Änderungen werden lokal gespeichert und beim nächsten erfolgreichen Sync hochgeladen.");
+    }
+  }
+  // 2. Versuche lokale data.json neben index.html (statisches Deployment ohne Token, z.B. read-only Spiegel)
+  if(!DB){
+    const cached = loadLocalDB();
+    if(cached){ DB = cached; renderAll(); }
+  }
+  if(!DB){
+    try{
+      const res = await fetch("./data.json", {cache:"no-store"});
+      if(res.ok){ DB = await res.json(); saveLocalDB(DB); renderAll(); return; }
+    }catch(e){ /* ignore, evtl. file:// */ }
+  }
+  if(!DB){
+    DB = JSON.parse(JSON.stringify(SEED_DATA));
+    saveLocalDB(DB);
+  }
+  renderAll();
+}
+
+function setSyncBanner(kind, msg){
+  const el = document.getElementById("banner-area");
+  if(!msg){ el.innerHTML=""; return; }
+  el.innerHTML = `<div class="banner ${kind}">${msg}</div>`;
+}
+
+/* ======================= GITHUB SYNC ======================= */
+function ghHeaders(){
+  return {
+    "Authorization": "Bearer " + CFG.token,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+}
+function ghUrl(){
+  return `https://api.github.com/repos/${CFG.owner}/${CFG.repo}/contents/data.json` + (CFG.branch ? `?ref=${encodeURIComponent(CFG.branch)}` : "");
+}
+async function githubGetFile(){
+  const r = await fetch(ghUrl(), {headers:ghHeaders(), cache:"no-store"});
+  if(!r.ok) throw new Error("GitHub GET fehlgeschlagen: " + r.status);
+  const j = await r.json();
+  const content = decodeURIComponent(escape(atob(j.content.replace(/\n/g,""))));
+  return {data: JSON.parse(content), sha: j.sha};
+}
+async function githubPutFile(newData, message){
+  const body = {
+    message: message || "Update astro-logbuch data.json",
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2)))),
+    branch: CFG.branch || "main",
+  };
+  if(DB_SHA) body.sha = DB_SHA;
+  const r = await fetch(`https://api.github.com/repos/${CFG.owner}/${CFG.repo}/contents/data.json`, {
+    method:"PUT", headers:{...ghHeaders(), "Content-Type":"application/json"}, body: JSON.stringify(body)
+  });
+  if(!r.ok){ const t = await r.text(); throw new Error("GitHub PUT fehlgeschlagen: " + r.status + " " + t); }
+  const j = await r.json();
+  DB_SHA = j.content.sha;
+  return j;
+}
+
+async function persist(message){
+  DB.generatedAt = new Date().toISOString();
+  DB.objectCount = DB.objects.length;
+  DB.sessionCount = DB.objects.reduce((a,o)=>a+o.sessions.length,0);
+  saveLocalDB(DB);
+  if(CFG.owner && CFG.repo && CFG.token){
+    try{
+      await githubPutFile(DB, message);
+      setSyncBanner("ok", "Gespeichert und mit GitHub synchronisiert.");
+      return true;
+    }catch(e){
+      console.error(e);
+      setSyncBanner("warn", "Lokal gespeichert, aber Sync zu GitHub fehlgeschlagen (" + e.message + "). Bitte Verbindung/Token prüfen und später erneut versuchen (Einstellungen, Verbindung testen).");
+      return false;
+    }
+  }else{
+    setSyncBanner("info", "Lokal gespeichert (kein GitHub-Sync konfiguriert, siehe Einstellungen).");
+    return true;
+  }
+}
+
+/* ======================= REVIEW-FLAG BESTÄTIGUNG ======================= */
+async function dismissObjectReview(id){
+  const o = DB.objects.find(x=>x.id===id);
+  if(!o) return;
+  o.needsReview = false; o.reviewNote = null;
+  await persist("Review bestätigt: " + o.displayName);
+  renderAll();
+}
+async function dismissSessionReview(id, idx){
+  const o = DB.objects.find(x=>x.id===id);
+  if(!o) return;
+  const s = o.sessions[idx];
+  if(!s) return;
+  s.needsReview = false; s.reviewNote = null;
+  await persist("Review bestätigt (Session): " + o.displayName);
+  renderAll();
+}
+
+/* ======================= RENDER: STATS + OVERVIEW ======================= */
+function fmtDate(d){
+  if(!d) return "–";
+  const parts = d.split("-");
+  if(parts.length===3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+  if(parts.length===2) return `${parts[1]}/${parts[0]} (Monat)`;
+  return d;
+}
+function totalIntegrationSeconds(obj){
+  return obj.sessions.reduce((a,s)=> a + (s.frames||0) * (s.exposureSec||0), 0);
+}
+function fmtHours(sec){
+  const h = sec/3600;
+  if(h < 0.1) return (sec/60).toFixed(0) + " min";
+  return h.toFixed(1) + " h";
+}
+
+function renderAll(){
+  document.getElementById("hdr-subtitle").textContent =
+    (CFG.owner && CFG.repo && CFG.token) ? `${CFG.owner}/${CFG.repo}` : "lokal (kein Sync)";
+  renderObjectList();
+  renderAddDatalists();
+  document.getElementById("footer-count").textContent =
+    `${DB.objects.length} Objekte · ${DB.objects.reduce((a,o)=>a+o.sessions.length,0)} Sessions`;
+}
+
+let currentFilter = "all";
+let currentSearch = "";
+let expandedIds = new Set();
+let descOpenIds = new Set();
+
+function objMatchesSearch(o, q){
+  if(!q) return true;
+  q = q.toLowerCase();
+  const hay = [o.displayName, o.commonName, o.constellation, o.type,
+    o.catalog && Object.values(o.catalog).flat().filter(Boolean).join(" "),
+    ...o.sessions.map(s=>s.location)].filter(Boolean).join(" ").toLowerCase();
+  return hay.includes(q);
+}
+function objMatchesFilter(o, f){
+  if(f==="all") return true;
+  if(f==="review") return o.needsReview || o.sessions.some(s=>s.needsReview);
+  if(f==="multi") return o.sessions.length>1;
+  return true;
+}
+
+function renderObjectList(){
+  const list = document.getElementById("object-list");
+  const items = DB.objects
+    .filter(o=>objMatchesSearch(o,currentSearch) && objMatchesFilter(o,currentFilter))
+    .slice()
+    .sort((a,b)=>{
+      const da = a.sessions.map(s=>s.dateStart).sort().pop() || "";
+      const db_ = b.sessions.map(s=>s.dateStart).sort().pop() || "";
+      return db_.localeCompare(da);
+    });
+  if(items.length===0){ list.innerHTML = `<p style="color:var(--text-dim)">Keine Objekte gefunden.</p>`; return; }
+  list.innerHTML = items.map(o=>renderObjectItem(o)).join("");
+  list.querySelectorAll(".obj-head").forEach(h=>{
+    h.addEventListener("click", ()=>{
+      const item = h.closest(".obj-item");
+      const id = item.dataset.id;
+      item.classList.toggle("open");
+      if(item.classList.contains("open")) expandedIds.add(id); else expandedIds.delete(id);
+      const tog = h.querySelector(".expand-toggle");
+      if(tog) tog.textContent = item.classList.contains("open") ? "–" : "+";
+    });
+  });
+  list.querySelectorAll("[data-info-toggle]").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const id = btn.dataset.infoToggle;
+      const desc = document.getElementById("desc-"+id);
+      if(!desc) return;
+      desc.classList.toggle("open");
+      if(desc.classList.contains("open")) descOpenIds.add(id); else descOpenIds.delete(id);
+    });
+  });
+}
+
+function catalogBadges(o){
+  const c = o.catalog || {};
+  const parts = [];
+  if(c.messier) parts.push(c.messier);
+  if(c.ngc) parts.push(c.ngc);
+  if(c.ic) parts.push(c.ic);
+  if(c.other && c.other.length) parts.push(...c.other);
+  return parts.map(p=>`<span class="badge">${escapeHtml(p)}</span>`).join("");
+}
+
+function renderObjectItem(o){
+  const nSessions = o.sessions.length;
+  const hasReview = o.needsReview || o.sessions.some(s=>s.needsReview);
+  const totalSec = totalIntegrationSeconds(o);
+  const isOpen = expandedIds.has(o.id);
+  const descOpen = descOpenIds.has(o.id);
+  const sorted = o.sessions.slice().sort((a,b)=> (a.dateStart||"").localeCompare(b.dateStart||""));
+  const rows = sorted.map(s=>{
+    const realIdx = o.sessions.indexOf(s);
+    const extras = [];
+    if(s.mosaicPanels) extras.push(`Mosaik: ${s.mosaicPanels} Panels`);
+    if(s.notes) extras.push(escapeHtml(s.notes));
+    const extraRow = extras.length
+      ? `<tr class="${s.needsReview?'needs-review':''}"><td colspan="6" style="color:var(--text-dim);font-size:.75rem">${extras.join(' · ')}</td></tr>` : '';
+    const reviewRow = s.needsReview
+      ? `<tr class="needs-review"><td colspan="6"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="dismissSessionReview('${o.id}', ${realIdx})">OK, geprüft</button></div></td></tr>` : '';
+    return `
+    <tr class="${s.needsReview?'needs-review':''}">
+      <td>${fmtDate(s.dateStart)}${s.dateEnd?(' – '+fmtDate(s.dateEnd)):''}</td>
+      <td>${escapeHtml(s.location||"")}</td>
+      <td>${s.focalLengthMm?s.focalLengthMm+' mm':'–'}</td>
+      <td>${s.frames ?? '–'}</td>
+      <td>${s.exposureSec!=null ? (s.exposureSec<1 ? ('1/'+Math.round(1/s.exposureSec)+'s') : s.exposureSec+'"') : '–'}</td>
+      <td>${s.iso ?? '–'}</td>
+    </tr>
+    ${extraRow}${reviewRow}`;
+  }).join("");
+  return `
+  <div class="obj-item${isOpen?' open':''}" data-id="${o.id}">
+    <div class="obj-head">
+      <div class="expand-toggle">${isOpen?'–':'+'}</div>
+      <div class="titles">
+        <div class="t1"><span class="name">${escapeHtml(o.displayName)}</span>${hasReview?'<span class="badge review" title="Enthält ungeprüfte Angaben">⚠️</span>':''}${o.description?`<button class="info-btn" data-info-toggle="${o.id}" title="Info">i</button>`:''}</div>
+        <div class="t2">${typeMeta(o.type).label}${o.constellation? ' · '+escapeHtml(o.constellation):''} ${catalogBadges(o)}</div>
+      </div>
+      <div class="meta">
+        <div>${nSessions} Session${nSessions!==1?'s':''}</div>
+        <div>${fmtHours(totalSec)}</div>
+      </div>
+    </div>
+    <div class="obj-body">
+      ${o.description?`<div class="obj-desc${descOpen?' open':''}" id="desc-${o.id}">${escapeHtml(o.description)}</div>`:''}
+      ${o.needsReview?`<div class="review-panel"><span>${escapeHtml(o.reviewNote||'Objektangaben bitte prüfen.')}</span><button class="small" onclick="dismissObjectReview('${o.id}')">OK, geprüft</button></div>`:''}
+      <div style="overflow-x:auto">
+      <table class="sessions">
+        <thead><tr><th>Datum</th><th>Ort</th><th>Brennw.</th><th>Fotos</th><th>Belichtung</th><th>ISO</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      </div>
+      <div class="row" style="margin-top:.7em">
+        <button class="small" onclick="prefillAddForObject('${o.id}')">Weitere Session für dieses Objekt</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ======================= SEARCH / FILTER EVENTS ======================= */
+document.getElementById("search-input").addEventListener("input", e=>{
+  currentSearch = e.target.value; renderObjectList();
+});
+document.querySelectorAll(".toolbar .chip").forEach(chip=>{
+  chip.addEventListener("click", ()=>{
+    document.querySelectorAll(".toolbar .chip").forEach(c=>c.classList.remove("active"));
+    chip.classList.add("active");
+    currentFilter = chip.dataset.filter;
+    renderObjectList();
+  });
+});
+
+/* ======================= ADD SESSION VIEW ======================= */
+function renderAddDatalists(){
+  const locs = new Set();
+  DB.objects.forEach(o=>o.sessions.forEach(s=>{ if(s.location) locs.add(s.location); }));
+  document.getElementById("location-datalist").innerHTML = [...locs].map(l=>`<option value="${escapeHtml(l)}">`).join("");
+  refreshCatalogIndex();
+}
+
+/* Kombinierter, durchsuchbarer Katalogindex aus bereits erfassten Objekten +
+   Messier- (110) und Caldwell- (109) Nachschlagetabellen, damit beim Anlegen
+   neuer Sessions aus den wesentlichen Katalogen (M/NGC/IC) ausgewählt werden kann. */
+let catalogIndex = [];
+function refreshCatalogIndex(){
+  const idx = [];
+  DB.objects.forEach(o=>{
+    idx.push({
+      source:"existing", objId:o.id, label:o.displayName,
+      sub:[typeMeta(o.type).label, o.constellation].filter(Boolean).join(" · "),
+      searchText:[o.displayName,o.commonName,o.constellation,
+        o.catalog && Object.values(o.catalog).flat().filter(Boolean).join(" ")]
+        .filter(Boolean).join(" ").toLowerCase()
+    });
+  });
+  const existingDesignations = new Set();
+  DB.objects.forEach(o=>{
+    const c=o.catalog||{};
+    [c.messier,c.ngc,c.ic].forEach(v=>{ if(v) existingDesignations.add(String(v).toLowerCase()); });
+  });
+  Object.entries(MESSIER_LOOKUP).forEach(([num,[name,type,con]])=>{
+    const desig = "M"+num;
+    if(existingDesignations.has(desig.toLowerCase())) return;
+    idx.push({source:"messier", designation:desig, name, type, con,
+      label:`${desig} (${name})`, sub:`${typeMeta(type in TYPE_META?type:"other").label} · ${con}`,
+      searchText:`${desig} messier ${name} ${con}`.toLowerCase()});
+  });
+  Object.entries(CALDWELL_LOOKUP).forEach(([num,[primary,name,type,con]])=>{
+    const cdesig = "C"+num;
+    if(existingDesignations.has(primary.toLowerCase())) return;
+    const commonName = (name && name!==("C"+num)) ? name : null;
+    idx.push({source:"caldwell", designation:primary, caldwellDesig:cdesig, name:commonName, type, con,
+      label: commonName ? `${cdesig} / ${primary} (${commonName})` : `${cdesig} / ${primary}`,
+      sub:`${typeMeta(type in TYPE_META?type:"other").label} · ${con}`,
+      searchText:`${cdesig} ${primary} caldwell ${commonName||""} ${con}`.toLowerCase()});
+  });
+  catalogIndex = idx;
+}
+
+let matchedObjectId = null;
+const searchInput = document.getElementById("add-object-search");
+const catalogResults = document.getElementById("catalog-results");
+
+function resetNewObjectFields(){
+  ["no-display","no-messier","no-ngc","no-ic","no-const","no-common","no-ra","no-dec"]
+    .forEach(id=>{ document.getElementById(id).value = ""; });
+  document.getElementById("no-type").value = "galaxy";
+  document.getElementById("messier-autofill-hint").hidden = true;
+}
+
+searchInput.addEventListener("input", ()=>{
+  const q = searchInput.value.trim().toLowerCase();
+  matchedObjectId = null;
+  const hint = document.getElementById("add-object-hint");
+  const newCard = document.getElementById("new-object-card");
+  hint.textContent = "";
+  newCard.hidden = true;
+  if(q.length<1){ catalogResults.hidden = true; catalogResults.innerHTML = ""; return; }
+  const matches = catalogIndex.filter(e=>e.searchText.includes(q)).slice(0,25);
+  if(matches.length===0){
+    catalogResults.hidden = true;
+    catalogResults.innerHTML = "";
+    hint.textContent = "Kein Katalogeintrag gefunden – unten kann ein neues Objekt frei angelegt werden.";
+    resetNewObjectFields();
+    document.getElementById("no-display").value = searchInput.value.trim();
+    newCard.hidden = false;
+    return;
+  }
+  catalogResults.innerHTML = matches.map((e,i)=>
+    `<div class="catalog-result" data-idx="${i}"><div class="cr-name">${escapeHtml(e.label)}</div><div class="cr-sub">${escapeHtml(e.sub||"")}</div></div>`
+  ).join("");
+  catalogResults._matches = matches;
+  catalogResults.hidden = false;
+});
+catalogResults.addEventListener("click", e=>{
+  const row = e.target.closest(".catalog-result");
+  if(!row) return;
+  selectCatalogEntry(catalogResults._matches[+row.dataset.idx]);
+});
+document.addEventListener("click", e=>{
+  if(!e.target.closest(".catalog-search")) catalogResults.hidden = true;
+});
+
+function selectCatalogEntry(entry){
+  catalogResults.hidden = true;
+  searchInput.value = entry.label;
+  const hint = document.getElementById("add-object-hint");
+  const newCard = document.getElementById("new-object-card");
+  if(entry.source==="existing"){
+    matchedObjectId = entry.objId;
+    const obj = DB.objects.find(o=>o.id===entry.objId);
+    hint.textContent = `Bestehendes Objekt ausgewählt – neue Session wird${obj && obj.sessions.length? " als weitere Session (Mehrfachaufnahme)":""} hinzugefügt.`;
+    newCard.hidden = true;
+  }else{
+    resetNewObjectFields();
+    document.getElementById("no-display").value = entry.caldwellDesig
+      ? `${entry.designation}${entry.name? " ("+entry.name+")":""}` : entry.label;
+    document.getElementById("no-type").value = entry.type in TYPE_META ? entry.type : "other";
+    document.getElementById("no-const").value = entry.con || "";
+    document.getElementById("no-common").value = entry.name || "";
+    if(entry.source==="messier") document.getElementById("no-messier").value = entry.designation;
+    if(entry.source==="caldwell"){
+      if(entry.designation.startsWith("NGC")) document.getElementById("no-ngc").value = entry.designation;
+      if(entry.designation.startsWith("IC")) document.getElementById("no-ic").value = entry.designation;
+    }
+    document.getElementById("messier-autofill-hint").hidden = false;
+    hint.textContent = "Katalogeintrag ausgewählt – bitte unten prüfen/ergänzen und Session-Daten eintragen.";
+    newCard.hidden = false;
+  }
+}
+
+function prefillAddForObject(id){
+  const o = DB.objects.find(x=>x.id===id);
+  if(!o) return;
+  switchView("add");
+  searchInput.value = o.displayName;
+  matchedObjectId = o.id;
+  catalogResults.hidden = true;
+  document.getElementById("new-object-card").hidden = true;
+  document.getElementById("add-object-hint").textContent =
+    `Bestehendes Objekt ausgewählt – neue Session wird als weitere Session (Mehrfachaufnahme) hinzugefügt.`;
+}
+
+function slugify(s){
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || ("obj-"+Date.now());
+}
+
+document.getElementById("btn-close-add").addEventListener("click", ()=>{
+  clearAddForm();
+  switchView("overview");
+});
+
+document.getElementById("btn-save-session").addEventListener("click", async ()=>{
+  const statusEl = document.getElementById("add-status");
+  const dateStart = document.getElementById("s-date-start").value;
+  const location = document.getElementById("s-location").value.trim();
+  const frames = parseFloat(document.getElementById("s-frames").value);
+  const exposureSec = parseFloat(document.getElementById("s-exposure").value);
+  const iso = parseInt(document.getElementById("s-iso").value);
+  if(!dateStart || !location || !frames || !exposureSec || !iso){
+    statusEl.innerHTML = `<div class="banner warn">Bitte Pflichtfelder ausfüllen: Datum, Ort, Anzahl Fotos, Belichtungszeit, ISO.</div>`;
+    return;
+  }
+  const session = {
+    dateStart, dateEnd: document.getElementById("s-date-end").value || null,
+    location,
+    focalLengthMm: parseFloat(document.getElementById("s-focal").value) || null,
+    lens: document.getElementById("s-lens").value.trim() || null,
+    frames, exposureSec, iso,
+    mosaicPanels: parseInt(document.getElementById("s-mosaic").value) || null,
+    isMosaicSummary: false,
+    notes: document.getElementById("s-notes").value.trim() || null,
+    rawFolderName: `${dateStart.replace(/-/g,"")}_${location}_${frames} pcs_${exposureSec}"_${iso}`,
+    needsReview: document.getElementById("s-review").checked,
+    reviewNote: document.getElementById("s-review").checked ? "Manuell als zu prüfen markiert." : null,
+  };
+
+  let targetObj = null;
+  if(matchedObjectId){
+    targetObj = DB.objects.find(o=>o.id===matchedObjectId);
+  }else{
+    const display = document.getElementById("no-display").value.trim();
+    if(!display){
+      statusEl.innerHTML = `<div class="banner warn">Bitte einen Anzeigenamen für das neue Objekt angeben.</div>`;
+      return;
+    }
+    targetObj = {
+      id: slugify(display),
+      displayName: display,
+      catalog: {
+        messier: document.getElementById("no-messier").value.trim() || null,
+        ngc: document.getElementById("no-ngc").value.trim() || null,
+        ic: document.getElementById("no-ic").value.trim() || null,
+        other: []
+      },
+      commonName: document.getElementById("no-common").value.trim() || null,
+      type: document.getElementById("no-type").value,
+      constellation: document.getElementById("no-const").value.trim() || null,
+      ra: document.getElementById("no-ra").value.trim() || null,
+      dec: document.getElementById("no-dec").value.trim() || null,
+      magnitude: null, angularSize: null, distanceLy: null,
+      description: document.getElementById("no-desc").value.trim() || null,
+      needsReview: !(document.getElementById("no-ra").value.trim() && document.getElementById("no-dec").value.trim()),
+      reviewNote: null,
+      sessions: []
+    };
+    if(targetObj.needsReview) targetObj.reviewNote = "Neu angelegt ohne vollständige RA/Dec-Koordinaten – für Sternkarte bitte ergänzen.";
+    DB.objects.push(targetObj);
+  }
+  targetObj.sessions.push(session);
+  statusEl.innerHTML = `<div class="banner info">speichere …</div>`;
+  const ok = await persist(`Neue Session: ${targetObj.displayName} (${dateStart})`);
+  statusEl.innerHTML = ok
+    ? `<div class="banner ok">Session für "${escapeHtml(targetObj.displayName)}" gespeichert.</div>`
+    : `<div class="banner warn">Lokal gespeichert, GitHub-Sync fehlgeschlagen (siehe oben).</div>`;
+  renderAll();
+  clearAddForm();
+});
+
+function clearAddForm(){
+  ["no-display","no-messier","no-ngc","no-ic","no-const","no-common","no-ra","no-dec","no-desc",
+   "s-date-start","s-date-end","s-location","s-focal","s-frames","s-exposure","s-iso","s-mosaic","s-lens","s-notes"]
+   .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  searchInput.value = "";
+  document.getElementById("s-review").checked = false;
+  document.getElementById("new-object-card").hidden = true;
+  document.getElementById("messier-autofill-hint").hidden = true;
+  document.getElementById("add-object-hint").textContent = "";
+  catalogResults.hidden = true;
+  matchedObjectId = null;
+}
+
+/* ======================= NAV / VIEWS ======================= */
+function switchView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll("nav.tabbar button").forEach(b=>b.classList.remove("active"));
+  if(name==="docs-btn"){ openModal("docs-modal"); return; }
+  document.getElementById("view-"+name).classList.add("active");
+  document.querySelector(`nav.tabbar button[data-view="${name}"]`).classList.add("active");
+  if(name==="map") initMapViewOnce();
+}
+document.querySelectorAll("nav.tabbar button").forEach(b=>{
+  b.addEventListener("click", ()=>switchView(b.dataset.view));
+});
+
+function openModal(id){ document.getElementById(id).hidden = false; }
+function closeModal(id){ document.getElementById(id).hidden = true; }
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>closeModal(b.dataset.close)));
+document.querySelectorAll(".modal-overlay").forEach(ov=>{
+  ov.addEventListener("click", e=>{ if(e.target===ov) ov.hidden = true; });
+});
+document.getElementById("btn-settings").addEventListener("click", ()=>{
+  document.getElementById("cfg-owner").value = CFG.owner||"";
+  document.getElementById("cfg-repo").value = CFG.repo||"";
+  document.getElementById("cfg-branch").value = CFG.branch||"main";
+  document.getElementById("cfg-token").value = CFG.token||"";
+  document.getElementById("cfg-fov").value = CFG.fov||65;
+  document.getElementById("cfg-nasa-key").value = CFG.nasaKey||"";
+  openModal("settings-modal");
+});
+
+/* ======================= SETTINGS ACTIONS ======================= */
+document.getElementById("btn-test-sync").addEventListener("click", async ()=>{
+  const el = document.getElementById("sync-test-result");
+  el.textContent = "teste Verbindung …"; el.className="sync-status";
+  const tmpCfg = readCfgForm();
+  const oldCfg = CFG; CFG = tmpCfg;
+  try{
+    const res = await githubGetFile();
+    el.textContent = `Verbindung OK – data.json gefunden (${res.data.objects ? res.data.objects.length : '?'} Objekte).`;
+    el.className = "sync-status ok";
+  }catch(e){
+    el.textContent = `${e.message} – Falls data.json im Repo noch nicht existiert, einfach 'Speichern' klicken und dann eine erste Session eintragen, die Datei wird automatisch angelegt.`;
+    el.className = "sync-status err";
+  }finally{ CFG = oldCfg; }
+});
+function readCfgForm(){
+  return {
+    owner: document.getElementById("cfg-owner").value.trim(),
+    repo: document.getElementById("cfg-repo").value.trim(),
+    branch: document.getElementById("cfg-branch").value.trim() || "main",
+    token: document.getElementById("cfg-token").value.trim(),
+    fov: parseFloat(document.getElementById("cfg-fov").value) || 65,
+    nasaKey: document.getElementById("cfg-nasa-key").value.trim(),
+  };
+}
+document.getElementById("btn-save-sync").addEventListener("click", async ()=>{
+  CFG = readCfgForm();
+  saveConfig(CFG);
+  closeModal("settings-modal");
+  await initData();
+});
+document.getElementById("btn-clear-sync").addEventListener("click", ()=>{
+  CFG = {}; saveConfig(CFG);
+  document.getElementById("cfg-owner").value="";
+  document.getElementById("cfg-repo").value="";
+  document.getElementById("cfg-token").value="";
+  renderAll();
+});
+document.getElementById("btn-export").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "data.json";
+  a.click();
+});
+document.getElementById("btn-import-trigger").addEventListener("click", ()=> document.getElementById("import-file").click());
+document.getElementById("import-file").addEventListener("change", async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if(!parsed.objects) throw new Error("Ungültiges Format (kein 'objects'-Array gefunden).");
+    DB = parsed; DB_SHA = null;
+    await persist("Import via manueller Datei");
+    renderAll();
+    alert("Import erfolgreich: " + DB.objects.length + " Objekte geladen.");
+  }catch(err){ alert("Import fehlgeschlagen: " + err.message); }
+});
+
+/* ======================= DOCS CONTENT ======================= */
+document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong> (für Menschen &amp; KI-Assistenten gleichermaßen lesbar). Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Brennweite in mm, falls im Ordnernamen angegeben</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n";
+
+/* ======================= STAR MAP ======================= */
+let mapMode = "2d";
+let userLat = null, userLon = null;
+let mapTimeOverride = null;
+let mapInited = false;
+
+document.querySelectorAll('[data-mapmode]').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-mapmode]').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    mapMode = chip.dataset.mapmode;
+    setMapMode(mapMode);
+  });
+});
+
+function setMapMode(mode){
+  const video = document.getElementById('arVideo');
+  const arCanvas = document.getElementById('arCanvas');
+  const skyCanvas = document.getElementById('skyCanvas');
+  if(mode === 'ar'){
+    skyCanvas.style.display = 'none';
+    video.style.display = 'block';
+    arCanvas.style.display = 'block';
+    startAR();
+  }else{
+    skyCanvas.style.display = 'block';
+    video.style.display = 'none';
+    arCanvas.style.display = 'none';
+    stopAR();
+    drawSky2D();
+  }
+}
+
+function initMapViewOnce(){
+  if(mapInited) return;
+  mapInited = true;
+  const mapStatus = document.getElementById('map-status');
+  mapStatus.textContent = "Standort noch nicht ermittelt – Standard: Berlin. Für genauere Anzeige 'Standort ermitteln' klicken.";
+  userLat = 52.5200; userLon = 13.4050;
+  drawSky2D();
+  document.getElementById('skyCanvas').addEventListener('click', onSkyCanvasClick);
+}
+
+document.getElementById('btn-geo').addEventListener('click', ()=>{
+  if(!navigator.geolocation){ alert('Geolocation wird von diesem Browser nicht unterstützt.'); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLat = pos.coords.latitude; userLon = pos.coords.longitude;
+    document.getElementById('map-status').textContent = `Standort: ${userLat.toFixed(3)}, ${userLon.toFixed(3)}`;
+    if(mapMode==='2d') drawSky2D();
+  }, err=>{
+    document.getElementById('map-status').textContent = 'Standort konnte nicht ermittelt werden: ' + err.message + ' (nutze Berlin als Standard).';
+  });
+});
+document.getElementById('btn-map-now').addEventListener('click', ()=>{
+  mapTimeOverride = null;
+  document.getElementById('map-time').value = "";
+  if(mapMode==='2d') drawSky2D();
+});
+document.getElementById('map-time').addEventListener('change', e=>{
+  mapTimeOverride = e.target.value ? new Date(e.target.value) : null;
+  if(mapMode==='2d') drawSky2D();
+});
+
+/* ---- Astronomie-Hilfsfunktionen ---- */
+function deg2rad(d){ return d*Math.PI/180; }
+function rad2deg(r){ return r*180/Math.PI; }
+function julianDate(date){
+  return date.getTime()/86400000 + 2440587.5;
+}
+function gmstDeg(date){
+  const jd = julianDate(date);
+  const T = (jd - 2451545.0)/36525.0;
+  let gmst = 280.46061837 + 360.98564736629*(jd-2451545.0) + 0.000387933*T*T - (T*T*T)/38710000.0;
+  gmst = gmst % 360; if(gmst<0) gmst += 360;
+  return gmst;
+}
+function raDecToAltAz(raDeg, decDeg, lat, lon, date){
+  const lst = (gmstDeg(date) + lon) % 360;
+  let H = lst - raDeg; H = ((H+540)%360)-180; // -180..180
+  const Hr = deg2rad(H), latr = deg2rad(lat), decr = deg2rad(decDeg);
+  const sinAlt = Math.sin(latr)*Math.sin(decr) + Math.cos(latr)*Math.cos(decr)*Math.cos(Hr);
+  const alt = Math.asin(Math.max(-1,Math.min(1,sinAlt)));
+  const cosA = (Math.sin(decr) - Math.sin(alt)*Math.sin(latr)) / (Math.cos(alt)*Math.cos(latr) || 1e-9);
+  const sinA = -Math.sin(Hr)*Math.cos(decr) / (Math.cos(alt) || 1e-9);
+  let az = rad2deg(Math.atan2(sinA, cosA)); // 0 = Nord, 90 = Ost
+  az = (az+360)%360;
+  return {alt: rad2deg(alt), az};
+}
+function currentMapDate(){ return mapTimeOverride || new Date(); }
+
+function parseRaToDeg(ra){
+  if(ra==null) return null;
+  const m = String(ra).match(/(\d+)h\s*(\d+)?m?\s*([\d.]+)?s?/i);
+  if(!m) return null;
+  const h=+m[1]||0, mi=+m[2]||0, se=+m[3]||0;
+  return (h + mi/60 + se/3600)*15;
+}
+function parseDecToDeg(dec){
+  if(dec==null) return null;
+  const s = String(dec).trim();
+  const sign = s.startsWith('-') ? -1 : 1;
+  const m = s.match(/(\d+)[°d]\s*(\d+)?['m]?\s*([\d.]+)?["s]?/);
+  if(!m) return null;
+  const d=+m[1]||0, mi=+m[2]||0, se=+m[3]||0;
+  return sign*(d + mi/60 + se/3600);
+}
+
+function getPhotographedTargets(){
+  return DB.objects.filter(o=>o.ra && o.dec).map(o=>{
+    const raDeg = parseRaToDeg(o.ra), decDeg = parseDecToDeg(o.dec);
+    return {obj:o, raDeg, decDeg};
+  }).filter(t=>t.raDeg!=null && t.decDeg!=null);
+}
+
+/* ---- 2D Fisheye-Himmelskarte (Zenit = Mitte, Horizont = Rand) ---- */
+function drawSky2D(){
+  const canvas = document.getElementById('skyCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const R = Math.min(W,H)/2 - 10;
+  const cx = W/2, cy = H/2;
+  ctx.fillStyle = '#05060a'; ctx.fillRect(0,0,W,H);
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.strokeStyle='#262c3a'; ctx.stroke();
+
+  function project(alt, az){
+    const r = (90-alt)/90 * R;
+    const a = deg2rad(az - 90); // Norden oben
+    return {x: cx + r*Math.cos(a), y: cy + r*Math.sin(a)};
+  }
+
+  // Horizont-Ring-Beschriftung
+  ctx.fillStyle = '#5c6579'; ctx.font = '12px sans-serif'; ctx.textAlign='center';
+  const dirs = [['N',0],['O',90],['S',180],['W',270]];
+  dirs.forEach(([lbl,az])=>{
+    const p = project(-2, az);
+    ctx.fillText(lbl, p.x, p.y);
+  });
+
+  const date = currentMapDate();
+  if(userLat==null) return;
+
+  // Sterne + Linien
+  const starPos = {};
+  STAR_CATALOG.stars.forEach(st=>{
+    const {alt,az} = raDecToAltAz(st.ra, st.dec, userLat, userLon, date);
+    starPos[st.name] = {alt,az};
+    if(alt>0){
+      const p = project(alt,az);
+      const r = Math.max(0.6, 2.6 - st.mag*0.5);
+      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7);
+      ctx.fillStyle = '#c9d3e6'; ctx.fill();
+    }
+  });
+  ctx.strokeStyle = 'rgba(90,110,150,.35)'; ctx.lineWidth = 1;
+  STAR_CATALOG.lines.forEach(([a,b])=>{
+    const pa = starPos[a], pb = starPos[b];
+    if(!pa||!pb||pa.alt<0||pb.alt<0) return;
+    const p1 = project(pa.alt,pa.az), p2 = project(pb.alt,pb.az);
+    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+  });
+
+  // fotografierte Objekte
+  getPhotographedTargets().forEach(t=>{
+    const {alt,az} = raDecToAltAz(t.raDeg, t.decDeg, userLat, userLon, date);
+    if(alt < -5) return;
+    const p = project(Math.max(alt,-5), az);
+    const color = t.obj.needsReview ? '#f5c451' : '#6ea8fe';
+    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,7);
+    ctx.fillStyle = color+'cc'; ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle = '#e8ecf4'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(t.obj.displayName.split(' (')[0], p.x+7, p.y+3);
+    t._screen = p;
+  });
+  window._mapTargets = getPhotographedTargets();
+}
+
+function onSkyCanvasClick(e){
+  const canvas = e.target;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX-rect.left) * (canvas.width/rect.width);
+  const y = (e.clientY-rect.top) * (canvas.height/rect.height);
+  let best=null, bestD=18;
+  (window._mapTargets||[]).forEach(t=>{
+    if(!t._screen) return;
+    const d = Math.hypot(t._screen.x-x, t._screen.y-y);
+    if(d<bestD){ bestD=d; best=t; }
+  });
+  const info = document.getElementById('map-object-info');
+  if(best){
+    info.hidden=false;
+    info.innerHTML = `<h3>${escapeHtml(best.obj.displayName)}</h3>
+      <div class="obj-desc">${escapeHtml(best.obj.description||'')}</div>
+      <div>${best.obj.sessions.length} Session(s) · ${fmtHours(totalIntegrationSeconds(best.obj))} Gesamtbelichtung</div>`;
+  }else{ info.hidden=true; }
+}
+setInterval(()=>{ if(mapMode==='2d' && document.getElementById('view-map').classList.contains('active')) drawSky2D(); }, 60000);
+
+/* ---- AR Kamera-Overlay ---- */
+let arStream = null, arOrientationHandler = null;
+let deviceHeading = null, devicePitch = null;
+
+async function startAR(){
+  const status = document.getElementById('map-status');
+  if(userLat==null){ userLat=52.52; userLon=13.405; }
+  try{
+    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      const perm = await DeviceOrientationEvent.requestPermission();
+      if(perm !== 'granted') throw new Error('Bewegungssensor-Zugriff verweigert.');
+    }
+    arStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
+    document.getElementById('arVideo').srcObject = arStream;
+    arOrientationHandler = onDeviceOrientation;
+    window.addEventListener('deviceorientationabsolute', arOrientationHandler, true);
+    window.addEventListener('deviceorientation', arOrientationHandler, true);
+    status.className = 'banner ok';
+    status.textContent = 'AR aktiv – Handy in den Himmel halten. Kompass-basiert, nicht teleskop-präzise.';
+    requestAnimationFrame(drawARFrame);
+  }catch(e){
+    status.className = 'banner warn';
+    status.textContent = 'AR nicht verfügbar: ' + e.message + ' (Kamera/Sensor-Zugriff nötig, funktioniert nur über HTTPS auf dem Handy).';
+    document.querySelector('[data-mapmode="2d"]').click();
+  }
+}
+function stopAR(){
+  if(arStream){ arStream.getTracks().forEach(t=>t.stop()); arStream=null; }
+  if(arOrientationHandler){
+    window.removeEventListener('deviceorientationabsolute', arOrientationHandler, true);
+    window.removeEventListener('deviceorientation', arOrientationHandler, true);
+    arOrientationHandler = null;
+  }
+}
+function onDeviceOrientation(e){
+  let heading;
+  if(typeof e.webkitCompassHeading === 'number'){ heading = e.webkitCompassHeading; }
+  else if(e.absolute && e.alpha!=null){ heading = 360 - e.alpha; }
+  else if(e.alpha!=null){ heading = 360 - e.alpha; }
+  if(heading!=null) deviceHeading = (heading+360)%360;
+  if(e.beta!=null) devicePitch = 90 - e.beta; // grobe Näherung: Handy vertikal ~ Horizont
+}
+function drawARFrame(){
+  if(mapMode!=='ar') return;
+  const canvas = document.getElementById('arCanvas');
+  const video = document.getElementById('arVideo');
+  canvas.width = video.videoWidth || canvas.clientWidth;
+  canvas.height = video.videoHeight || canvas.clientHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(deviceHeading!=null && devicePitch!=null){
+    const fov = CFG.fov || 65;
+    const date = currentMapDate();
+    getPhotographedTargets().forEach(t=>{
+      const {alt,az} = raDecToAltAz(t.raDeg, t.decDeg, userLat, userLon, date);
+      let dAz = ((az - deviceHeading + 540) % 360) - 180;
+      let dAlt = alt - devicePitch;
+      if(Math.abs(dAz) > fov/2 || Math.abs(dAlt) > fov/2) return;
+      const x = canvas.width/2 + (dAz/(fov/2)) * (canvas.width/2);
+      const y = canvas.height/2 - (dAlt/(fov/2)) * (canvas.height/2);
+      const color = t.obj.needsReview ? '#f5c451' : '#6ea8fe';
+      ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.arc(x,y,22,0,7); ctx.fillStyle=color; ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = color; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(t.obj.displayName.split(' (')[0], x, y-28);
+    });
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='11px monospace'; ctx.textAlign='left';
+    ctx.fillText(`Kompass: ${deviceHeading.toFixed(0)}°  Neigung: ${devicePitch.toFixed(0)}°`, 8, canvas.height-10);
+  }else{
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Warte auf Sensordaten … Handy bewegen.', canvas.width/2, canvas.height/2);
+  }
+  requestAnimationFrame(drawARFrame);
+}
+
+/* ======================= ASTRONOMY PICTURE OF THE DAY ======================= */
+async function loadApod(){
+  const el = document.getElementById('apod-card');
+  el.innerHTML = `<div style="padding:1em;color:var(--text-dim)">Astronomy Picture of the Day wird geladen …</div>`;
+  const todayKey = new Date().toISOString().slice(0,10);
+  try{
+    let cached = null;
+    try{ cached = JSON.parse(localStorage.getItem('apod_cache_v1')||'null'); }catch(e){}
+    let apod;
+    if(cached && cached.date===todayKey && cached.data){
+      apod = cached.data;
+    }else{
+      const key = CFG.nasaKey || 'DEMO_KEY';
+      const r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}`);
+      if(!r.ok) throw new Error('Abruf fehlgeschlagen (' + r.status + ')');
+      apod = await r.json();
+      localStorage.setItem('apod_cache_v1', JSON.stringify({date:todayKey, data:apod}));
+    }
+    renderApod(apod);
+  }catch(e){
+    el.innerHTML = `<div class="apod-fallback">
+      <div>Astronomy Picture of the Day konnte nicht geladen werden (${escapeHtml(e.message)}).</div>
+      <div style="margin-top:.4em"><a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">Auf apod.nasa.gov ansehen</a></div>
+    </div>`;
+  }
+}
+function renderApod(apod){
+  const el = document.getElementById('apod-card');
+  const media = apod.media_type === 'video'
+    ? `<a href="${apod.url}" target="_blank" rel="noopener" class="apod-media-link">Video ansehen: ${escapeHtml(apod.title)}</a>`
+    : `<a href="${apod.hdurl||apod.url}" target="_blank" rel="noopener"><img src="${apod.url}" alt="${escapeHtml(apod.title)}" class="apod-img" loading="lazy"></a>`;
+  el.innerHTML = `
+    <div class="apod-head">
+      <div class="apod-title">${escapeHtml(apod.title)}</div>
+      <button class="info-btn" id="apod-info-btn" title="Info">i</button>
+    </div>
+    ${media}
+    <div class="apod-explain" id="apod-explain" hidden>${escapeHtml(apod.explanation||'')}</div>
+    <div class="apod-date">${escapeHtml(apod.date||'')} · Astronomy Picture of the Day (NASA) · <a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">Quelle</a></div>
+  `;
+  const infoBtn = document.getElementById('apod-info-btn');
+  if(infoBtn) infoBtn.addEventListener('click', ()=>{
+    const ex = document.getElementById('apod-explain');
+    ex.hidden = !ex.hidden;
+  });
+}
+
+/* ======================= INIT ======================= */
+initData();
+loadApod();
+</script>
+</body>
+</html>
