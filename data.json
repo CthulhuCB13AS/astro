@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T20:29:50.837Z",
+  "generatedAt": "2026-08-18T21:40:15.795Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1720,7 +1720,20 @@
           "notes": null,
           "rawFolderName": "20241230_Gomera_9...60\"_3200 (50mm f1.4)",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ngc7000-20241230-detgcq.jpg",
+          "photoSha": "d51f01b554bd2e2ceb9414549f0793f9d2571a47",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-08-30",
