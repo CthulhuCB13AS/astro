@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:04:35.934Z",
+  "generatedAt": "2026-08-18T14:04:42.237Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -977,8 +977,8 @@
           "isMosaicSummary": false,
           "notes": null,
           "rawFolderName": "20250302_Bundesplatz_200pcs_20_13",
-          "needsReview": true,
-          "reviewNote": "Ordnername weicht vom Standardmuster ab ('200pcs_20_13'). Interpretiert als Belichtung 1/20 s; ISO vermutlich 160 statt '13' (möglicher Tippfehler) – bitte prüfen."
+          "needsReview": false,
+          "reviewNote": null
         },
         {
           "dateStart": "2025-03-02",
