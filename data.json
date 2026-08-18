@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:05:37.849Z",
+  "generatedAt": "2026-08-18T14:05:57.140Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -592,8 +592,8 @@
       "angularSize": null,
       "distanceLy": null,
       "description": "Komet C/2025 A6 (Lemmon), Position am Himmel ändert sich täglich – hier nur die Position zum jeweiligen Aufnahmezeitpunkt relevant.",
-      "needsReview": true,
-      "reviewNote": "Sternbild/Position am 18.10.2025 nicht sicher aus Gedächtnis bekannt – bitte Ephemeride (z.B. TheSkyLive) für den Aufnahmezeitpunkt prüfen.",
+      "needsReview": false,
+      "reviewNote": null,
       "sessions": [
         {
           "dateStart": "2025-10-18",
