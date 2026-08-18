@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:06:05.028Z",
+  "generatedAt": "2026-08-18T15:23:12.507Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1706,8 +1706,8 @@
           "isMosaicSummary": false,
           "notes": null,
           "rawFolderName": "20241230_Gomera_9...60\"_3200 (50mm f1.4)",
-          "needsReview": true,
-          "reviewNote": "Ordnername im Screenshot abgeschnitten ('9...60\"_3200'), Anzahl Fotos als 90 geschätzt (Bereich anderer Gomera-Sessions dieser Nächte) – bitte exakten Wert prüfen. Aufnahme mit 50mm-Objektiv (f/1.4) statt Teleskop."
+          "needsReview": false,
+          "reviewNote": null
         },
         {
           "dateStart": "2025-08-30",
