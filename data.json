@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:04:11.057Z",
+  "generatedAt": "2026-08-18T14:04:35.934Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -970,7 +970,7 @@
           "location": "Bundesplatz",
           "focalLengthMm": null,
           "lens": null,
-          "frames": 200,
+          "frames": 1,
           "exposureSec": 0.05,
           "iso": 160,
           "mosaicPanels": null,
