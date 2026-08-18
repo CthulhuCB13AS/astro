@@ -290,6 +290,7 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
         <div class="field"><label>Kamera</label><select id="fs-camera"><option value="">Alle</option></select></div>
         <div class="field"><label>Teleskop</label><select id="fs-telescope"><option value="">Alle</option></select></div>
       </div>
+      <button class="small" id="btn-search-reset" type="button">Zurücksetzen</button>
     </div>
     <div id="search-results"></div>
   </section>
@@ -2872,7 +2873,7 @@ const STAR_CATALOG = {
    "name": "Mintaka",
    "con": "Ori",
    "ra": 83.0,
-   "dec": 0.299,
+   "dec": -0.299,
    "mag": 2.2
   },
   {
@@ -4844,6 +4845,22 @@ async function initData(){
   if(CFG.owner && CFG.repo && CFG.token){
     try{
       const res = await githubGetFile();
+      // Schutz vor stillem Datenverlust: initData() wird nicht nur beim ersten Laden aufgerufen, sondern
+      // auch erneut, wenn die Sync-Einstellungen gespeichert werden (z.B. weil der Nutzer nur den API-Key
+      // geändert hat). Falls zwischenzeitlich ein persist() lokal gespeichert, aber der GitHub-Push
+      // fehlgeschlagen ist (z.B. Netzwerkfehler), wäre die lokale Version NEUER als die auf GitHub – ein
+      // stillschweigendes Überschreiben mit den (älteren) Remote-Daten würde diese Änderungen unwiderruflich
+      // verwerfen. Daher: nur überschreiben, wenn Remote nicht älter als der aktuell geladene Stand ist.
+      // WICHTIG: nur für dasselbe Repo greifen – wechselt der Nutzer bewusst zu einem anderen Repo/Branch
+      // (DB.repoOwner/-Name weichen von CFG ab), sind ältere Remote-Daten dort erwartet und sollen ganz
+      // normal geladen werden, statt fälschlich als "alte, fehlgeschlagene Sync-Version" blockiert zu werden.
+      const sameRepo = !DB || (!DB.repoOwner && !DB.repoName) || (DB.repoOwner===CFG.owner && DB.repoName===CFG.repo);
+      if(sameRepo && DB && DB.generatedAt && res.data && res.data.generatedAt && new Date(res.data.generatedAt) < new Date(DB.generatedAt)){
+        DB_SHA = res.sha;
+        setSyncBanner("warn", "⚠️ Lokale Daten sind neuer als die Version auf GitHub (vermutlich ist ein früherer Sync fehlgeschlagen). Lokale Änderungen wurden NICHT überschrieben – bitte zeitnah erneut speichern, um sie hochzuladen.");
+        finishDataLoad();
+        return;
+      }
       DB = res.data; DB_SHA = res.sha;
       saveLocalDB(DB);
       setSyncBanner("ok", "✅ Verbunden mit GitHub – Daten aktuell.");
@@ -4897,15 +4914,38 @@ async function githubGetFile(){
   return {data: JSON.parse(content), sha: j.sha};
 }
 async function githubPutFile(newData, message){
-  const body = {
+  const putUrl = `https://api.github.com/repos/${CFG.owner}/${CFG.repo}/contents/data.json`;
+  const buildBody = () => ({
     message: message || "Update astro-logbuch data.json",
     content: btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2)))),
     branch: CFG.branch || "main",
-  };
-  if(DB_SHA) body.sha = DB_SHA;
-  const r = await fetch(`https://api.github.com/repos/${CFG.owner}/${CFG.repo}/contents/data.json`, {
-    method:"PUT", headers:{...ghHeaders(), "Content-Type":"application/json"}, body: JSON.stringify(body)
+    ...(DB_SHA ? {sha: DB_SHA} : {}),
   });
+  let r = await fetch(putUrl, {
+    method:"PUT", headers:{...ghHeaders(), "Content-Type":"application/json"}, body: JSON.stringify(buildBody())
+  });
+  // GitHub lehnt ein PUT auf eine bereits existierende Datei ohne (oder mit veraltetem) "sha" mit 409/422
+  // ab. War der allererste githubGetFile()-Aufruf beim Laden fehlgeschlagen (z.B. kurzzeitiger
+  // Netzwerkfehler), blieb DB_SHA für den Rest der Sitzung null - und JEDER weitere Speicherversuch
+  // scheiterte danach genauso, ohne dass es einen Weg zurück gab außer einem kompletten Reload. Jetzt
+  // wird bei diesem speziellen Fehler einmalig versucht, die aktuelle sha (und Version) nachzuladen und
+  // den Schreibvorgang zu wiederholen - aber NUR, wenn die Remote-Version dabei nicht neuer ist als die,
+  // die wir gerade schreiben wollen (sonst würden wir einen zwischenzeitlich von einem anderen Gerät
+  // gespeicherten Stand kommentarlos überschreiben; in dem Fall bleibt es beim ursprünglichen Fehler,
+  // und der Nutzer sieht wie gehabt die Sync-fehlgeschlagen-Meldung).
+  if(!r.ok && (r.status===409 || r.status===422)){
+    try{
+      const fresh = await githubGetFile();
+      const remoteIsNewer = fresh.data && fresh.data.generatedAt && newData.generatedAt
+        && new Date(fresh.data.generatedAt) > new Date(newData.generatedAt);
+      if(!remoteIsNewer){
+        DB_SHA = fresh.sha;
+        r = await fetch(putUrl, {
+          method:"PUT", headers:{...ghHeaders(), "Content-Type":"application/json"}, body: JSON.stringify(buildBody())
+        });
+      }
+    }catch(e2){ /* Nachladen selbst fehlgeschlagen - unten greift der reguläre Fehlerpfad */ }
+  }
   if(!r.ok){ const t = await r.text(); throw new Error("GitHub PUT fehlgeschlagen: " + r.status + " " + t); }
   const j = await r.json();
   DB_SHA = j.content.sha;
@@ -5092,20 +5132,55 @@ function openObjectEditModal(id){
 document.getElementById("btn-save-object-edit").addEventListener("click", async ()=>{
   const o = DB.objects.find(x=>x.id===editingObjectId);
   if(!o) return;
+  // WICHTIG: Erst ALLE Formularwerte einlesen und validieren, DANN erst das Objekt mutieren. Vorher
+  // wurden displayName/type/catalog.*/constellation/commonName schon direkt auf "o" geschrieben, bevor
+  // RA/Dec geprüft wurden – brach die Validierung mit return ab, blieben diese Felder trotzdem im
+  // Live-Objekt verändert (und ggf. per renderAll() bereits sichtbar), obwohl der Nutzer "Speichern"
+  // gar nicht erfolgreich abgeschlossen hatte. Ein erneuter Klick auf "Abbrechen" stellte den alten
+  // Zustand NICHT wieder her, da nichts davon zwischengespeichert war.
   const display = document.getElementById("oe-display").value.trim();
   if(!display){ alert("Bitte einen Anzeigenamen angeben."); return; }
+  const type = document.getElementById("oe-type").value;
+  const catMessier = document.getElementById("oe-messier").value.trim() || null;
+  const catNgc = document.getElementById("oe-ngc").value.trim() || null;
+  const catIc = document.getElementById("oe-ic").value.trim() || null;
+  const constellation = document.getElementById("oe-const").value.trim() || null;
+  const commonName = document.getElementById("oe-common").value.trim() || null;
+  const oeRa = document.getElementById("oe-ra").value.trim() || null;
+  const oeDec = document.getElementById("oe-dec").value.trim() || null;
+  // Ohne diese Prüfung machte ein Tippfehler oder ein Wert außerhalb des gültigen Bereichs das Objekt
+  // stillschweigend unsichtbar auf der Sternkarte (parseRaToDeg/parseDecToDeg liefern dann null und
+  // getPhotographedTargets() filtert es einfach heraus) bzw. plottete es an einer unmöglichen Position –
+  // beides ohne jede Rückmeldung beim Speichern.
+  if(oeRa!=null){
+    const raDeg = parseRaToDeg(oeRa);
+    if(raDeg==null || raDeg<0 || raDeg>360){
+      alert('Rektaszension (RA) ungültig oder außerhalb des gültigen Bereichs – erwartetes Format z.B. "12h34m56s". Bitte korrigieren oder das Feld leer lassen.');
+      return;
+    }
+  }
+  if(oeDec!=null){
+    const decDeg = parseDecToDeg(oeDec);
+    if(decDeg==null || decDeg<-90 || decDeg>90){
+      alert("Deklination (Dec) ungültig oder außerhalb des gültigen Bereichs (-90 bis +90) – erwartetes Format z.B. +12°34'56\" oder -12°34'56\". Bitte korrigieren oder das Feld leer lassen.");
+      return;
+    }
+  }
+  const description = document.getElementById("oe-desc").value.trim() || null;
+  const needsReview = document.getElementById("oe-review").checked;
+  // Alle Prüfungen bestanden – jetzt erst tatsächlich übernehmen.
   o.displayName = display;
-  o.type = document.getElementById("oe-type").value;
+  o.type = type;
   o.catalog = o.catalog || {};
-  o.catalog.messier = document.getElementById("oe-messier").value.trim() || null;
-  o.catalog.ngc = document.getElementById("oe-ngc").value.trim() || null;
-  o.catalog.ic = document.getElementById("oe-ic").value.trim() || null;
-  o.constellation = document.getElementById("oe-const").value.trim() || null;
-  o.commonName = document.getElementById("oe-common").value.trim() || null;
-  o.ra = document.getElementById("oe-ra").value.trim() || null;
-  o.dec = document.getElementById("oe-dec").value.trim() || null;
-  o.description = document.getElementById("oe-desc").value.trim() || null;
-  o.needsReview = document.getElementById("oe-review").checked;
+  o.catalog.messier = catMessier;
+  o.catalog.ngc = catNgc;
+  o.catalog.ic = catIc;
+  o.constellation = constellation;
+  o.commonName = commonName;
+  o.ra = oeRa;
+  o.dec = oeDec;
+  o.description = description;
+  o.needsReview = needsReview;
   if(!o.needsReview) o.reviewNote = null;
   else if(!o.reviewNote) o.reviewNote = "Manuell als zu prüfen markiert.";
   await persist("Objekt bearbeitet: " + o.displayName);
@@ -5116,6 +5191,13 @@ async function deleteObject(id){
   const o = DB.objects.find(x=>x.id===id);
   if(!o) return;
   if(!confirm(`"${o.displayName}" inkl. aller ${o.sessions.length} Session(s) wirklich löschen?`)) return;
+  // Wie deleteSession() auch hier zuerst die auf GitHub liegenden Fotos aller Sessions entfernen –
+  // sonst blieben sie beim Löschen eines ganzen Objekts als nie mehr referenzierte, verwaiste Dateien
+  // im Repo zurück (deleteSession() macht das pro Session schon korrekt, deleteObject() hat es bisher
+  // für keine der Sessions gemacht).
+  for(const s of o.sessions){
+    if(s.photoPath) await githubDeleteImage(s.photoPath, s.photoSha, "Foto entfernt (Objekt gelöscht): " + o.displayName);
+  }
   DB.objects = DB.objects.filter(x=>x.id!==id);
   await persist("Objekt gelöscht: " + o.displayName);
   closeModal("object-edit-modal");
@@ -5142,7 +5224,13 @@ function openSessionEditModal(objId, idx){
   if(!o) return;
   const s = o.sessions[idx];
   if(!s) return;
-  editingSession = {objId, idx};
+  // Für Legacy-Sessions ohne cameraId/mountId wird im Formular nur eine GERATENE Vorauswahl angezeigt
+  // (damit das Dropdown nicht leer bleibt). Wird diese Vorauswahl beim Speichern nicht bewusst geändert,
+  // darf sie NICHT übernommen werden – sonst geht der ursprüngliche Freitext (s.camera) verloren und alte
+  // Sessions werden fälschlich einem geratenen Gerät zugeordnet. Dafür merken wir uns die geratenen IDs.
+  const guessedCameraId = DB.equipment.cameras.find(c=>c.id==="cam-default")?.id || DB.equipment.cameras[0]?.id || "";
+  const guessedMountId = DB.equipment.mounts.find(m=>m.id==="mount-none")?.id || DB.equipment.mounts[0]?.id || "";
+  editingSession = {objId, idx, hadCameraId: !!s.cameraId, guessedCameraId, hadMountId: !!s.mountId, guessedMountId};
   resetSessionEditPhotoState();
   document.getElementById("se-type").value = o.type in TYPE_META ? o.type : "other";
   document.getElementById("se-date-start").value = /^\d{4}-\d{2}-\d{2}$/.test(s.dateStart) ? s.dateStart : "";
@@ -5151,8 +5239,8 @@ function openSessionEditModal(objId, idx){
   document.getElementById("se-time-end").value = s.timeEnd || "";
   document.getElementById("se-location").value = s.location || "";
   document.getElementById("se-telescope").value = s.telescopeId || "";
-  document.getElementById("se-camera").value = s.cameraId || (DB.equipment.cameras.find(c=>c.id==="cam-default")?.id || DB.equipment.cameras[0]?.id || "");
-  document.getElementById("se-mount").value = s.mountId || (DB.equipment.mounts.find(m=>m.id==="mount-none")?.id || DB.equipment.mounts[0]?.id || "");
+  document.getElementById("se-camera").value = s.cameraId || guessedCameraId;
+  document.getElementById("se-mount").value = s.mountId || guessedMountId;
   document.getElementById("se-filter").value = s.filter || "";
   document.getElementById("se-frames").value = s.frames ?? "";
   document.getElementById("se-exposure").value = s.exposureSec ?? "";
@@ -5209,11 +5297,18 @@ document.getElementById("btn-save-session-edit").addEventListener("click", async
   const s = o.sessions[editingSession.idx];
   if(!s) return;
   const dateStart = document.getElementById("se-date-start").value;
+  const dateEndVal = document.getElementById("se-date-end").value || null;
   const location = document.getElementById("se-location").value.trim();
   const frames = parseFloat(document.getElementById("se-frames").value);
   const exposureSec = parseFloat(document.getElementById("se-exposure").value);
-  if(!dateStart || !location || !frames || !exposureSec){
-    alert("Bitte Pflichtfelder ausfüllen: Datum, Ort, Anzahl Fotos, Belichtungszeit.");
+  if(!dateStart || !location || !frames || !exposureSec || frames<0 || exposureSec<0){
+    alert("Bitte Pflichtfelder ausfüllen: Datum, Ort, Anzahl Fotos, Belichtungszeit (jeweils positive Werte).");
+    return;
+  }
+  // Ohne diese Prüfung ließ sich ein Enddatum VOR dem Startdatum speichern, was sessionDateRangeLabel()
+  // anschließend als verwirrenden, rückwärtslaufenden Zeitraum anzeigte (z.B. "18.08.2026 – 10.08.2026").
+  if(dateEndVal && dateEndVal < dateStart){
+    alert("Das Enddatum darf nicht vor dem Startdatum liegen.");
     return;
   }
   const saveBtn = document.getElementById("btn-save-session-edit");
@@ -5235,15 +5330,26 @@ document.getElementById("btn-save-session-edit").addEventListener("click", async
     }
     o.type = document.getElementById("se-type").value;
     s.dateStart = dateStart;
-    s.dateEnd = document.getElementById("se-date-end").value || null;
+    s.dateEnd = dateEndVal;
     s.timeStart = document.getElementById("se-time-start").value || null;
     s.timeEnd = document.getElementById("se-time-end").value || null;
     s.location = location;
     s.telescopeId = document.getElementById("se-telescope").value || null;
-    s.cameraId = document.getElementById("se-camera").value || null;
-    s.mountId = document.getElementById("se-mount").value || null;
-    s.focalLengthMm = sessionFocalLength({telescopeId:s.telescopeId, focalLengthMm:null});
-    s.camera = null;
+    const selectedCameraId = document.getElementById("se-camera").value || null;
+    const selectedMountId = document.getElementById("se-mount").value || null;
+    // Vergleich über (x||"") statt direkt: "" (leere Ausrüstungsliste -> guessed*Id="") und null
+    // (selected*Id, weil "" || null zu null wird) sind hier dasselbe "nichts ausgewählt" - ohne diese
+    // Normalisierung hätte "" !== null fälschlich als "Nutzer hat geändert" gezählt und bei leerer
+    // Ausrüstungsliste den Freitext trotzdem gelöscht.
+    if(editingSession.hadCameraId || (selectedCameraId||"") !== (editingSession.guessedCameraId||"")){
+      // Nutzer hat die Kamera bewusst gesetzt/geändert (oder es war schon eine echte cameraId vorhanden)
+      s.cameraId = selectedCameraId;
+      s.camera = null;
+    } // sonst: nur geratene Vorauswahl unverändert übernommen -> alten Freitext (s.camera) NICHT löschen
+    if(editingSession.hadMountId || (selectedMountId||"") !== (editingSession.guessedMountId||"")){
+      s.mountId = selectedMountId;
+    }
+    s.focalLengthMm = sessionFocalLength({telescopeId:s.telescopeId, focalLengthMm:s.focalLengthMm});
     s.filter = document.getElementById("se-filter").value.trim() || null;
     s.frames = frames;
     s.exposureSec = exposureSec;
@@ -5296,7 +5402,7 @@ function openPhotoViewer(objId, idx){
   const url = photoUrl(s);
   const body = document.getElementById("photo-modal-body");
   if(url){
-    body.innerHTML = `<img src="${url}" alt="Foto: ${escapeHtml(o.displayName)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'banner warn',textContent:'Foto konnte nicht geladen werden.'}))">`;
+    body.innerHTML = `<img src="${escapeHtml(url)}" alt="Foto: ${escapeHtml(o.displayName)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'banner warn',textContent:'Foto konnte nicht geladen werden.'}))">`;
   }else{
     body.innerHTML = `<div class="banner warn">Kein Foto vorhanden.</div>`;
   }
@@ -5347,6 +5453,7 @@ function openSessionDetailModal(objId, idx){
     ["Alternative Bezeichnungen", escapeHtml(altDesignations(o))],
     ["Sternbild", escapeHtml(o.constellation || "–")],
     ["Zeitraum der Aufnahme", escapeHtml(sessionDateRangeLabel(s))],
+    ["Aufnahmeort", escapeHtml(s.location || "–")],
     ["Teleskop", escapeHtml(sessionTelescopeLabelFull(s))],
     ["Brennweite", escapeHtml(fmtFocal(sessionFocalLength(s)))],
     ["Nachführung", escapeHtml(sessionMountLabel(s))],
@@ -5358,6 +5465,8 @@ function openSessionDetailModal(objId, idx){
     ["Kalibrierbilder", escapeHtml(calibrationLabel(s.calibration))],
     ["ISO", s.iso ?? "–"],
   ];
+  if(s.mosaicPanels) rows.push(["Mosaik-Panels", s.mosaicPanels]);
+  rows.push(["Kommentar", escapeHtml(s.notes || "–")]);
   document.getElementById("sd-fields").innerHTML = rows.map(([label,val])=>
     `<tr><td style="color:var(--text-dim);width:45%">${label}</td><td>${val}</td></tr>`
   ).join("");
@@ -5381,12 +5490,20 @@ function totalIntegrationSeconds(obj){
   return obj.sessions.reduce((a,s)=> a + (s.frames||0) * (s.exposureSec||0), 0);
 }
 function fmtHours(sec){
-  const totalMin = Math.round((sec||0)/60);
+  // Negative Werte (sollten laut Eingabevalidierung nicht vorkommen, sind aber bei älteren/importierten
+  // Datensätzen ohne Validierung denkbar) wurden vorher stillschweigend falsch angezeigt: JS liefert für
+  // negative Zahlen beim %-Operator ein negatives Ergebnis (z.B. -90 % 60 === -30, nicht 30), und da h<=0
+  // in diesem Fall immer zutraf, wurde die Stundenkomponente komplett verschluckt (aus "-1 h 30 min"
+  // wurde fälschlich nur "-30 min"). Jetzt wird das Vorzeichen separat behandelt.
+  const total = sec || 0;
+  const neg = total < 0;
+  const totalMin = Math.round(Math.abs(total)/60);
   const h = Math.floor(totalMin/60);
   const m = totalMin%60;
-  if(h<=0) return `${m} min`;
-  if(m===0) return `${h} h`;
-  return `${h} h ${m} min`;
+  const sign = neg ? "-" : "";
+  if(h<=0) return `${sign}${m} min`;
+  if(m===0) return `${sign}${h} h`;
+  return `${sign}${h} h ${m} min`;
 }
 const DEFAULT_CAMERA = "Fujifilm XT-30";
 function fmtFocal(mm){
@@ -5394,7 +5511,10 @@ function fmtFocal(mm){
   return mm.toLocaleString("de-DE") + " mm";
 }
 function fmtExposure(sec){
-  if(sec==null) return "–";
+  // sec===0 wurde vorher nicht abgefangen (nur sec==null): 0<1 war wahr, also wurde 1/Math.round(1/0)
+  // berechnet = 1/Infinity = "1/Infinitys" ausgegeben. 0 Sekunden Belichtungszeit ist kein sinnvoller
+  // Wert, daher wie "unbekannt" (null) behandeln.
+  if(sec==null || sec===0) return "–";
   return sec<1 ? ("1/"+Math.round(1/sec)+"s") : (sec+'"');
 }
 
@@ -5503,7 +5623,7 @@ function sessionFocalLength(s){
 const CAMERA_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
 function photoCellHtml(objId, idx, s){
   if(!photoUrl(s)) return `<td class="col-photo"></td>`;
-  return `<td class="col-photo"><button class="photo-btn" onclick="event.stopPropagation();openPhotoViewer('${objId}',${idx})" title="Foto anzeigen">${CAMERA_ICON_SVG}</button></td>`;
+  return `<td class="col-photo"><button class="photo-btn" onclick="event.stopPropagation();openPhotoViewer(${jsAttr(objId)},${idx})" title="Foto anzeigen">${CAMERA_ICON_SVG}</button></td>`;
 }
 function newEquipmentId(cat){ return cat + "-" + Math.random().toString(36).slice(2,9); }
 function renderEquipmentList(cat){
@@ -5512,27 +5632,30 @@ function renderEquipmentList(cat){
   const fields = EQUIPMENT_FIELDS[cat];
   const items = (DB.equipment && DB.equipment[cat]) || [];
   container.innerHTML = items.map(item=>{
+    // item.id kann aus importierten/synchronisierten Daten stammen (siehe "JSON importieren") und läuft
+    // nicht zwingend durch newEquipmentId() – daher wie alle anderen Attributwerte escapen.
+    const eqId = escapeHtml(item.id);
     const inputs = fields.map(f=>{
       const val = item[f.key];
       if(f.type==="bool"){
         return `<div class="field"><label>${f.label}</label>
-          <select data-eq-cat="${cat}" data-eq-id="${item.id}" data-eq-key="${f.key}" class="eq-input">
+          <select data-eq-cat="${cat}" data-eq-id="${eqId}" data-eq-key="${f.key}" class="eq-input">
             <option value="false"${!val?' selected':''}>Nein</option>
             <option value="true"${val?' selected':''}>Ja</option>
           </select></div>`;
       }
       if(f.type==="select"){
         return `<div class="field"><label>${f.label}</label>
-          <select data-eq-cat="${cat}" data-eq-id="${item.id}" data-eq-key="${f.key}" class="eq-input">
+          <select data-eq-cat="${cat}" data-eq-id="${eqId}" data-eq-key="${f.key}" class="eq-input">
             ${f.options.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join("")}
           </select></div>`;
       }
       return `<div class="field"><label>${f.label}</label>
-        <input type="${f.type}" ${f.step?`step="${f.step}"`:""} value="${val ?? ""}" data-eq-cat="${cat}" data-eq-id="${item.id}" data-eq-key="${f.key}" class="eq-input"></div>`;
+        <input type="${f.type}" ${f.step?`step="${f.step}"`:""} value="${escapeHtml(String(val ?? ""))}" data-eq-cat="${cat}" data-eq-id="${eqId}" data-eq-key="${f.key}" class="eq-input"></div>`;
     }).join("");
     return `<div class="eq-item">
       <div class="row eq-row">${inputs}</div>
-      <button class="small danger eq-remove" type="button" data-eq-cat="${cat}" data-eq-id="${item.id}">Entfernen</button>
+      <button class="small danger eq-remove" type="button" data-eq-cat="${cat}" data-eq-id="${eqId}">Entfernen</button>
     </div>`;
   }).join("") || `<p style="color:var(--text-dim);font-size:.82rem">Keine Einträge.</p>`;
 }
@@ -5568,6 +5691,10 @@ document.getElementById("settings-modal").addEventListener("change", async (e)=>
   item[key] = val;
   await persist("Ausrüstung aktualisiert");
   populateEquipmentSelects();
+  // Ohne dies blieben z.B. Kamera-/Teleskop-Beschriftungen in der Objektübersicht (und in Suchergebnissen)
+  // nach einer Umbenennung in den Einstellungen so lange stehen, bis irgendeine andere Aktion zufällig
+  // renderAll() auslöste – die Daten in DB waren korrekt, nur die bereits gerenderte Ansicht war veraltet.
+  renderAll();
 });
 document.getElementById("settings-modal").addEventListener("click", async (e)=>{
   const btn = e.target.closest(".eq-remove");
@@ -5578,6 +5705,7 @@ document.getElementById("settings-modal").addEventListener("click", async (e)=>{
   await persist("Ausrüstung entfernt");
   renderEquipmentList(cat);
   populateEquipmentSelects();
+  renderAll();
 });
 const EQUIPMENT_DEFAULTS = {
   cameras: ()=>({brand:"", model:"", type:"", pixelSize:null, cooled:false}),
@@ -5597,11 +5725,21 @@ const EQUIPMENT_DEFAULTS = {
   });
 });
 
+let searchResultsStale = false; // siehe renderAll()/switchView(): hält die Suchergebnisse konsistent,
+                                 // auch wenn Daten geändert werden während die Suche gar nicht sichtbar ist
 function renderAll(){
   renderObjectList();
   renderAddDatalists();
   document.getElementById("footer-count").textContent =
     `${DB.objects.length} Objekte · ${DB.objects.reduce((a,o)=>a+o.sessions.length,0)} Sessions`;
+  // Verhindert veraltete Suchergebnisse: bisher wurde die Suche nach einer Datenänderung (z.B. Session
+  // bearbeitet, Ausrüstung umbenannt/gelöscht) nur aktualisiert, wenn die Suchansicht GENAU IN DIESEM
+  // MOMENT sichtbar war. Änderungen aus einer anderen Ansicht heraus (z.B. Einstellungen) ließen die
+  // Suchergebnisse mit veralteten Zeilen (falsche Kamera-Beschriftung, oder ein "data-idx", das nach
+  // einem Löschvorgang plötzlich auf eine andere Session zeigt) stehen, bis man zufällig woanders erneut
+  // etwas änderte. Jetzt: sofort aktualisieren falls sichtbar, sonst beim nächsten Öffnen der Suche.
+  if(document.getElementById("view-search").classList.contains("active")) runFieldSearch();
+  else searchResultsStale = true;
 }
 
 let currentFilter = "all";
@@ -5685,13 +5823,8 @@ function renderObjectItem(o){
   const sorted = o.sessions.slice().sort((a,b)=> (a.dateStart||"").localeCompare(b.dateStart||""));
   const rows = sorted.map(s=>{
     const realIdx = o.sessions.indexOf(s);
-    const extras = [];
-    if(s.mosaicPanels) extras.push(`Mosaik: ${s.mosaicPanels} Panels`);
-    if(s.notes) extras.push(escapeHtml(s.notes));
-    const extraRow = extras.length
-      ? `<tr class="${s.needsReview?'needs-review':''}"><td colspan="6" style="color:var(--text-dim);font-size:.75rem;white-space:normal;overflow:visible">${extras.join(' · ')}</td></tr>` : '';
     const reviewRow = s.needsReview
-      ? `<tr class="needs-review"><td colspan="6" style="white-space:normal;overflow:visible"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="event.stopPropagation();dismissSessionReview('${o.id}', ${realIdx})">OK, geprüft</button><button class="small" onclick="event.stopPropagation();openSessionEditModal('${o.id}', ${realIdx})">Bearbeiten</button></div></td></tr>` : '';
+      ? `<tr class="needs-review"><td colspan="6" style="white-space:normal;overflow:visible"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="event.stopPropagation();dismissSessionReview(${jsAttr(o.id)}, ${realIdx})">OK, geprüft</button><button class="small" onclick="event.stopPropagation();openSessionEditModal(${jsAttr(o.id)}, ${realIdx})">Bearbeiten</button></div></td></tr>` : '';
     return `
     <tr class="session-row${s.needsReview?' needs-review':''}" data-obj-id="${o.id}" data-idx="${realIdx}">
       <td class="col-date">${fmtDate(s.dateStart)}${s.dateEnd?(' – '+fmtDate(s.dateEnd)):''}</td>
@@ -5699,9 +5832,9 @@ function renderObjectItem(o){
       <td class="col-scope">${escapeHtml(sessionTelescopeBrand(s))}</td>
       <td class="col-camera">${escapeHtml(sessionCameraShort(s))}</td>
       ${photoCellHtml(o.id, realIdx, s)}
-      <td class="col-eye"><button class="eye-btn" onclick="event.stopPropagation();openSessionDetailModal('${o.id}',${realIdx})" title="Details anzeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></td>
+      <td class="col-eye"><button class="eye-btn" onclick="event.stopPropagation();openSessionDetailModal(${jsAttr(o.id)},${realIdx})" title="Details anzeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></td>
     </tr>
-    ${extraRow}${reviewRow}`;
+    ${reviewRow}`;
   }).join("");
   return `
   <div class="obj-item${isOpen?' open':''}" data-id="${o.id}">
@@ -5718,7 +5851,7 @@ function renderObjectItem(o){
     </div>
     <div class="obj-body">
       ${o.description?`<div class="obj-desc${descOpen?' open':''}" id="desc-${o.id}">${escapeHtml(o.description)}</div>`:''}
-      ${o.needsReview?`<div class="review-panel"><span>${escapeHtml(o.reviewNote||'Objektangaben bitte prüfen.')}</span><button class="small" onclick="dismissObjectReview('${o.id}')">OK, geprüft</button><button class="small" onclick="openObjectEditModal('${o.id}')">Bearbeiten</button></div>`:''}
+      ${o.needsReview?`<div class="review-panel"><span>${escapeHtml(o.reviewNote||'Objektangaben bitte prüfen.')}</span><button class="small" onclick="dismissObjectReview(${jsAttr(o.id)})">OK, geprüft</button><button class="small" onclick="openObjectEditModal(${jsAttr(o.id)})">Bearbeiten</button></div>`:''}
       <div style="overflow-x:auto">
       <table class="sessions tbl-obj">
         <thead><tr><th class="col-date">Datum</th><th class="col-loc">Ort</th><th class="col-scope" title="Teleskop">Tel.</th><th class="col-camera">Kam.</th><th class="col-photo"></th><th class="col-eye"></th></tr></thead>
@@ -5726,8 +5859,8 @@ function renderObjectItem(o){
       </table>
       </div>
       <div class="obj-actions">
-        <button class="small icon-only-btn" title="Weitere Session für dieses Objekt" onclick="prefillAddForObject('${o.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-        <button class="small icon-only-btn" title="Objekt bearbeiten" onclick="openObjectEditModal('${o.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></button>
+        <button class="small icon-only-btn" title="Weitere Session für dieses Objekt" onclick="prefillAddForObject(${jsAttr(o.id)})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+        <button class="small icon-only-btn" title="Objekt bearbeiten" onclick="openObjectEditModal(${jsAttr(o.id)})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></button>
       </div>
     </div>
   </div>`;
@@ -5736,6 +5869,13 @@ function renderObjectItem(o){
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+// Für Werte, die in ein inline onclick-Attribut als JS-String-Literal eingebettet werden (z.B. IDs aus
+// importierten/synchronisierten JSON-Daten, die nicht zwingend über slugify() laufen): escapeHtml() allein
+// reicht hier NICHT, da der Browser HTML-Entities im Attributwert VOR der JS-Auswertung dekodiert – ein
+// eingeschleustes &#39; würde also wieder zu einem echten ' und könnte so aus dem String ausbrechen.
+// JSON.stringify() liefert ein korrekt escapetes JS-String-Literal (inkl. eigener Anführungszeichen);
+// escapeHtml() darüber schützt zusätzlich das umgebende HTML-Attribut selbst.
+function jsAttr(v){ return escapeHtml(JSON.stringify(v)); }
 
 /* ======================= CSV-EXPORT ======================= */
 function csvEscape(v){
@@ -5828,6 +5968,11 @@ document.getElementById("btn-new").addEventListener("click", ()=>{
 ["fs-camera","fs-telescope"].forEach(id=>{
   document.getElementById(id).addEventListener("change", runFieldSearch);
 });
+document.getElementById("btn-search-reset").addEventListener("click", ()=>{
+  ["fs-object","fs-location","fs-year","fs-iso"].forEach(id=>{ document.getElementById(id).value = ""; });
+  ["fs-camera","fs-telescope"].forEach(id=>{ document.getElementById(id).value = ""; });
+  runFieldSearch();
+});
 function runFieldSearch(){
   const qObj = document.getElementById("fs-object").value.trim().toLowerCase();
   const qLoc = document.getElementById("fs-location").value.trim().toLowerCase();
@@ -5849,7 +5994,10 @@ function runFieldSearch(){
     o.sessions.forEach((s,idx)=>{
       if(qLoc && !(s.location||"").toLowerCase().includes(qLoc)) return;
       if(qYear && !(s.dateStart||"").startsWith(qYear)) return;
-      if(qCamera && s.cameraId !== qCamera) return;
+      // Erst per ID vergleichen (präzise, auch wenn zwei Kameras zufällig denselben Anzeigetext haben),
+      // und nur als Fallback per Anzeigetext (für Legacy-Sessions ohne cameraId, die die Kamera nur über
+      // den Default-Fallbacktext referenzieren).
+      if(qCamera && s.cameraId !== qCamera && sessionCameraShort(s) !== equipLabel("cameras", getCamera(qCamera))) return;
       if(qTelescope && s.telescopeId !== qTelescope) return;
       if(qIso && String(s.iso||"") !== qIso) return;
       rows.push({o, s, idx});
@@ -5871,7 +6019,7 @@ function runFieldSearch(){
       <td class="col-scope">${escapeHtml(sessionTelescopeBrand(r.s))}</td>
       <td class="col-camera">${escapeHtml(sessionCameraShort(r.s))}</td>
       ${photoCellHtml(r.o.id, r.idx, r.s)}
-      <td class="col-eye"><button class="eye-btn" onclick="event.stopPropagation();openSessionDetailModal('${r.o.id}',${r.idx})" title="Details anzeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></td>
+      <td class="col-eye"><button class="eye-btn" onclick="event.stopPropagation();openSessionDetailModal(${jsAttr(r.o.id)},${r.idx})" title="Details anzeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></td>
     </tr>`;
     }).join("")}</tbody>
   </table></div>`;
@@ -5903,10 +6051,25 @@ function refreshCatalogIndex(){
         .filter(Boolean).join(" ").toLowerCase()
     });
   });
+  // Manche Objekte decken mehrere Katalognummern zugleich ab (z.B. ein "Leo Triplet"-Summenobjekt mit
+  // catalog.messier = "M65/M66", catalog.ngc = "NGC 3623/3627/3628") - ohne diese Aufsplittung wurde
+  // "M65"/"M66" trotz bereits vorhandenem Objekt weiterhin als "noch nicht angelegt" in der
+  // Katalog-Suche vorgeschlagen, was zu doppelt angelegten Objekten führen konnte.
+  function splitDesignationGroup(raw){
+    const parts = String(raw).split("/").map(s=>s.trim()).filter(Boolean);
+    if(parts.length<2) return parts;
+    // Bei gruppierten NGC-Angaben trägt oft nur der erste Teil das "NGC "-Präfix -> auf die anderen übertragen.
+    const prefixMatch = parts[0].match(/^([A-Za-z]+)\s*/);
+    const prefix = prefixMatch ? prefixMatch[1] : "";
+    return parts.map(p => /^[A-Za-z]/.test(p) ? p : (prefix ? `${prefix} ${p}` : p));
+  }
   const existingDesignations = new Set();
   DB.objects.forEach(o=>{
     const c=o.catalog||{};
-    [c.messier,c.ngc,c.ic].forEach(v=>{ if(v) existingDesignations.add(String(v).toLowerCase()); });
+    [c.messier,c.ngc,c.ic].forEach(v=>{
+      if(!v) return;
+      splitDesignationGroup(v).forEach(d=>existingDesignations.add(d.toLowerCase()));
+    });
   });
   Object.entries(MESSIER_LOOKUP).forEach(([num,[name,type,con]])=>{
     const desig = "M"+num;
@@ -5932,7 +6095,7 @@ const searchInput = document.getElementById("add-object-search");
 const catalogResults = document.getElementById("catalog-results");
 
 function resetNewObjectFields(){
-  ["no-display","no-messier","no-ngc","no-ic","no-const","no-common","no-ra","no-dec"]
+  ["no-display","no-messier","no-ngc","no-ic","no-const","no-common","no-ra","no-dec","no-desc"]
     .forEach(id=>{ document.getElementById(id).value = ""; });
   document.getElementById("no-type").value = "galaxy";
   document.getElementById("messier-autofill-hint").hidden = true;
@@ -6003,6 +6166,9 @@ function selectCatalogEntry(entry){
 function prefillAddForObject(id){
   const o = DB.objects.find(x=>x.id===id);
   if(!o) return;
+  // Verhindert, dass Session-Felder (Datum/Ort/Frames/Notizen/Foto), die für einen zuvor abgebrochenen
+  // "neues Objekt anlegen"-Vorgang eingetippt wurden, stillschweigend an dieses (andere) Objekt hängen.
+  clearAddForm();
   document.getElementById("add-view-title").textContent = `Neue Session: ${o.displayName}`;
   switchView("add");
   searchInput.value = o.displayName;
@@ -6040,29 +6206,76 @@ document.getElementById("btn-close-add").addEventListener("click", ()=>{
 
 document.getElementById("btn-save-session").addEventListener("click", async ()=>{
   const statusEl = document.getElementById("add-status");
+  const saveBtn = document.getElementById("btn-save-session");
+  if(saveBtn.disabled) return; // verhindert doppelt angelegte Sessions/Objekte bei Doppelklick / langsamem Upload
   const dateStart = document.getElementById("s-date-start").value;
+  const dateEndVal = document.getElementById("s-date-end").value || null;
   const location = document.getElementById("s-location").value.trim();
   const frames = parseFloat(document.getElementById("s-frames").value);
   const exposureSec = parseFloat(document.getElementById("s-exposure").value);
   const iso = parseInt(document.getElementById("s-iso").value);
-  if(!dateStart || !location || !frames || !exposureSec || !iso){
-    statusEl.innerHTML = `<div class="banner warn">Bitte Pflichtfelder ausfüllen: Datum, Ort, Anzahl Fotos, Belichtungszeit, ISO.</div>`;
+  if(!dateStart || !location || !frames || !exposureSec || !iso || frames<0 || exposureSec<0){
+    statusEl.innerHTML = `<div class="banner warn">Bitte Pflichtfelder ausfüllen: Datum, Ort, Anzahl Fotos, Belichtungszeit, ISO (jeweils positive Werte).</div>`;
     return;
   }
+  // Siehe Kommentar bei btn-save-session-edit: ein Enddatum vor dem Startdatum ergäbe einen verwirrenden,
+  // rückwärtslaufenden Zeitraum in der Anzeige (sessionDateRangeLabel()).
+  if(dateEndVal && dateEndVal < dateStart){
+    statusEl.innerHTML = `<div class="banner warn">Das Enddatum darf nicht vor dem Startdatum liegen.</div>`;
+    return;
+  }
+  // Zielobjekt-ID VOR dem Fotoupload bestimmen (inkl. Kollisions-Suffix bei neuem Objekt) – vorher wurde
+  // hier ein Foto unter der noch nicht eindeutig gemachten Roh-ID (slugify(display) ohne "-2"/"-3"-Suffix)
+  // hochgeladen, während die Session am Ende an der TATSÄCHLICH eindeutigen ID hing: Bei einer Namens-
+  // kollision landete das Foto dadurch am falschen/fremden Objekt-Pfad. Ebenso wird der "kein Anzeigename"-
+  // Fehler jetzt VOR dem Upload geprüft, statt erst danach – sonst blieb ein bereits hochgeladenes, nie
+  // referenziertes Foto verwaist auf GitHub liegen, wenn der Anzeigename fehlte.
+  let targetObjId = matchedObjectId;
+  let newObjDisplay = null;
+  if(!targetObjId){
+    newObjDisplay = document.getElementById("no-display").value.trim();
+    if(!newObjDisplay){
+      statusEl.innerHTML = `<div class="banner warn">Bitte einen Anzeigenamen für das neue Objekt angeben.</div>`;
+      return;
+    }
+    const baseId = slugify(newObjDisplay);
+    targetObjId = baseId;
+    let suffix = 2;
+    while(DB.objects.some(o=>o.id===targetObjId)){ targetObjId = `${baseId}-${suffix++}`; }
+    // Ohne diese Prüfung machte ein Tippfehler oder ein Wert außerhalb des gültigen Bereichs das Objekt
+    // stillschweigend unsichtbar auf der Sternkarte, ohne jede Rückmeldung beim Speichern.
+    const noRa = document.getElementById("no-ra").value.trim();
+    const noDec = document.getElementById("no-dec").value.trim();
+    if(noRa){
+      const raDeg = parseRaToDeg(noRa);
+      if(raDeg==null || raDeg<0 || raDeg>360){
+        statusEl.innerHTML = `<div class="banner warn">Rektaszension (RA) ungültig oder außerhalb des gültigen Bereichs – erwartetes Format z.B. "12h34m56s". Bitte korrigieren oder das Feld leer lassen.</div>`;
+        return;
+      }
+    }
+    if(noDec){
+      const decDeg = parseDecToDeg(noDec);
+      if(decDeg==null || decDeg<-90 || decDeg>90){
+        statusEl.innerHTML = `<div class="banner warn">Deklination (Dec) ungültig oder außerhalb des gültigen Bereichs (-90 bis +90) – erwartetes Format z.B. +12°34'56" oder -12°34'56". Bitte korrigieren oder das Feld leer lassen.</div>`;
+        return;
+      }
+    }
+  }
+  saveBtn.disabled = true; const saveBtnOrigText = saveBtn.textContent; saveBtn.textContent = "Speichern …";
   let uploadedPhoto = null;
   if(pendingAddPhoto){
-    const objIdForPhoto = matchedObjectId || slugify(document.getElementById("no-display").value.trim() || "objekt");
     try{
       if(CFG.owner && CFG.repo && CFG.token){
         statusEl.innerHTML = `<div class="banner info">Foto wird hochgeladen …</div>`;
-        const path = photoFilename(objIdForPhoto, dateStart);
-        const up = await githubUploadImage(path, pendingAddPhoto.base64, `Foto: ${objIdForPhoto} (${dateStart})`);
+        const path = photoFilename(targetObjId, dateStart);
+        const up = await githubUploadImage(path, pendingAddPhoto.base64, `Foto: ${targetObjId} (${dateStart})`);
         uploadedPhoto = { photoPath: up.path, photoSha: up.sha, photoDataUrl: null };
       }else{
         uploadedPhoto = { photoPath: null, photoSha: null, photoDataUrl: pendingAddPhoto.dataUrl };
       }
     }catch(err){
       statusEl.innerHTML = `<div class="banner warn">Foto-Upload fehlgeschlagen (${escapeHtml(err.message)}). Session wurde nicht gespeichert – bitte erneut versuchen.</div>`;
+      saveBtn.disabled = false; saveBtn.textContent = saveBtnOrigText;
       return;
     }
   }
@@ -6070,7 +6283,7 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
   const sTelescopeId = document.getElementById("s-telescope").value || null;
   const session = {
     ...(uploadedPhoto || {}),
-    dateStart, dateEnd: document.getElementById("s-date-end").value || null,
+    dateStart, dateEnd: dateEndVal,
     timeStart: document.getElementById("s-time-start").value || null,
     timeEnd: document.getElementById("s-time-end").value || null,
     location,
@@ -6096,18 +6309,14 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
     reviewNote: document.getElementById("s-review").checked ? "Manuell als zu prüfen markiert." : null,
   };
 
+  const isNewObject = !matchedObjectId;
   let targetObj = null;
   if(matchedObjectId){
     targetObj = DB.objects.find(o=>o.id===matchedObjectId);
   }else{
-    const display = document.getElementById("no-display").value.trim();
-    if(!display){
-      statusEl.innerHTML = `<div class="banner warn">Bitte einen Anzeigenamen für das neue Objekt angeben.</div>`;
-      return;
-    }
     targetObj = {
-      id: slugify(display),
-      displayName: display,
+      id: targetObjId,
+      displayName: newObjDisplay,
       catalog: {
         messier: document.getElementById("no-messier").value.trim() || null,
         ngc: document.getElementById("no-ngc").value.trim() || null,
@@ -6130,12 +6339,32 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
   }
   targetObj.sessions.push(session);
   statusEl.innerHTML = `<div class="banner info">speichere …</div>`;
-  const ok = await persist(`Neue Session: ${targetObj.displayName} (${dateStart})`);
-  statusEl.innerHTML = ok
-    ? `<div class="banner ok">Session für "${escapeHtml(targetObj.displayName)}" gespeichert.</div>`
-    : `<div class="banner warn">Lokal gespeichert, GitHub-Sync fehlgeschlagen (siehe oben).</div>`;
-  renderAll();
-  clearAddForm();
+  // try/finally: persist() kann synchron werfen (z.B. QuotaExceededError von localStorage bei großen
+  // Foto-DataURLs ohne GitHub-Sync) – ohne finally hätte das den Button dauerhaft gesperrt (kein Reload
+  // nötig, aber "Session speichern" wäre bis zum Neuladen der Seite tot gewesen).
+  try{
+    const ok = await persist(`Neue Session: ${targetObj.displayName} (${dateStart})`);
+    statusEl.innerHTML = ok
+      ? `<div class="banner ok">Session für "${escapeHtml(targetObj.displayName)}" gespeichert.</div>`
+      : `<div class="banner warn">Lokal gespeichert, GitHub-Sync fehlgeschlagen (siehe oben).</div>`;
+    renderAll();
+    clearAddForm();
+  }catch(err){
+    // Rollback der bereits vorgenommenen In-Memory-Änderungen: Ohne dies blieb targetObjId nach einem
+    // fehlgeschlagenen persist() (z.B. QuotaExceededError beim lokalen Speichern) trotzdem "belegt", da
+    // targetObj/session schon vorher in DB.objects gepusht wurden. Ein erneuter Klick auf "Speichern" mit
+    // denselben Formularwerten hätte dann fälschlich eine "-2"-Dublette angelegt statt denselben Namen
+    // wiederzuverwenden, weil slugify(displayName) plötzlich "schon vergeben" erschien.
+    const si = targetObj.sessions.lastIndexOf(session);
+    if(si !== -1) targetObj.sessions.splice(si, 1);
+    if(isNewObject){
+      const oi = DB.objects.indexOf(targetObj);
+      if(oi !== -1) DB.objects.splice(oi, 1);
+    }
+    statusEl.innerHTML = `<div class="banner warn">Speichern fehlgeschlagen (${escapeHtml(err.message)}). Bitte erneut versuchen.</div>`;
+  }finally{
+    saveBtn.disabled = false; saveBtn.textContent = saveBtnOrigText;
+  }
 });
 
 function clearAddForm(){
@@ -6164,12 +6393,25 @@ function clearAddForm(){
 /* ======================= NAV / VIEWS ======================= */
 function switchView(name){
   if(name==="export-btn"){ exportCsv(); return; }
+  // Verlässt der Nutzer die Karten-Ansicht über die Hauptnavigation (statt über den 2D/AR-Umschalter),
+  // lief die Kamera + Sensor-Listener + requestAnimationFrame-Schleife bisher unbemerkt im Hintergrund
+  // weiter (Akku-/CPU-Verbrauch, Kamera-Indikator bleibt an) – switchView prüfte mapMode nie.
+  if(name!=="map" && mapMode==='ar'){
+    // Kamera/Sensoren/Zeichenschleife stoppen UND sauber auf 2D zurückschalten (Video/Canvas-Sichtbarkeit,
+    // Umschalter-Chip), damit beim nächsten Öffnen der Karte kein kaputter Zwischenzustand übrig bleibt
+    // und drawARFrame()s requestAnimationFrame-Schleife (die sich nur über mapMode!=='ar' selbst beendet)
+    // nicht unbemerkt endlos weiterläuft.
+    document.querySelectorAll('[data-mapmode]').forEach(c=>c.classList.toggle('active', c.dataset.mapmode==='2d'));
+    mapMode = '2d';
+    setMapMode('2d');
+  }
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav.tabbar button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
   const navBtn = document.querySelector(`nav.tabbar button[data-view="${name}"]`);
   if(navBtn) navBtn.classList.add("active");
   if(name==="map") initMapViewOnce();
+  if(name==="search" && searchResultsStale){ runFieldSearch(); searchResultsStale = false; }
 }
 document.querySelectorAll("nav.tabbar button").forEach(b=>{
   b.addEventListener("click", ()=>switchView(b.dataset.view));
@@ -6258,7 +6500,7 @@ document.getElementById("import-file").addEventListener("change", async (e)=>{
 });
 
 /* ======================= DOCS CONTENT ======================= */
-document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong>. Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n<p style=\"color:var(--text-faint);font-size:.78rem\">Diese Version von <code>index.html</code> wurde erstellt am: <strong>18.08.2026, 20:04 UTC</strong></p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"repoOwner\": \"string|undefined – GitHub-Benutzer/Org, gesetzt sobald Sync konfiguriert wurde\",\n  \"repoName\": \"string|undefined – GitHub-Repo-Name\",\n  \"repoBranch\": \"string|undefined – Branch, i.d.R. \\\"main\\\"\",\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n<p><code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code> werden automatisch beim Speichern der Sync-Einstellungen in <code>data.json</code> geschrieben (nicht nur lokal im Browser). Grund: Foto-URLs (siehe Abschnitt 22) werden daraus gebaut, damit Fotos auch auf einem Gerät korrekt angezeigt werden, auf dem die Sync-Einstellungen noch nicht lokal eingerichtet sind.</p>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>timeStart</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmebeginns, optional. Bei Altdaten/vergangenen Sessions meist leer; gedacht v.a. für geplante zukünftige Aufnahmen</td></tr>\n<tr><td><code>timeEnd</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmeendes, optional</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Brennweite in mm, falls im Ordnernamen angegeben</td></tr>\n<tr><td><code>camera</code></td><td>string</td><td>Verwendete Kamera, Freitext. Voreingestellt „Fujifilm XT-30\" beim Anlegen neuer Sessions</td></tr>\n<tr><td><code>filter</code></td><td>string|null</td><td>Verwendeter Filter (z.B. Optolong L-Pro), optional</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>calibration</code></td><td>object</td><td><code>{used: boolean, darks: number|null, flats: number|null, biases: number|null}</code> – ob und wie viele Kalibrierbilder aufgenommen wurden</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n<tr><td><code>photoPath</code></td><td>string|null</td><td>Relativer Pfad im Repo zum hochgeladenen Astrofoto dieser Session, z.B. <code>images/m31-20260817-a1b2c3.jpg</code> (siehe Abschnitt 22). Nur gesetzt, wenn Sync konfiguriert ist.</td></tr>\n<tr><td><code>photoSha</code></td><td>string|null</td><td>Git-Blob-SHA der Fotodatei, benötigt von der GitHub API zum Ersetzen/Löschen der Datei</td></tr>\n<tr><td><code>photoDataUrl</code></td><td>string|null</td><td>Base64-Data-URI des Fotos, nur als lokaler Fallback gesetzt, wenn kein Sync konfiguriert ist (siehe Abschnitt 22)</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n\n<h3>13. Kategorien in der Übersicht</h3>\n<p>Die Objektliste ist nach <code>type</code> in feste Kategorien gruppiert: Nebel (<code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>), Galaxien (<code>galaxy</code>, <code>galaxy_group</code>), Sternhaufen (<code>open_cluster</code>, <code>globular_cluster</code>), Exoplaneten (<code>exoplanet</code>), Kometen (<code>comet</code>), Objekte des Solarsystems (<code>planet</code>, <code>moon</code>), Konstellationen (<code>constellation</code>, <code>asterism</code>, <code>milkyway</code>) sowie eine Sonstiges-Kategorie als Auffangbecken (<code>star</code>, <code>double_star</code>, <code>mosaic</code>, <code>other</code>). Die Zuordnung erfolgt automatisch anhand von <code>type</code>, ist also nicht separat in <code>data.json</code> gespeichert.</p>\n<p>Zum Filtern steht oben der Button „Alle\" sowie ein Dropdown zur Auswahl genau einer Kategorie zur Verfügung (gegenseitig exklusiv: Auswahl einer Kategorie deaktiviert „Alle\" und umgekehrt). Objekte bzw. Sessions mit ungeprüften Angaben bleiben weiterhin über das gelbe Warndreieck direkt in der Liste erkennbar, auch ohne einen eigenen Filter-Chip dafür.</p>\n\n<h3>14. Suche</h3>\n<p>Über das Lupen-Symbol oben rechts öffnet sich eine eigene Suchansicht mit den Feldern Objekt, Ort der Aufnahme, Jahr der Aufnahme, Brennweite und ISO. Treffer werden – anders als in der Übersicht – als flache Liste einzelner Sessions ohne Kategorie-Gruppierung angezeigt, da hier auf Session-Ebene gefiltert wird.</p>\n\n<h3>15. Bearbeiten &amp; Löschen</h3>\n<p>Unterhalb der Session-Tabelle eines Objekts befinden sich zwei Icon-Buttons: ein Plus (weitere Session für dieses Objekt anlegen) und ein Schraubenschlüssel (Objekt bearbeiten). Das Löschen eines Objekts erfolgt nicht mehr über einen eigenen Button in der Liste, sondern über „Objekt löschen\" innerhalb des Bearbeiten-Dialogs. Einzelne Sessions werden nicht direkt in der Tabelle bearbeitet, sondern über das Augensymbol bzw. Klick auf eine Tabellenzeile geöffnet (siehe Abschnitt 23) – von dort führt ein Bearbeiten-Symbol zum eigentlichen Bearbeiten-Dialog inkl. „Session löschen\". Löschen fragt vorher per Bestätigungsdialog nach. Änderungen werden wie neue Sessions über <code>persist()</code> lokal gespeichert und – falls konfiguriert – zu GitHub synchronisiert.</p>\n\n<h3>16. Sternkarte – Zoom &amp; Verschieben</h3>\n<p>Die 2D-Himmelskarte lässt sich zoomen und verschieben: am Desktop per Mausrad (Zoom zentriert auf die Cursor-Position) sowie per Maus-Drag zum Verschieben; am Handy per Zwei-Finger-Pinch-Geste (Zoom zentriert auf den Mittelpunkt der beiden Finger) und Ein-Finger-Wischen zum Verschieben. Auch die AR-Kamera-Ansicht lässt sich per Pinch/Wisch zoomen und verschieben (rein visuell per CSS-Transform auf Video- und Overlay-Ebene, ohne die zugrundeliegende Projektion zu verändern).</p>\n<p>Der Button „Jetzt\" setzt das Datum/Zeit-Feld auf den aktuellen Zeitpunkt (sichtbar als Bestätigung im Feld); die Positionsberechnung selbst folgt ohnehin laufend der echten Uhrzeit, solange kein abweichender Zeitpunkt manuell im Feld eingetragen ist. Nach erfolgreicher Standortermittlung („Standort ermitteln\") erscheint neben dem Button ein kleines blaues Häkchen als Bestätigung, dass Koordinaten empfangen wurden.</p>\n\n<h3>17. Header-Buttons &amp; Export</h3>\n<p>Oben rechts befinden sich drei Icon-Buttons: Lupe (Suche, siehe Abschnitt 14), Plus („Neues Objekt eintragen\" – öffnet das Formular; wird ein bestehendes Objekt aus dem Katalogindex ausgewählt, wechselt die Überschrift zu „Neue Session: &lt;Objektname&gt;\", da dann eine weitere Session für dieses Objekt angelegt wird) und Zahnrad (Einstellungen). Über den Button „Export\" in der unteren Navigationsleiste lässt sich die komplette Datenbank als CSV-Datei herunterladen (eine Zeile pro Session, inkl. Objekt, Kategorie, Katalognummern und allen Session-Feldern – auch Kamera, Filter, Uhrzeiten und Kalibrierbilder; Semikolon-getrennt mit UTF-8-BOM für direkte Excel-Kompatibilität). Über „Doku\" in derselben Navigationsleiste öffnet sich diese Dokumentation als eigene, vollwertige Ansicht (kein schließbares Fenster) – Zurück geht über einen anderen Tab in derselben Navigationsleiste.</p>\n\n<h3>18. AR-Kamera – Sternbildlinien</h3>\n<p>Neben den bereits fotografierten Objekten zeigt die AR-Kamera-Ansicht zusätzlich den eingebetteten Sternkatalog mit Konstellationslinien an (dieselbe Datengrundlage wie die 2D-Karte), projiziert anhand von Kompass und Neigungssensor – als zusätzliche Orientierungshilfe beim Wiedererkennen von Sternbildern.</p>\n\n<h3>19. Astronomy Picture of the Day – Fallback-Foto</h3>\n<p>Kann das tagesaktuelle NASA-Bild nicht geladen werden (z.B. kein Internetzugriff, Rate-Limit erreicht), zeigt die App stattdessen automatisch ein fest in <code>index.html</code> eingebettetes eigenes Astrofoto (Data-URI, kein externer Abruf nötig) mit Hinweis-Text. Datum/Quelle-Zeile und Erklärungstext sind sowohl beim echten APOD als auch beim Fallback-Foto standardmäßig eingeklappt und erscheinen erst nach Klick auf das „i\"-Symbol.</p>\n\n<h3>20. Kategorie beim Bearbeiten einer Session</h3>\n<p>Da die Kategorie (Nebel, Galaxie, …) technisch am Objekt hängt (Feld <code>type</code>, siehe Abschnitt 5), nicht an der einzelnen Session, lässt sie sich zur Vereinfachung direkt im Bearbeiten-Dialog einer Session mit ändern – die Änderung wirkt sich auf das gesamte Objekt (und damit auf alle seine Sessions) aus.</p>\n\n<h3>21. Gesamtbelichtungszeit</h3>\n<p>Die in jedem Objekt-Eintrag angezeigte Gesamtbelichtungszeit (Summe aus <code>sessions[].frames * sessions[].exposureSec</code> über alle Sessions) wird in Stunden und Minuten kombiniert dargestellt (z.B. „3 h 24 min\"), bei unter einer Stunde nur in Minuten.</p>\n\n<h3>22. Foto pro Session</h3>\n<p>Jede Session kann genau ein aufgenommenes Astrofoto besitzen (kein Galerie-Konzept, ein Foto pro Session). Beim Anlegen einer neuen Session oder beim Bearbeiten einer bestehenden Session lässt sich über ein Datei-Feld ein Foto auswählen – am Desktop alternativ auch per Drag&amp;Drop direkt auf das gestrichelte Feld gezogen; die App verkleinert es clientseitig automatisch (längste Kante max. 2000px, JPEG-Qualität 0,82) bevor es gespeichert wird, um Repo-Größe und Sync-Dauer klein zu halten. Existiert zu einer Session ein Foto, wird es oben in der Detailansicht dieser Session angezeigt (siehe Abschnitt 23); ein Klick darauf öffnet es groß in einem Overlay.</p>\n<p><strong>Speicherort:</strong> Ist GitHub-Sync konfiguriert, wird das komprimierte Foto als eigene Datei in einen Ordner <code>images/</code> im Repo hochgeladen (per GitHub Contents API, <code>PUT /repos/{owner}/{repo}/contents/images/{dateiname}.jpg</code>) – der Ordner wird beim ersten Foto-Upload automatisch angelegt, kein manuelles Setup nötig. In <code>data.json</code> wird nur der relative Pfad (<code>photoPath</code>) und die Blob-SHA (<code>photoSha</code>) referenziert, nicht das Bild selbst – so bleibt <code>data.json</code> klein und schnell synchronisierbar. Angezeigt wird das Foto direkt über <code>https://raw.githubusercontent.com/{repoOwner}/{repoName}/{repoBranch}/{photoPath}</code> (siehe Abschnitt 2 zu <code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code>), ohne Token, da dies nur bei einem öffentlichen Repo funktioniert (wie es für kostenlose GitHub Pages ohnehin vorausgesetzt ist).</p>\n<p><strong>Ohne Sync:</strong> Ist kein GitHub-Sync eingerichtet, wird das komprimierte Foto stattdessen als Base64-Data-URI direkt im Feld <code>photoDataUrl</code> der Session gespeichert (nur lokal im Browser via <code>localStorage</code>, analog zum sonstigen Offline-Verhalten der App).</p>\n<p><strong>Ersetzen/Löschen:</strong> Wird ein Foto ersetzt oder entfernt, wird die alte Datei im Repo per <code>DELETE /repos/{owner}/{repo}/contents/{photoPath}</code> best-effort gelöscht (schlägt der Löschversuch fehl, z.B. wegen fehlender Berechtigung, wird das ignoriert und nur eine Konsolenwarnung ausgegeben, ohne den eigentlichen Vorgang zu blockieren). Wird eine Session mit Foto gelöscht, wird ebenso versucht, die zugehörige Bilddatei im Repo zu entfernen.</p>\n\n<h3>23. Session-Tabelle &amp; Detailansicht</h3>\n<p>Die Session-Tabelle innerhalb eines aufgeklappten Objekts zeigt bewusst nur vier Spalten: Datum, Ort, Brennweite („f\") und Kamera („Kam.\"). Ganz rechts befindet sich pro Zeile ein Augensymbol; ein Klick darauf (oder auf die Zeile selbst) öffnet ein nicht bearbeitbares Detail-Popup mit allen Angaben zur Session: Name des Objekts, alternative Bezeichnungen (Katalognummern + Eigenname), Sternbild, Zeitraum der Aufnahme (inkl. Uhrzeiten, sofern eingetragen), Brennweite (mit deutscher Tausendertrennung, z.B. „1.000 mm\"), Kamera, Filter, Anzahl Fotos, Belichtungszeit pro Foto, Gesamtbelichtungszeit (Anzahl × Belichtungszeit), Kalibrierbilder (ja/nein inkl. Anzahl Darks/Flats/Biases), ISO sowie – falls vorhanden – das Session-Foto. Oben im Popup befindet sich ein Bearbeiten-Symbol (Schraubenschlüssel), das das Popup schließt und direkt den bearbeitbaren Session-Dialog mit denselben Feldern öffnet.</p>\n<p>Die Spaltenbreiten sind über beide Session-Tabellen (Objekt-Detail und Suchergebnisse) hinweg als Prozentwerte der jeweiligen Tabellenbreite definiert (nicht als feste Pixel-/em-Werte), damit die Tabelle stets die volle verfügbare Breite ausfüllt und nicht wie zuvor nur einen Teil davon.</p>\n\n<h3>24. Kein Pinch-Zoom der Gesamt-App</h3>\n<p>Die App unterbindet über das Viewport-Meta-Tag (<code>maximum-scale=1, user-scalable=no</code>) das versehentliche Vergrößern/Verkleinern der gesamten Seite per Zwei-Finger-Geste am Handy. Die eigene Pinch-Zoom-Funktion der Sternkarte und der AR-Kamera-Ansicht (siehe Abschnitt 16) ist davon unabhängig und funktioniert weiterhin, da sie über eigene Touch-Event-Handler auf dem Karten-Canvas realisiert ist, nicht über den Browser-Viewport.</p>\n";
+document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong>. Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n<p style=\"color:var(--text-faint);font-size:.78rem\">Diese Version von <code>index.html</code> wurde erstellt am: <strong>18.08.2026, 21:32 UTC</strong></p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"repoOwner\": \"string|undefined – GitHub-Benutzer/Org, gesetzt sobald Sync konfiguriert wurde\",\n  \"repoName\": \"string|undefined – GitHub-Repo-Name\",\n  \"repoBranch\": \"string|undefined – Branch, i.d.R. \\\"main\\\"\",\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n<p><code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code> werden automatisch beim Speichern der Sync-Einstellungen in <code>data.json</code> geschrieben (nicht nur lokal im Browser). Grund: Foto-URLs (siehe Abschnitt 22) werden daraus gebaut, damit Fotos auch auf einem Gerät korrekt angezeigt werden, auf dem die Sync-Einstellungen noch nicht lokal eingerichtet sind.</p>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>timeStart</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmebeginns, optional. Bei Altdaten/vergangenen Sessions meist leer; gedacht v.a. für geplante zukünftige Aufnahmen</td></tr>\n<tr><td><code>timeEnd</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmeendes, optional</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>telescopeId</code></td><td>string|null</td><td>Verweist auf einen Eintrag in <code>DB.equipment.telescopes</code> (siehe Abschnitt 25). Aktueller, primärer Weg, ein Teleskop zuzuordnen</td></tr>\n<tr><td><code>cameraId</code></td><td>string|null</td><td>Verweist auf einen Eintrag in <code>DB.equipment.cameras</code> (siehe Abschnitt 25). Aktueller, primärer Weg, eine Kamera zuzuordnen</td></tr>\n<tr><td><code>mountId</code></td><td>string|null</td><td>Verweist auf einen Eintrag in <code>DB.equipment.mounts</code> (siehe Abschnitt 25)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Nur noch als <strong>Legacy-Fallback</strong> relevant: manuell erfasste Brennweite in mm für Sessions ohne <code>telescopeId</code> (bzw. ohne im Teleskop-Katalogeintrag hinterlegte Brennweite). Ist ein Teleskop mit Brennweite verknüpft, hat dessen Wert Vorrang</td></tr>\n<tr><td><code>camera</code></td><td>string|null</td><td><strong>Legacy-Freitext</strong> aus der Zeit vor der Ausrüstungsverwaltung (Abschnitt 25). Nur noch für ältere Sessions ohne <code>cameraId</code> relevant, in denen die Kamera nicht eindeutig aus dem Katalog übernommen wurde. Wird beim Bearbeiten einer solchen Session nur überschrieben/gelöscht, wenn im Bearbeiten-Dialog aktiv eine andere Kamera ausgewählt wird</td></tr>\n<tr><td><code>filter</code></td><td>string|null</td><td>Verwendeter Filter (z.B. Optolong L-Pro), optional</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>calibration</code></td><td>object</td><td><code>{used: boolean, darks: number|null, flats: number|null, biases: number|null}</code> – ob und wie viele Kalibrierbilder aufgenommen wurden</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n<tr><td><code>photoPath</code></td><td>string|null</td><td>Relativer Pfad im Repo zum hochgeladenen Astrofoto dieser Session, z.B. <code>images/m31-20260817-a1b2c3.jpg</code> (siehe Abschnitt 22). Nur gesetzt, wenn Sync konfiguriert ist.</td></tr>\n<tr><td><code>photoSha</code></td><td>string|null</td><td>Git-Blob-SHA der Fotodatei, benötigt von der GitHub API zum Ersetzen/Löschen der Datei</td></tr>\n<tr><td><code>photoDataUrl</code></td><td>string|null</td><td>Base64-Data-URI des Fotos, nur als lokaler Fallback gesetzt, wenn kein Sync konfiguriert ist (siehe Abschnitt 22)</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n\n<h3>13. Kategorien in der Übersicht</h3>\n<p>Die Objektliste ist nach <code>type</code> in feste Kategorien gruppiert: Nebel (<code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>), Galaxien (<code>galaxy</code>, <code>galaxy_group</code>), Sternhaufen (<code>open_cluster</code>, <code>globular_cluster</code>), Exoplaneten (<code>exoplanet</code>), Kometen (<code>comet</code>), Objekte des Solarsystems (<code>planet</code>, <code>moon</code>), Konstellationen (<code>constellation</code>, <code>asterism</code>, <code>milkyway</code>) sowie eine Sonstiges-Kategorie als Auffangbecken (<code>star</code>, <code>double_star</code>, <code>mosaic</code>, <code>other</code>). Die Zuordnung erfolgt automatisch anhand von <code>type</code>, ist also nicht separat in <code>data.json</code> gespeichert.</p>\n<p>Zum Filtern steht oben der Button „Alle\" sowie ein Dropdown zur Auswahl genau einer Kategorie zur Verfügung (gegenseitig exklusiv: Auswahl einer Kategorie deaktiviert „Alle\" und umgekehrt). Objekte bzw. Sessions mit ungeprüften Angaben bleiben weiterhin über das gelbe Warndreieck direkt in der Liste erkennbar, auch ohne einen eigenen Filter-Chip dafür.</p>\n\n<h3>14. Suche</h3>\n<p>Über das Lupen-Symbol oben rechts öffnet sich eine eigene Suchansicht mit den Feldern Objekt, Ort der Aufnahme, Jahr der Aufnahme, ISO sowie Dropdowns für Kamera und Teleskop (befüllt aus <code>DB.equipment</code>, siehe Abschnitt 25). Treffer werden – anders als in der Übersicht – als flache Liste einzelner Sessions ohne Kategorie-Gruppierung angezeigt, da hier auf Session-Ebene gefiltert wird. Ein „Zurücksetzen\"-Button leert alle Filterfelder auf einmal. Der Kamera-Filter vergleicht zuerst <code>cameraId</code>; nur wenn eine Session keine <code>cameraId</code> hat (Legacy-Daten), wird ersatzweise die angezeigte Kamerabezeichnung verglichen.</p>\n\n<h3>15. Bearbeiten &amp; Löschen</h3>\n<p>Unterhalb der Session-Tabelle eines Objekts befinden sich zwei Icon-Buttons: ein Plus (weitere Session für dieses Objekt anlegen) und ein Schraubenschlüssel (Objekt bearbeiten). Das Löschen eines Objekts erfolgt nicht mehr über einen eigenen Button in der Liste, sondern über „Objekt löschen\" innerhalb des Bearbeiten-Dialogs. Einzelne Sessions werden nicht direkt in der Tabelle bearbeitet, sondern über das Augensymbol bzw. Klick auf eine Tabellenzeile geöffnet (siehe Abschnitt 23) – von dort führt ein Bearbeiten-Symbol zum eigentlichen Bearbeiten-Dialog inkl. „Session löschen\". Löschen fragt vorher per Bestätigungsdialog nach. Änderungen werden wie neue Sessions über <code>persist()</code> lokal gespeichert und – falls konfiguriert – zu GitHub synchronisiert.</p>\n\n<h3>16. Sternkarte – Zoom &amp; Verschieben</h3>\n<p>Die 2D-Himmelskarte lässt sich zoomen und verschieben: am Desktop per Mausrad (Zoom zentriert auf die Cursor-Position) sowie per Maus-Drag zum Verschieben; am Handy per Zwei-Finger-Pinch-Geste (Zoom zentriert auf den Mittelpunkt der beiden Finger) und Ein-Finger-Wischen zum Verschieben. Auch die AR-Kamera-Ansicht lässt sich per Pinch/Wisch zoomen und verschieben (rein visuell per CSS-Transform auf Video- und Overlay-Ebene, ohne die zugrundeliegende Projektion zu verändern).</p>\n<p>Der Button „Jetzt\" setzt das Datum/Zeit-Feld auf den aktuellen Zeitpunkt (sichtbar als Bestätigung im Feld); die Positionsberechnung selbst folgt ohnehin laufend der echten Uhrzeit, solange kein abweichender Zeitpunkt manuell im Feld eingetragen ist. Nach erfolgreicher Standortermittlung („Standort ermitteln\") erscheint neben dem Button ein kleines blaues Häkchen als Bestätigung, dass Koordinaten empfangen wurden.</p>\n\n<h3>17. Header-Buttons &amp; Export</h3>\n<p>Oben rechts befinden sich drei Icon-Buttons: Lupe (Suche, siehe Abschnitt 14), Plus („Neues Objekt eintragen\" – öffnet das Formular; wird ein bestehendes Objekt aus dem Katalogindex ausgewählt, wechselt die Überschrift zu „Neue Session: &lt;Objektname&gt;\", da dann eine weitere Session für dieses Objekt angelegt wird) und Zahnrad (Einstellungen, inkl. Ausrüstungsverwaltung, siehe Abschnitt 25). Über den Button „Export\" in der unteren Navigationsleiste lässt sich die komplette Datenbank als CSV-Datei herunterladen (eine Zeile pro Session, inkl. Objekt, Kategorie, Katalognummern und allen Session-Feldern – auch Teleskop, Kamera, Nachführung, Filter, Uhrzeiten und Kalibrierbilder; Semikolon-getrennt mit UTF-8-BOM für direkte Excel-Kompatibilität). Über „Doku\" in derselben Navigationsleiste öffnet sich diese Dokumentation als eigene, vollwertige Ansicht (kein schließbares Fenster) – Zurück geht über einen anderen Tab in derselben Navigationsleiste.</p>\n\n<h3>18. AR-Kamera – Sternbildlinien</h3>\n<p>Neben den bereits fotografierten Objekten zeigt die AR-Kamera-Ansicht zusätzlich den eingebetteten Sternkatalog mit Konstellationslinien an (dieselbe Datengrundlage wie die 2D-Karte), projiziert anhand von Kompass und Neigungssensor – als zusätzliche Orientierungshilfe beim Wiedererkennen von Sternbildern.</p>\n\n<h3>19. Astronomy Picture of the Day – Fallback-Foto</h3>\n<p>Kann das tagesaktuelle NASA-Bild nicht geladen werden (z.B. kein Internetzugriff, Rate-Limit erreicht), zeigt die App stattdessen automatisch ein fest in <code>index.html</code> eingebettetes eigenes Astrofoto (Data-URI, kein externer Abruf nötig) mit Hinweis-Text. Datum/Quelle-Zeile und Erklärungstext sind sowohl beim echten APOD als auch beim Fallback-Foto standardmäßig eingeklappt und erscheinen erst nach Klick auf das „i\"-Symbol.</p>\n\n<h3>20. Kategorie beim Bearbeiten einer Session</h3>\n<p>Da die Kategorie (Nebel, Galaxie, …) technisch am Objekt hängt (Feld <code>type</code>, siehe Abschnitt 5), nicht an der einzelnen Session, lässt sie sich zur Vereinfachung direkt im Bearbeiten-Dialog einer Session mit ändern – die Änderung wirkt sich auf das gesamte Objekt (und damit auf alle seine Sessions) aus.</p>\n\n<h3>21. Gesamtbelichtungszeit</h3>\n<p>Die in jedem Objekt-Eintrag angezeigte Gesamtbelichtungszeit (Summe aus <code>sessions[].frames * sessions[].exposureSec</code> über alle Sessions) wird in Stunden und Minuten kombiniert dargestellt (z.B. „3 h 24 min\"), bei unter einer Stunde nur in Minuten.</p>\n\n<h3>22. Foto pro Session</h3>\n<p>Jede Session kann genau ein aufgenommenes Astrofoto besitzen (kein Galerie-Konzept, ein Foto pro Session). Beim Anlegen einer neuen Session oder beim Bearbeiten einer bestehenden Session lässt sich über ein Datei-Feld ein Foto auswählen – am Desktop alternativ auch per Drag&amp;Drop direkt auf das gestrichelte Feld gezogen; die App verkleinert es clientseitig automatisch (längste Kante max. 2000px, JPEG-Qualität 0,82) bevor es gespeichert wird, um Repo-Größe und Sync-Dauer klein zu halten. Existiert zu einer Session ein Foto, wird es oben in der Detailansicht dieser Session angezeigt (siehe Abschnitt 23); ein Klick darauf öffnet es groß in einem Overlay.</p>\n<p><strong>Speicherort:</strong> Ist GitHub-Sync konfiguriert, wird das komprimierte Foto als eigene Datei in einen Ordner <code>images/</code> im Repo hochgeladen (per GitHub Contents API, <code>PUT /repos/{owner}/{repo}/contents/images/{dateiname}.jpg</code>) – der Ordner wird beim ersten Foto-Upload automatisch angelegt, kein manuelles Setup nötig. In <code>data.json</code> wird nur der relative Pfad (<code>photoPath</code>) und die Blob-SHA (<code>photoSha</code>) referenziert, nicht das Bild selbst – so bleibt <code>data.json</code> klein und schnell synchronisierbar. Angezeigt wird das Foto direkt über <code>https://raw.githubusercontent.com/{repoOwner}/{repoName}/{repoBranch}/{photoPath}</code> (siehe Abschnitt 2 zu <code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code>), ohne Token, da dies nur bei einem öffentlichen Repo funktioniert (wie es für kostenlose GitHub Pages ohnehin vorausgesetzt ist).</p>\n<p><strong>Ohne Sync:</strong> Ist kein GitHub-Sync eingerichtet, wird das komprimierte Foto stattdessen als Base64-Data-URI direkt im Feld <code>photoDataUrl</code> der Session gespeichert (nur lokal im Browser via <code>localStorage</code>, analog zum sonstigen Offline-Verhalten der App).</p>\n<p><strong>Ersetzen/Löschen:</strong> Wird ein Foto ersetzt oder entfernt, wird die alte Datei im Repo per <code>DELETE /repos/{owner}/{repo}/contents/{photoPath}</code> best-effort gelöscht (schlägt der Löschversuch fehl, z.B. wegen fehlender Berechtigung, wird das ignoriert und nur eine Konsolenwarnung ausgegeben, ohne den eigentlichen Vorgang zu blockieren). Wird eine Session mit Foto gelöscht, wird ebenso versucht, die zugehörige Bilddatei im Repo zu entfernen.</p>\n\n<h3>23. Session-Tabelle &amp; Detailansicht</h3>\n<p>Die Session-Tabelle innerhalb eines aufgeklappten Objekts zeigt bewusst nur vier inhaltliche Spalten: Datum, Ort, Teleskop („Tel.\", Markenname) und Kamera („Kam.\"). Rechts daneben folgen zwei Icon-Spalten: ein Kamerasymbol (nur sichtbar, wenn die Session ein Foto hat – öffnet direkt die Vollbild-Fotoansicht) und ganz rechts ein Augensymbol; ein Klick darauf (oder auf die Zeile selbst) öffnet ein nicht bearbeitbares Detail-Popup mit allen Angaben zur Session: Name des Objekts, alternative Bezeichnungen (Katalognummern + Eigenname), Sternbild, Zeitraum der Aufnahme (inkl. Uhrzeiten, sofern eingetragen), Aufnahmeort, Teleskop (voller Name), Brennweite (mit deutscher Tausendertrennung, z.B. „1.000 mm\" – Wert aus dem verknüpften Teleskop-Katalogeintrag, sonst Legacy-Fallback, siehe Abschnitt 25), Nachführung, Kamera (voller Name), Filter, Anzahl Fotos, Belichtungszeit pro Foto, Gesamtbelichtungszeit (Anzahl × Belichtungszeit), Kalibrierbilder (ja/nein inkl. Anzahl Darks/Flats/Biases), ISO, bei Mosaik-Sessions zusätzlich die Anzahl Panels, sowie zuletzt ein freies Kommentarfeld (Feld <code>notes</code>). Das Session-Foto selbst wird hier NICHT angezeigt (siehe Kamerasymbol in der Tabelle oben). Oben im Popup befindet sich ein Bearbeiten-Symbol (Schraubenschlüssel), das das Popup schließt und direkt den bearbeitbaren Session-Dialog mit denselben Feldern öffnet.</p>\n<p>Der separate gelbe Review-Hinweis („OK, geprüft\" / „Bearbeiten\"), der bei Bedarf direkt unter der Session-Tabelle eines Objekts erscheint, ist ein eigenständiges Feature (Felder <code>needsReview</code>/<code>reviewNote</code>, siehe Abschnitt 7) und unabhängig vom oben genannten Kommentarfeld <code>notes</code>.</p>\n<p>Die Spaltenbreiten sind über beide Session-Tabellen (Objekt-Detail und Suchergebnisse) hinweg als Prozentwerte der jeweiligen Tabellenbreite definiert (nicht als feste Pixel-/em-Werte), damit die Tabelle stets die volle verfügbare Breite ausfüllt und nicht wie zuvor nur einen Teil davon.</p>\n\n<h3>24. Kein Pinch-Zoom der Gesamt-App</h3>\n<p>Die App unterbindet über das Viewport-Meta-Tag (<code>maximum-scale=1, user-scalable=no</code>) das versehentliche Vergrößern/Verkleinern der gesamten Seite per Zwei-Finger-Geste am Handy. Die eigene Pinch-Zoom-Funktion der Sternkarte und der AR-Kamera-Ansicht (siehe Abschnitt 16) ist davon unabhängig und funktioniert weiterhin, da sie über eigene Touch-Event-Handler auf dem Karten-Canvas realisiert ist, nicht über den Browser-Viewport.</p>\n\n<h3>25. Ausrüstungsverwaltung (Kameras, Teleskope, Nachführungen)</h3>\n<p>Neben den Objekten/Sessions verwaltet <code>data.json</code> zusätzlich <code>DB.equipment = {cameras: [...], telescopes: [...], mounts: [...]}</code> – eine kleine, in den Einstellungen (Zahnrad-Symbol) frei bearbeitbare Stammdatenliste der eigenen Ausrüstung. Jeder Eintrag hat eine eindeutige <code>id</code> plus je nach Kategorie eigene Felder (Kamera: Marke, Modell, Typ, Pixelgröße, gekühlt ja/nein; Teleskop: Marke, Modell, Bauart, Öffnung, Brennweite, Öffnungsverhältnis; Nachführung: Marke, Modell, Montierungsart, Goto ja/nein). In den Einstellungen lassen sich Einträge hinzufügen, direkt inline bearbeiten und entfernen (mit Bestätigungsabfrage).</p>\n<p>Sessions verweisen über <code>cameraId</code>/<code>telescopeId</code>/<code>mountId</code> (siehe Abschnitt 4) auf diese Liste; die entsprechenden Beschriftungen (z.B. \"Fujifilm XT-30\" oder \"Skywatcher N 200/1000\") werden daraus überall live zusammengesetzt, statt als Freitext in jeder Session dupliziert zu werden. Wird ein Ausrüstungseintrag umbenannt, aktualisieren sich dadurch automatisch alle Sessions, die darauf verweisen. Wird ein Eintrag entfernt, bleiben Sessions, die noch seine ID referenzieren, nicht kaputt – die Anzeige fällt dann auf „–\" bzw. (bei Kameras) auf den Legacy-Freitext bzw. eine Standardkamera zurück (siehe <code>camera</code>-Feld, Abschnitt 4); die Session-Daten selbst werden beim Entfernen eines Ausrüstungseintrags nicht verändert.</p>\n<p>Ältere, vor Einführung dieser Ausrüstungsverwaltung angelegte Sessions haben keine <code>cameraId</code>/<code>telescopeId</code>/<code>mountId</code>. Beim Öffnen des Bearbeiten-Dialogs einer solchen Session zeigen die Dropdowns dafür eine <em>geratene</em> Vorauswahl (Standardkamera bzw. „ohne Nachführung\") an, rein damit das Dropdown nicht leer ist – wird diese Vorauswahl nicht aktiv geändert, bleibt die Session weiterhin ohne feste ID (und ein eventuell vorhandener Legacy-Freitext in <code>camera</code> bleibt erhalten), damit ein bloßes Öffnen-und-wieder-Speichern einer alten Session nicht versehentlich eine falsche Kamera zuweist.</p>\n";
 
 /* ======================= STAR MAP ======================= */
 let mapMode = "2d";
@@ -6376,11 +6618,25 @@ function parseDecToDeg(dec){
   return sign*(d + mi/60 + se/3600);
 }
 
+// Ergebnis wird nach DB.generatedAt (von persist() bei jeder Änderung hochgezählt) gecacht: die AR-Ansicht
+// ruft diese Funktion sonst bei ~60 Bildern/Sekunde auf und parst dabei jedes Mal erneut alle RA/Dec-Strings
+// per Regex neu – unnötige Arbeit, da sich raDeg/decDeg zwischen zwei Datenänderungen nie ändern (nur die
+// daraus abgeleitete Alt/Az-Position ändert sich pro Frame, und die wird an anderer Stelle live berechnet).
+let _photographedTargetsCache = null, _photographedTargetsCacheKey = null;
+// Cache-Key kombiniert generatedAt mit Objektanzahl + Repo-Identität statt nur generatedAt allein: die
+// eingebauten SEED_DATA haben ein fest einkompiliertes, nie aktualisiertes generatedAt - ein Wechsel zu
+// einem anderen, ebenfalls nie gespeicherten Datensatz (z.B. Demo-Repo ohne Sync) mit zufällig demselben
+// Zeitstempel hätte sonst die alten (falschen) Ziele weiterverwendet. Der zusammengesetzte Key macht eine
+// echte Kollision praktisch ausgeschlossen, ohne die Cache-Logik selbst zu verkomplizieren.
 function getPhotographedTargets(){
-  return DB.objects.filter(o=>o.ra && o.dec).map(o=>{
+  const key = `${DB.generatedAt}|${DB.objects.length}|${DB.repoOwner||''}|${DB.repoName||''}`;
+  if(_photographedTargetsCache && _photographedTargetsCacheKey === key) return _photographedTargetsCache;
+  _photographedTargetsCache = DB.objects.filter(o=>o.ra && o.dec).map(o=>{
     const raDeg = parseRaToDeg(o.ra), decDeg = parseDecToDeg(o.dec);
     return {obj:o, raDeg, decDeg};
   }).filter(t=>t.raDeg!=null && t.decDeg!=null);
+  _photographedTargetsCacheKey = key;
+  return _photographedTargetsCache;
 }
 
 /* ---- 2D Fisheye-Himmelskarte (Zenit = Mitte, Horizont = Rand) ---- */
@@ -6433,7 +6689,12 @@ function drawSky2D(){
   });
 
   // fotografierte Objekte
-  getPhotographedTargets().forEach(t=>{
+  // WICHTIG: getPhotographedTargets() nur EINMAL aufrufen und dasselbe Array für Klick-Hittest
+  // wiederverwenden – es erzeugt bei jedem Aufruf neue Objekt-Instanzen, daher ging die hier gesetzte
+  // t._screen-Position beim zweiten Aufruf (für window._mapTargets) verloren und Klicks auf Objekte
+  // in der Sternkarte taten dadurch nie etwas.
+  const targets = getPhotographedTargets();
+  targets.forEach(t=>{
     const {alt,az} = raDecToAltAz(t.raDeg, t.decDeg, userLat, userLon, date);
     if(alt < -5) return;
     const p = project(Math.max(alt,-5), az);
@@ -6445,7 +6706,7 @@ function drawSky2D(){
     ctx.fillText(t.obj.displayName.split(' (')[0], p.x+7, p.y+3);
     t._screen = p;
   });
-  window._mapTargets = getPhotographedTargets();
+  window._mapTargets = targets;
   ctx.setTransform(1,0,0,1,0,0);
 }
 
@@ -6476,6 +6737,14 @@ setInterval(()=>{ if(mapMode==='2d' && document.getElementById('view-map').class
 
 /* ---- Zoom & Pan (Maus-Rad am Desktop, Pinch/Pan per Touch am Handy) ---- */
 function clampMapZoom(z){ return Math.max(1, Math.min(6, z)); }
+// Verhindert, dass die Sternkarte durch wiederholtes Verschieben komplett aus dem sichtbaren Bereich
+// wandert (es gibt keine "Ansicht zurücksetzen"-Taste) – ohne Begrenzung wäre die Karte dann nur noch
+// per Reload wiederherstellbar.
+function clampMapPan(px, py){
+  const canvas = document.getElementById('skyCanvas');
+  const maxPan = Math.max(canvas.width, canvas.height) * mapZoom;
+  return { x: Math.max(-maxPan, Math.min(maxPan, px)), y: Math.max(-maxPan, Math.min(maxPan, py)) };
+}
 function zoomMapAt(px, py, factor){
   const canvas = document.getElementById('skyCanvas');
   const cx = canvas.width/2, cy = canvas.height/2;
@@ -6486,6 +6755,8 @@ function zoomMapAt(px, py, factor){
   mapPanX = px - newZoom*baseX - cx*(1-newZoom);
   mapPanY = py - newZoom*baseY - cy*(1-newZoom);
   mapZoom = newZoom;
+  const clamped = clampMapPan(mapPanX, mapPanY);
+  mapPanX = clamped.x; mapPanY = clamped.y;
   drawSky2D();
 }
 function mapCanvasPoint(canvas, clientX, clientY){
@@ -6523,8 +6794,8 @@ skyCanvasEl.addEventListener('touchmove', e=>{
     mapTouchState.dist = newDist;
   }else if(mapTouchState.mode==='pan' && e.touches.length===1){
     const p = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
-    mapPanX += (p.x - mapTouchState.last.x);
-    mapPanY += (p.y - mapTouchState.last.y);
+    const clamped = clampMapPan(mapPanX + (p.x - mapTouchState.last.x), mapPanY + (p.y - mapTouchState.last.y));
+    mapPanX = clamped.x; mapPanY = clamped.y;
     mapTouchState.last = p;
     drawSky2D();
   }
@@ -6547,7 +6818,8 @@ window.addEventListener('mousemove', e=>{
   const dx = p.x - sky2DDrag.last.x, dy = p.y - sky2DDrag.last.y;
   if(Math.abs(dx) > 1 || Math.abs(dy) > 1){
     if(!sky2DDrag.moved){ sky2DDrag.moved = true; skyCanvasEl.classList.add('dragging'); }
-    mapPanX += dx; mapPanY += dy;
+    const clamped = clampMapPan(mapPanX + dx, mapPanY + dy);
+    mapPanX = clamped.x; mapPanY = clamped.y;
     sky2DDrag.last = p;
     drawSky2D();
   }
@@ -6564,7 +6836,13 @@ window.addEventListener('mouseup', ()=>{
 let arStream = null, arOrientationHandler = null;
 let deviceHeading = null, devicePitch = null;
 
+let arStarting = false; // verhindert, dass ein zweiter (z.B. Doppeltipp-ausgelöster) startAR()-Aufruf
+                         // vor Abschluss des ersten (während der Berechtigungsabfrage) läuft und dabei
+                         // dessen Kamera-Stream verwaist bzw. eine zweite requestAnimationFrame-Schleife startet
+let arLoopRunning = false; // stellt sicher, dass drawARFrame() nur eine einzige rAF-Kette am Laufen hat
 async function startAR(){
+  if(arStarting) return;
+  arStarting = true;
   const status = document.getElementById('map-status');
   if(userLat==null){ userLat=52.52; userLon=13.405; }
   resetArTransform();
@@ -6580,11 +6858,13 @@ async function startAR(){
     window.addEventListener('deviceorientation', arOrientationHandler, true);
     status.className = 'banner ok';
     status.textContent = 'AR aktiv – Handy in den Himmel halten. Kompass-basiert, nicht teleskop-präzise. Mit zwei Fingern zoomen, mit einem Finger verschieben.';
-    requestAnimationFrame(drawARFrame);
+    if(!arLoopRunning){ arLoopRunning = true; requestAnimationFrame(drawARFrame); }
   }catch(e){
     status.className = 'banner warn';
     status.textContent = 'AR nicht verfügbar: ' + e.message + ' (Kamera/Sensor-Zugriff nötig, funktioniert nur über HTTPS auf dem Handy).';
     document.querySelector('[data-mapmode="2d"]').click();
+  }finally{
+    arStarting = false;
   }
 }
 function stopAR(){
@@ -6609,11 +6889,19 @@ function resetArTransform(){ arZoom=1; arPanX=0; arPanY=0; applyArTransform(); }
 
 let arTouchState = null;
 const mapWrapEl = document.getElementById('map-wrap');
+// Baseline für den Pinch-Zoom neu berechnen (aus den ERSTEN beiden aktuell aktiven Fingern). Wird bei
+// jedem Wechsel der Fingeranzahl auf >=2 aufgerufen (nicht nur beim allerersten touchstart) – sonst blieb
+// die Basis-Distanz stehen, wenn z.B. ein 3. Finger dazukam und danach einer der ursprünglichen beiden
+// abgehoben wurde: die nächste touchmove-Berechnung verglich dann zwei Finger, die nie zusammen die
+// Ausgangsdistanz gebildet hatten -> sichtbarer Zoom-Sprung.
+function rebaseArPinch(touches){
+  const d = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY);
+  arTouchState = {mode:'pinch', dist:d, zoomStart:arZoom};
+}
 mapWrapEl.addEventListener('touchstart', e=>{
   if(mapMode!=='ar') return;
-  if(e.touches.length===2){
-    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-    arTouchState = {mode:'pinch', dist:d, zoomStart:arZoom};
+  if(e.touches.length>=2){
+    rebaseArPinch(e.touches);
   }else if(e.touches.length===1){
     arTouchState = {mode:'pan', lastX:e.touches[0].clientX, lastY:e.touches[0].clientY};
   }
@@ -6635,21 +6923,82 @@ mapWrapEl.addEventListener('touchmove', e=>{
 mapWrapEl.addEventListener('touchend', e=>{
   if(e.touches.length===0) arTouchState = null;
   else if(e.touches.length===1) arTouchState = {mode:'pan', lastX:e.touches[0].clientX, lastY:e.touches[0].clientY};
+  else if(e.touches.length>=2) rebaseArPinch(e.touches); // z.B. 3->2 Finger: Basis auf verbliebenes Paar neu setzen
 });
+// Korrekte Kompass-Umrechnung aus alpha/beta/gamma (statt der naiven "360-alpha"-Formel,
+// die nur stimmt, wenn das Handy flach auf dem Tisch liegt). Beim AR-Modus wird das Handy
+// aber typischerweise hochkant Richtung Himmel gehalten (beta≈70-160°) – dort führt die
+// naive Formel zu spürbar falschen/instabilen Werten genau dann, wenn man das Handy bewegt/kippt,
+// was sich als "Hakeln" der Sterne äußert. Diese Formel berücksichtigt die volle Lage des Geräts.
+function computeCompassHeading(alpha, beta, gamma){
+  const aRad = alpha*Math.PI/180, bRad = beta*Math.PI/180, gRad = gamma*Math.PI/180;
+  const cA = Math.cos(aRad), sA = Math.sin(aRad);
+  const cB = Math.cos(bRad), sB = Math.sin(bRad);
+  const cG = Math.cos(gRad), sG = Math.sin(gRad);
+  const rA = -cA*sG - sA*sB*cG;
+  const rB = -sA*sG + cA*sB*cG;
+  // Bei gamma≈0 UND beta≈0 zugleich (Handy exakt flach, z.B. kurz beim Anheben vom Tisch) wird diese
+  // Formel numerisch instabil (0/0). Statt hier einen wild schwankenden/NaN-Wert zu liefern, lieber
+  // gar keinen neuen Wert liefern und den zuletzt bekannten Kompasswert beibehalten.
+  if(Math.abs(rA) < 1e-6 && Math.abs(rB) < 1e-6) return null;
+  let heading = Math.atan(rA/rB);
+  if(rB<0) heading += Math.PI;
+  else if(rA<0) heading += 2*Math.PI;
+  const deg = heading*180/Math.PI;
+  return isNaN(deg) ? null : (deg + 360) % 360;
+}
+// Exponentielle Glättung (Tiefpassfilter) gegen Sensorrauschen/Jitter der Rohsensordaten.
+function smoothAngleDeg(prev, next, alpha){
+  if(prev==null || isNaN(prev)) return next;
+  const diff = ((next - prev + 540) % 360) - 180; // kürzester Weg, -180..180
+  return (prev + diff*alpha + 360) % 360;
+}
+function smoothLinear(prev, next, alpha){
+  if(prev==null || isNaN(prev)) return next;
+  return prev + (next-prev)*alpha;
+}
+let arHaveAbsolute = false; // sobald echte 'deviceorientationabsolute'-Events kommen, werden die (evtl. nur relativen) 'deviceorientation'-Events ignoriert
 function onDeviceOrientation(e){
-  let heading;
-  if(typeof e.webkitCompassHeading === 'number'){ heading = e.webkitCompassHeading; }
-  else if(e.absolute && e.alpha!=null){ heading = 360 - e.alpha; }
-  else if(e.alpha!=null){ heading = 360 - e.alpha; }
-  if(heading!=null) deviceHeading = (heading+360)%360;
-  if(e.beta!=null) devicePitch = e.beta - 90; // Handy vertikal (Kamera Richtung Horizont) → beta≈90 → Pitch 0; Richtung Zenit gekippt → beta→180 → Pitch steigt
+  // Manche Android-Browser feuern 'deviceorientation' UND 'deviceorientationabsolute' parallel,
+  // teils mit unterschiedlichen Referenzrahmen (absolut vs. relativ zur Startausrichtung). Werden
+  // beide gemischt in dieselben Variablen geschrieben, springt der Kompasswert bei jeder Bewegung
+  // zwischen zwei widersprüchlichen Werten hin und her – genau das erzeugte das gemeldete "Hakeln".
+  // Fix: sobald einmal ein echtes 'deviceorientationabsolute'-Event ankam, gewinnt dieses immer.
+  if(e.type === 'deviceorientationabsolute'){ arHaveAbsolute = true; }
+  else if(arHaveAbsolute && !e.absolute){ return; }
+
+  let heading = null;
+  if(typeof e.webkitCompassHeading === 'number'){
+    heading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten Kompasswert
+  }else if(e.alpha!=null && e.beta!=null && e.gamma!=null){
+    heading = computeCompassHeading(e.alpha, e.beta, e.gamma);
+  }
+  if(heading!=null){
+    deviceHeading = smoothAngleDeg(deviceHeading, (heading+360)%360, 0.25);
+  }
+  if(e.beta!=null){
+    // Handy vertikal (Kamera Richtung Horizont) → beta≈90 → Pitch 0; Richtung Zenit gekippt → beta→180 → Pitch steigt
+    devicePitch = smoothLinear(devicePitch, e.beta - 90, 0.25);
+  }
 }
 function drawARFrame(){
-  if(mapMode!=='ar') return;
+  if(mapMode!=='ar'){ arLoopRunning = false; return; }
+  // Der komplette Zeichenkörper steckt in try/catch: eine unerwartete Exception mitten im Frame
+  // (z.B. defekte Sternkatalog-Daten, Canvas kurzzeitig ohne Kontext) durfte früher verhindern, dass
+  // das abschließende requestAnimationFrame(drawARFrame) überhaupt erreicht wird – die Schleife blieb
+  // dann endgültig stehen und arLoopRunning hing für immer auf true, sodass auch ein erneuter
+  // startAR()-Aufruf (Guard "if(!arLoopRunning)") die Schleife nie wieder in Gang setzte (nur ein
+  // vollständiger Seiten-Reload half). Jetzt wird die Schleife in jedem Fall (Erfolg oder Fehler)
+  // fortgesetzt, ein Fehler wird nur einmal in die Konsole geloggt statt die App stillzulegen.
+  try{
   const canvas = document.getElementById('arCanvas');
   const video = document.getElementById('arVideo');
-  canvas.width = video.videoWidth || canvas.clientWidth;
-  canvas.height = video.videoHeight || canvas.clientHeight;
+  // canvas.width/height nur bei tatsächlicher Änderung neu setzen: jede Zuweisung (auch auf denselben
+  // Wert) leert den Canvas-Speicher und zwingt den Browser zu einer Neuallokation – bei ~60 Aufrufen/s
+  // war das auf schwächeren Handys ein spürbarer Performance-Faktor (Ruckeln bei Bewegung).
+  const vw = video.videoWidth || canvas.clientWidth, vh = video.videoHeight || canvas.clientHeight;
+  if(canvas.width !== vw) canvas.width = vw;
+  if(canvas.height !== vh) canvas.height = vh;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(deviceHeading!=null && devicePitch!=null){
@@ -6701,6 +7050,9 @@ function drawARFrame(){
     ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='13px sans-serif'; ctx.textAlign='center';
     ctx.fillText('Warte auf Sensordaten … Handy bewegen.', canvas.width/2, canvas.height/2);
   }
+  }catch(err){
+    console.error('drawARFrame: Fehler im AR-Frame, Schleife läuft trotzdem weiter', err);
+  }
   requestAnimationFrame(drawARFrame);
 }
 
@@ -6708,7 +7060,10 @@ function drawARFrame(){
 async function loadApod(){
   const el = document.getElementById('apod-card');
   el.innerHTML = `<div style="padding:1em;color:var(--text-dim)">Astronomy Picture of the Day wird geladen …</div>`;
-  const todayKey = new Date().toISOString().slice(0,10);
+  // Lokales Datum statt UTC (new Date().toISOString() ist immer UTC) – sonst bleibt der Cache für Nutzer
+  // östlich von UTC noch stundenlang nach ihrer eigenen lokalen Mitternacht auf dem Bild von "gestern" stehen.
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   try{
     let cached = null;
     try{ cached = JSON.parse(localStorage.getItem('apod_cache_v1')||'null'); }catch(e){}
@@ -6717,14 +7072,22 @@ async function loadApod(){
       apod = cached.data;
     }else{
       const key = CFG.nasaKey || 'DEMO_KEY';
-      const r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}`);
+      // Timeout, damit eine hängende (nicht fehlschlagende, sondern nie antwortende) Verbindung nicht
+      // dauerhaft im "wird geladen …"-Zustand stecken bleibt.
+      const controller = new AbortController();
+      const timeoutId = setTimeout(()=>controller.abort(), 12000);
+      let r;
+      try{
+        r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}`, {signal: controller.signal});
+      }finally{ clearTimeout(timeoutId); }
       if(!r.ok) throw new Error('Abruf fehlgeschlagen (' + r.status + ')');
       apod = await r.json();
+      if(!apod || typeof apod.url !== 'string') throw new Error('Unerwartete Antwort der NASA-API (kein Bild-URL enthalten).');
       localStorage.setItem('apod_cache_v1', JSON.stringify({date:todayKey, data:apod}));
     }
     renderApod(apod);
   }catch(e){
-    renderApodFallback(e.message);
+    renderApodFallback(e.name === 'AbortError' ? 'Zeitüberschreitung beim Abruf' : e.message);
   }
 }
 function renderApod(apod){
