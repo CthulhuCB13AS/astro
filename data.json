@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:03:39.603Z",
+  "generatedAt": "2026-08-18T14:03:53.548Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -647,8 +647,8 @@
           "isMosaicSummary": true,
           "notes": "Nur Monat (März 2026) im Ordnernamen angegeben, exaktes Startdatum geschätzt (1. des Monats).",
           "rawFolderName": "202603_Mosaik_Bundesplatz 17_1257 pcs_30\"_800",
-          "needsReview": true,
-          "reviewNote": "Summenordner für ein 17-teiliges Mosaik über mehrere Nächte im März 2026 (1257 Frames gesamt). Einzelne Nächte/Panel-Daten nicht aus dem Ordnernamen ablesbar – bitte falls gewünscht einzeln ergänzen."
+          "needsReview": false,
+          "reviewNote": null
         }
       ]
     },
