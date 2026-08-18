@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T16:02:16.806Z",
+  "generatedAt": "2026-08-18T16:06:58.597Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1764,10 +1764,10 @@
           "camera": "Fujifilm XT-30",
           "filter": null,
           "calibration": {
-            "used": false,
-            "darks": null,
-            "flats": null,
-            "biases": null
+            "used": true,
+            "darks": 20,
+            "flats": 20,
+            "biases": 20
           }
         }
       ]
