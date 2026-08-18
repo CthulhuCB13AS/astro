@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:04:54.073Z",
+  "generatedAt": "2026-08-18T14:04:58.610Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -993,8 +993,8 @@
           "isMosaicSummary": false,
           "notes": null,
           "rawFolderName": "20250302_Bundesplatz_200pcs_60_160",
-          "needsReview": true,
-          "reviewNote": "Interpretiert als Belichtung 1/60 s, ISO 160 – bitte gegen Originalquelle prüfen."
+          "needsReview": false,
+          "reviewNote": null
         },
         {
           "dateStart": "2025-03-02",
