@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T21:45:35.507Z",
+  "generatedAt": "2026-08-18T21:47:41.748Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -31,7 +31,7 @@
           "dateStart": "2026-08-14",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": 200,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 118,
           "exposureSec": 60,
@@ -41,7 +41,18 @@
           "notes": null,
           "rawFolderName": "20260814_Mahlsdorf_200mm_118 pcs_60\"_640",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
