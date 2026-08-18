@@ -40,13 +40,9 @@ label{display:block;font-size:.78rem;color:var(--text-dim);margin:0 0 .3em;font-
 .field{margin-bottom:.9em}
 .row{display:flex;gap:.7em;flex-wrap:wrap;align-items:flex-start}
 .row>.field{flex:1;min-width:140px}
-.row>.field label{min-height:2.5em}
 input[type=date]{min-width:0}
 .required-note{font-size:.72rem;color:var(--text-faint);margin:-.4em 0 .8em}
-@media (max-width:480px){
-  .row.date-row{flex-direction:column}
-  .row.date-row>.field{width:100%}
-}
+.row.date-row>.field{min-width:0}
 
 header.topbar{
   position:sticky;top:0;z-index:20;background:rgba(11,13,19,.92);backdrop-filter:blur(8px);
@@ -55,11 +51,11 @@ header.topbar{
 header.topbar .logo{font-size:1.15rem;font-weight:700;line-height:1.15}
 header.topbar .logo .sub{display:block;font-weight:400;color:var(--text-dim);font-size:.7rem}
 header.topbar .spacer{flex:1}
-header.topbar .icon-btn{
+.icon-btn{
   background:transparent;border:1px solid var(--border);border-radius:50%;width:2.2em;height:2.2em;
-  padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;flex:none;
+  padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--text);
 }
-header.topbar .icon-btn svg{width:1.1em;height:1.1em}
+.icon-btn svg{width:1.1em;height:1.1em}
 
 nav.tabbar{
   position:fixed;bottom:0;left:0;right:0;z-index:20;background:rgba(11,13,19,.97);
@@ -140,29 +136,32 @@ table.sessions{table-layout:fixed;width:100%;border-collapse:collapse;font-size:
 table.sessions th{text-align:left;color:var(--text-faint);font-weight:500;padding:.3em .5em;border-bottom:1px solid var(--border);white-space:normal;overflow-wrap:break-word;word-break:break-word;line-height:1.2;vertical-align:bottom}
 table.sessions td{padding:.55em .5em;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.sessions td.col-date{white-space:normal;overflow:visible;text-overflow:clip}
-table.sessions th.col-eye,table.sessions td.col-eye{padding-left:0;padding-right:.2em;text-align:right}
+table.sessions th.col-scope,table.sessions th.col-camera{white-space:nowrap}
+table.sessions th.col-photo,table.sessions td.col-photo,table.sessions th.col-eye,table.sessions td.col-eye{padding-left:.2em;padding-right:.2em;text-align:center}
 /* Objekt-Detail-Tabelle (kein Objekt-Spalte, mehr Platz für Ort) */
-table.sessions.tbl-obj th.col-date,table.sessions.tbl-obj td.col-date{width:26%}
-table.sessions.tbl-obj th.col-loc,table.sessions.tbl-obj td.col-loc{width:40%}
-table.sessions.tbl-obj th.col-focal,table.sessions.tbl-obj td.col-focal{width:12%}
-table.sessions.tbl-obj th.col-camera,table.sessions.tbl-obj td.col-camera{width:14%}
-table.sessions.tbl-obj th.col-eye,table.sessions.tbl-obj td.col-eye{width:8%}
+table.sessions.tbl-obj th.col-date,table.sessions.tbl-obj td.col-date{width:24%}
+table.sessions.tbl-obj th.col-loc,table.sessions.tbl-obj td.col-loc{width:28%}
+table.sessions.tbl-obj th.col-scope,table.sessions.tbl-obj td.col-scope{width:10%}
+table.sessions.tbl-obj th.col-camera,table.sessions.tbl-obj td.col-camera{width:20%}
+table.sessions.tbl-obj th.col-photo,table.sessions.tbl-obj td.col-photo{width:8%}
+table.sessions.tbl-obj th.col-eye,table.sessions.tbl-obj td.col-eye{width:10%}
 /* Such-Tabelle (mit zusätzlicher Objekt-Spalte) */
-table.sessions.tbl-search th.col-obj,table.sessions.tbl-search td.col-obj{width:22%}
-table.sessions.tbl-search th.col-date,table.sessions.tbl-search td.col-date{width:24%}
-table.sessions.tbl-search th.col-loc,table.sessions.tbl-search td.col-loc{width:18%}
-table.sessions.tbl-search th.col-focal,table.sessions.tbl-search td.col-focal{width:10%}
+table.sessions.tbl-search th.col-obj,table.sessions.tbl-search td.col-obj{width:18%}
+table.sessions.tbl-search th.col-date,table.sessions.tbl-search td.col-date{width:20%}
+table.sessions.tbl-search th.col-loc,table.sessions.tbl-search td.col-loc{width:16%}
+table.sessions.tbl-search th.col-scope,table.sessions.tbl-search td.col-scope{width:10%}
 table.sessions.tbl-search th.col-camera,table.sessions.tbl-search td.col-camera{width:18%}
-table.sessions.tbl-search th.col-eye,table.sessions.tbl-search td.col-eye{width:8%}
+table.sessions.tbl-search th.col-photo,table.sessions.tbl-search td.col-photo{width:8%}
+table.sessions.tbl-search th.col-eye,table.sessions.tbl-search td.col-eye{width:10%}
 table.sessions tr:last-child td{border-bottom:none}
 table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
 table.sessions tr.session-row{cursor:pointer}
 table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
-.eye-btn{
+.eye-btn,.photo-btn{
   background:transparent;border:none;color:var(--accent);cursor:pointer;padding:0;
   display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex:none;
 }
-.eye-btn svg{width:1.1em;height:1.1em}
+.eye-btn svg,.photo-btn svg{width:1.1em;height:1.1em}
 .review-note{font-size:.72rem;color:var(--warn);margin-top:.15em}
 .obj-actions{display:flex;gap:.5em;flex-wrap:wrap;margin-top:.7em}
 .icon-only-btn{display:inline-flex;align-items:center;justify-content:center;width:2.4em;height:2.4em;padding:0;flex:none}
@@ -173,10 +172,21 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 .dropzone.dragover{border-color:var(--accent);background:var(--accent-bg)}
 .dropzone input[type=file]{width:100%}
 .dropzone-hint{font-size:.7rem;color:var(--text-faint);margin-top:.4em;text-align:center}
-.modal.photo-modal{max-width:900px}
-#photo-modal-body{text-align:center}
-#photo-modal-body img{max-width:100%;max-height:78vh;border-radius:var(--radius)}
-#photo-modal-body .banner{text-align:left}
+#photo-modal{align-items:stretch;justify-content:stretch;padding:0;background:#000}
+.photo-fullscreen{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000}
+.photo-fullscreen .photo-close{
+  position:absolute;top:.9em;right:.9em;z-index:2;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);
+  color:#fff;border-radius:50%;width:2.4em;height:2.4em;display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;line-height:1;cursor:pointer;
+}
+#photo-modal-body{text-align:center;max-width:100%;max-height:100%}
+#photo-modal-body img{max-width:100vw;max-height:100vh;object-fit:contain;display:block}
+#photo-modal-body .banner{text-align:left;margin:1em}
+.eq-item{border:1px solid var(--border);border-radius:var(--radius);padding:.7em .7em .3em;margin-bottom:.7em;background:var(--bg3)}
+.eq-row{margin-bottom:0}
+.eq-row>.field{min-width:110px;margin-bottom:.6em}
+.eq-item .eq-remove{margin-bottom:.7em}
+.eq-add-row{margin:.3em 0 1.2em}
 
 .catalog-search{position:relative}
 .catalog-results{
@@ -338,20 +348,21 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       <div class="required-note">* Pflichtfeld</div>
       <div class="row date-row">
         <div class="field"><label>Datum (Start) *</label><input type="date" id="s-date-start"></div>
-        <div class="field"><label>Datum (Ende, optional bei Mehrnächter)</label><input type="date" id="s-date-end"></div>
+        <div class="field"><label>Datum (Ende, optional)</label><input type="date" id="s-date-end" title="Bei Mehrnächter"></div>
       </div>
       <div class="row date-row">
-        <div class="field"><label>Uhrzeit (Start, optional – z.B. für geplante zukünftige Aufnahmen)</label><input type="time" id="s-time-start"></div>
+        <div class="field"><label>Uhrzeit (Start, optional)</label><input type="time" id="s-time-start" title="Für geplante zukünftige Aufnahmen"></div>
         <div class="field"><label>Uhrzeit (Ende, optional)</label><input type="time" id="s-time-end"></div>
       </div>
       <div class="row">
         <div class="field"><label>Ort *</label><input id="s-location" placeholder="z.B. Bundesplatz, Mahlsdorf, Gomera …" list="location-datalist"><datalist id="location-datalist"></datalist></div>
-        <div class="field"><label>Brennweite (mm)</label><input type="number" id="s-focal" placeholder="optional"></div>
+        <div class="field"><label>Teleskop</label><select id="s-telescope"></select></div>
       </div>
       <div class="row">
-        <div class="field"><label>Kamera</label><input id="s-camera" placeholder="z.B. Fujifilm XT-30" value="Fujifilm XT-30"></div>
-        <div class="field"><label>Filter</label><input id="s-filter" placeholder="optional, z.B. Optolong L-Pro"></div>
+        <div class="field"><label>Kamera</label><select id="s-camera"></select></div>
+        <div class="field"><label>Nachführung</label><select id="s-mount"></select></div>
       </div>
+      <div class="field"><label>Filter</label><input id="s-filter" value="Omegon Pro CLS Filter"></div>
       <div class="row">
         <div class="field"><label>Anzahl Fotos *</label><input type="number" id="s-frames" placeholder="z.B. 120"></div>
         <div class="field"><label>Belichtungszeit pro Foto (s) *</label><input type="number" step="any" id="s-exposure" placeholder="z.B. 60"></div>
@@ -427,7 +438,7 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
     <div class="modal-head"><h2>Sync-Einstellungen</h2><button class="icon-btn" data-close="settings-modal">×</button></div>
     <div class="doc-content">
       <p>Für automatische Synchronisation zwischen Desktop und Handy wird <code>data.json</code> direkt in dein GitHub-Repo committet. Der Token wird ausschließlich lokal in diesem Browser gespeichert (<code>localStorage</code>) und nirgendwo sonst hin übertragen außer an <code>api.github.com</code>.</p>
-      <div class="field"><label>GitHub Benutzername/Organisation</label><input id="cfg-owner" placeholder="z.B. aracari"></div>
+      <div class="field"><label>GitHub Benutzername/Organisation</label><input id="cfg-owner" placeholder="z.B. Github-Name"></div>
       <div class="field"><label>Repository-Name</label><input id="cfg-repo" placeholder="z.B. astro-logbuch"></div>
       <div class="field"><label>Branch</label><input id="cfg-branch" placeholder="main" value="main"></div>
       <div class="field"><label>Personal Access Token (fine-grained, Contents: Read & Write)</label><input id="cfg-token" type="password" placeholder="github_pat_…"></div>
@@ -451,6 +462,18 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       <hr style="border-color:var(--border);margin:1.2em 0">
       <h3 style="margin-top:0">Sichtbare Objekte in der Kamera-Ansicht</h3>
       <div class="field"><label>Kamera-Sichtfeld (° horizontal, ungefähr)</label><input type="number" id="cfg-fov" value="65"></div>
+      <hr style="border-color:var(--border);margin:1.2em 0">
+      <h3 style="margin-top:0">Ausrüstung</h3>
+      <p style="font-size:.8rem;color:var(--text-dim)">Kameras, Teleskope und Nachführungen, die beim Bearbeiten einer Session per Dropdown ausgewählt werden können.</p>
+      <h4 style="margin:1em 0 .4em">Kameras</h4>
+      <div id="eq-list-cameras"></div>
+      <div class="eq-add-row"><button class="small" id="btn-eq-add-cameras" type="button">+ Kamera hinzufügen</button></div>
+      <h4 style="margin:1em 0 .4em">Teleskope</h4>
+      <div id="eq-list-telescopes"></div>
+      <div class="eq-add-row"><button class="small" id="btn-eq-add-telescopes" type="button">+ Teleskop hinzufügen</button></div>
+      <h4 style="margin:1em 0 .4em">Nachführungen</h4>
+      <div id="eq-list-mounts"></div>
+      <div class="eq-add-row"><button class="small" id="btn-eq-add-mounts" type="button">+ Nachführung hinzufügen</button></div>
     </div>
   </div>
 </div>
@@ -547,12 +570,13 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
     </div>
     <div class="row">
       <div class="field"><label>Ort *</label><input id="se-location"></div>
-      <div class="field"><label>Brennweite (mm)</label><input type="number" id="se-focal"></div>
+      <div class="field"><label>Teleskop</label><select id="se-telescope"></select></div>
     </div>
     <div class="row">
-      <div class="field"><label>Kamera</label><input id="se-camera" placeholder="z.B. Fujifilm XT-30"></div>
-      <div class="field"><label>Filter</label><input id="se-filter" placeholder="optional"></div>
+      <div class="field"><label>Kamera</label><select id="se-camera"></select></div>
+      <div class="field"><label>Nachführung</label><select id="se-mount"></select></div>
     </div>
+    <div class="field"><label>Filter</label><input id="se-filter" placeholder="optional"></div>
     <div class="row">
       <div class="field"><label>Anzahl Fotos *</label><input type="number" id="se-frames"></div>
       <div class="field"><label>Belichtungszeit pro Foto (s) *</label><input type="number" step="any" id="se-exposure"></div>
@@ -601,14 +625,13 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       </button>
       <button class="icon-btn" data-close="session-detail-modal" title="Schließen">×</button>
     </div>
-    <div id="sd-photo" class="photo-preview" hidden></div>
     <table class="doc-content" style="width:100%" id="sd-fields"></table>
   </div>
 </div>
 
 <div class="modal-overlay" id="photo-modal" hidden>
-  <div class="modal photo-modal">
-    <div class="modal-head"><h2 id="photo-modal-title">Foto</h2><button class="icon-btn" data-close="photo-modal">×</button></div>
+  <div class="photo-fullscreen">
+    <button class="photo-close" data-close="photo-modal" title="Schließen">×</button>
     <div id="photo-modal-body"></div>
   </div>
 </div>
@@ -4803,6 +4826,11 @@ function saveLocalDB(db){
   localStorage.setItem(LS_DATA_KEY, JSON.stringify(db));
 }
 
+function finishDataLoad(){
+  ensureEquipment(DB);
+  populateEquipmentSelects();
+  renderAll();
+}
 async function initData(){
   // 1. Wenn GitHub-Sync konfiguriert: versuche aktuelle data.json vom Repo zu laden (Quelle der Wahrheit).
   if(CFG.owner && CFG.repo && CFG.token){
@@ -4811,7 +4839,7 @@ async function initData(){
       DB = res.data; DB_SHA = res.sha;
       saveLocalDB(DB);
       setSyncBanner("ok", "✅ Verbunden mit GitHub – Daten aktuell.");
-      renderAll();
+      finishDataLoad();
       return;
     }catch(e){
       console.warn("GitHub-Sync fehlgeschlagen, nutze lokalen Cache:", e);
@@ -4821,19 +4849,19 @@ async function initData(){
   // 2. Versuche lokale data.json neben index.html (statisches Deployment ohne Token, z.B. read-only Spiegel)
   if(!DB){
     const cached = loadLocalDB();
-    if(cached){ DB = cached; renderAll(); }
+    if(cached){ DB = cached; finishDataLoad(); }
   }
   if(!DB){
     try{
       const res = await fetch("./data.json", {cache:"no-store"});
-      if(res.ok){ DB = await res.json(); saveLocalDB(DB); renderAll(); return; }
+      if(res.ok){ DB = await res.json(); saveLocalDB(DB); finishDataLoad(); return; }
     }catch(e){ /* ignore, evtl. file:// */ }
   }
   if(!DB){
     DB = JSON.parse(JSON.stringify(SEED_DATA));
     saveLocalDB(DB);
   }
-  renderAll();
+  finishDataLoad();
 }
 
 function setSyncBanner(kind, msg){
@@ -5114,8 +5142,9 @@ function openSessionEditModal(objId, idx){
   document.getElementById("se-time-start").value = s.timeStart || "";
   document.getElementById("se-time-end").value = s.timeEnd || "";
   document.getElementById("se-location").value = s.location || "";
-  document.getElementById("se-focal").value = s.focalLengthMm ?? "";
-  document.getElementById("se-camera").value = s.camera || DEFAULT_CAMERA;
+  document.getElementById("se-telescope").value = s.telescopeId || "";
+  document.getElementById("se-camera").value = s.cameraId || (DB.equipment.cameras.find(c=>c.id==="cam-default")?.id || DB.equipment.cameras[0]?.id || "");
+  document.getElementById("se-mount").value = s.mountId || (DB.equipment.mounts.find(m=>m.id==="mount-none")?.id || DB.equipment.mounts[0]?.id || "");
   document.getElementById("se-filter").value = s.filter || "";
   document.getElementById("se-frames").value = s.frames ?? "";
   document.getElementById("se-exposure").value = s.exposureSec ?? "";
@@ -5202,8 +5231,11 @@ document.getElementById("btn-save-session-edit").addEventListener("click", async
     s.timeStart = document.getElementById("se-time-start").value || null;
     s.timeEnd = document.getElementById("se-time-end").value || null;
     s.location = location;
-    s.focalLengthMm = parseFloat(document.getElementById("se-focal").value) || null;
-    s.camera = document.getElementById("se-camera").value.trim() || DEFAULT_CAMERA;
+    s.telescopeId = document.getElementById("se-telescope").value || null;
+    s.cameraId = document.getElementById("se-camera").value || null;
+    s.mountId = document.getElementById("se-mount").value || null;
+    s.focalLengthMm = sessionFocalLength({telescopeId:s.telescopeId, focalLengthMm:null});
+    s.camera = null;
     s.filter = document.getElementById("se-filter").value.trim() || null;
     s.frames = frames;
     s.exposureSec = exposureSec;
@@ -5254,7 +5286,6 @@ function openPhotoViewer(objId, idx){
   const s = o.sessions[idx];
   if(!s) return;
   const url = photoUrl(s);
-  document.getElementById("photo-modal-title").textContent = `${o.displayName} · ${fmtDate(s.dateStart)}`;
   const body = document.getElementById("photo-modal-body");
   if(url){
     body.innerHTML = `<img src="${url}" alt="Foto: ${escapeHtml(o.displayName)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'banner warn',textContent:'Foto konnte nicht geladen werden.'}))">`;
@@ -5308,8 +5339,10 @@ function openSessionDetailModal(objId, idx){
     ["Alternative Bezeichnungen", escapeHtml(altDesignations(o))],
     ["Sternbild", escapeHtml(o.constellation || "–")],
     ["Zeitraum der Aufnahme", escapeHtml(sessionDateRangeLabel(s))],
-    ["Brennweite", escapeHtml(fmtFocal(s.focalLengthMm))],
-    ["Kamera", escapeHtml(s.camera || DEFAULT_CAMERA)],
+    ["Teleskop", escapeHtml(sessionTelescopeLabelFull(s))],
+    ["Brennweite", escapeHtml(fmtFocal(sessionFocalLength(s)))],
+    ["Nachführung", escapeHtml(sessionMountLabel(s))],
+    ["Kamera", escapeHtml(sessionCameraLabelFull(s))],
     ["Filter", escapeHtml(s.filter || "–")],
     ["Anzahl Fotos", s.frames ?? "–"],
     ["Belichtungszeit", escapeHtml(fmtExposure(s.exposureSec))],
@@ -5320,15 +5353,6 @@ function openSessionDetailModal(objId, idx){
   document.getElementById("sd-fields").innerHTML = rows.map(([label,val])=>
     `<tr><td style="color:var(--text-dim);width:45%">${label}</td><td>${val}</td></tr>`
   ).join("");
-  const photoWrap = document.getElementById("sd-photo");
-  const url = photoUrl(s);
-  if(url){
-    photoWrap.hidden = false;
-    photoWrap.innerHTML = `<img src="${url}" alt="Foto" style="cursor:pointer;max-width:100%;border-radius:var(--radius)" onclick="openPhotoViewer('${o.id}',${idx})" onerror="this.closest('#sd-photo').hidden=true">`;
-  }else{
-    photoWrap.hidden = true;
-    photoWrap.innerHTML = "";
-  }
   openModal("session-detail-modal");
 }
 document.getElementById("btn-sd-edit").addEventListener("click", ()=>{
@@ -5365,6 +5389,200 @@ function fmtExposure(sec){
   if(sec==null) return "–";
   return sec<1 ? ("1/"+Math.round(1/sec)+"s") : (sec+'"');
 }
+
+/* ======================= AUSRÜSTUNG (Kamera/Teleskop/Nachführung) ======================= */
+const DEFAULT_FILTER = "Omegon Pro CLS Filter";
+const EQUIPMENT_FIELDS = {
+  cameras: [
+    {key:"brand", label:"Marke", type:"text"},
+    {key:"model", label:"Modell", type:"text"},
+    {key:"type", label:"Typ", type:"text"},
+    {key:"pixelSize", label:"Pixelgröße (µm)", type:"number", step:"any"},
+    {key:"cooled", label:"Gekühlt", type:"bool"},
+  ],
+  telescopes: [
+    {key:"brand", label:"Marke", type:"text"},
+    {key:"model", label:"Modell", type:"text"},
+    {key:"kind", label:"Typ", type:"select", options:["Refraktor","Reflektor"]},
+    {key:"design", label:"Bauart", type:"text"},
+    {key:"apertureMm", label:"Öffnung (mm)", type:"number"},
+    {key:"focalLengthMm", label:"Brennweite (mm)", type:"number"},
+    {key:"focalRatio", label:"Öffnungsverhältnis (f/)", type:"number", step:"any"},
+  ],
+  mounts: [
+    {key:"brand", label:"Marke", type:"text"},
+    {key:"model", label:"Modell", type:"text"},
+    {key:"mode", label:"Ausführung", type:"select", options:["parallaktisch","azimutal"]},
+    {key:"goto", label:"GoTo", type:"bool"},
+  ],
+};
+function ensureEquipment(db){
+  if(!db.equipment) db.equipment = {};
+  const eq = db.equipment;
+  if(!Array.isArray(eq.cameras) || eq.cameras.length===0){
+    eq.cameras = [
+      {id:"cam-default", brand:"Fujifilm", model:"XT-30", type:"DSLM/APS-C", pixelSize:3.78, cooled:false},
+    ];
+  }
+  if(!Array.isArray(eq.telescopes) || eq.telescopes.length===0){
+    eq.telescopes = [
+      {id:"tel-sw-n2001000", brand:"Skywatcher", model:"N 200/1000", kind:"Reflektor", design:"Newton", apertureMm:200, focalLengthMm:1000, focalRatio:5},
+      {id:"tel-omegon-72432", brand:"Omegon", model:"APO AP Photography Scope 72/432", kind:"Refraktor", design:"Apochromat", apertureMm:72, focalLengthMm:432, focalRatio:6},
+    ];
+  }
+  if(!Array.isArray(eq.mounts) || eq.mounts.length===0){
+    eq.mounts = [
+      {id:"mount-none", brand:"", model:"ohne Nachführung", mode:"", goto:false},
+      {id:"mount-sw-eq6r", brand:"Skywatcher", model:"EQ6-R PRO Synscan", mode:"parallaktisch", goto:true},
+      {id:"mount-ioptron-skyguider", brand:"iOptron", model:"SkyGuider Pro", mode:"parallaktisch", goto:false},
+    ];
+  }
+}
+function getCamera(id){ return (DB.equipment && DB.equipment.cameras || []).find(c=>c.id===id) || null; }
+function getTelescope(id){ return (DB.equipment && DB.equipment.telescopes || []).find(t=>t.id===id) || null; }
+function getMount(id){ return (DB.equipment && DB.equipment.mounts || []).find(m=>m.id===id) || null; }
+function equipLabel(cat, item){
+  if(!item) return "–";
+  if(cat==="mounts" && item.model==="ohne Nachführung") return "ohne Nachführung";
+  return `${item.brand||""} ${item.model||""}`.trim() || "(unbenannt)";
+}
+function cameraFullLabel(cam){
+  if(!cam) return "–";
+  const bits = [];
+  if(cam.type) bits.push(cam.type);
+  if(cam.pixelSize) bits.push(`${String(cam.pixelSize).replace(".",",")} µm Pixel`);
+  bits.push(cam.cooled ? "gekühlt" : "ungekühlt");
+  const base = equipLabel("cameras", cam);
+  return bits.length ? `${base} (${bits.join(", ")})` : base;
+}
+function telescopeFullLabel(t){
+  if(!t) return "–";
+  const bits = [];
+  if(t.kind) bits.push(t.kind);
+  if(t.design) bits.push(t.design);
+  if(t.apertureMm) bits.push(`${t.apertureMm} mm Öffnung`);
+  if(t.focalRatio) bits.push(`f/${t.focalRatio}`);
+  const base = equipLabel("telescopes", t);
+  return bits.length ? `${base} (${bits.join(", ")})` : base;
+}
+function sessionCameraShort(s){
+  const cam = getCamera(s.cameraId);
+  if(cam) return equipLabel("cameras", cam);
+  return s.camera || DEFAULT_CAMERA;
+}
+function sessionCameraLabelFull(s){
+  const cam = getCamera(s.cameraId);
+  if(cam) return cameraFullLabel(cam);
+  return s.camera || DEFAULT_CAMERA;
+}
+function sessionTelescopeBrand(s){
+  const t = getTelescope(s.telescopeId);
+  return t ? (t.brand || "–") : "–";
+}
+function sessionTelescopeLabelFull(s){
+  const t = getTelescope(s.telescopeId);
+  return t ? telescopeFullLabel(t) : "–";
+}
+function sessionMountLabel(s){
+  const m = getMount(s.mountId);
+  return m ? equipLabel("mounts", m) : "–";
+}
+function sessionFocalLength(s){
+  const t = getTelescope(s.telescopeId);
+  if(t && t.focalLengthMm) return t.focalLengthMm;
+  return s.focalLengthMm ?? null;
+}
+const CAMERA_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>';
+function photoCellHtml(objId, idx, s){
+  if(!photoUrl(s)) return `<td class="col-photo"></td>`;
+  return `<td class="col-photo"><button class="photo-btn" onclick="event.stopPropagation();openPhotoViewer('${objId}',${idx})" title="Foto anzeigen">${CAMERA_ICON_SVG}</button></td>`;
+}
+function newEquipmentId(cat){ return cat + "-" + Math.random().toString(36).slice(2,9); }
+function renderEquipmentList(cat){
+  const container = document.getElementById(`eq-list-${cat}`);
+  if(!container) return;
+  const fields = EQUIPMENT_FIELDS[cat];
+  const items = (DB.equipment && DB.equipment[cat]) || [];
+  container.innerHTML = items.map(item=>{
+    const inputs = fields.map(f=>{
+      const val = item[f.key];
+      if(f.type==="bool"){
+        return `<div class="field"><label>${f.label}</label>
+          <select data-eq-cat="${cat}" data-eq-id="${item.id}" data-eq-key="${f.key}" class="eq-input">
+            <option value="false"${!val?' selected':''}>Nein</option>
+            <option value="true"${val?' selected':''}>Ja</option>
+          </select></div>`;
+      }
+      if(f.type==="select"){
+        return `<div class="field"><label>${f.label}</label>
+          <select data-eq-cat="${cat}" data-eq-id="${item.id}" data-eq-key="${f.key}" class="eq-input">
+            ${f.options.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join("")}
+          </select></div>`;
+      }
+      return `<div class="field"><label>${f.label}</label>
+        <input type="${f.type}" ${f.step?`step="${f.step}"`:""} value="${val ?? ""}" data-eq-cat="${cat}" data-eq-id="${item.id}" data-eq-key="${f.key}" class="eq-input"></div>`;
+    }).join("");
+    return `<div class="eq-item">
+      <div class="row eq-row">${inputs}</div>
+      <button class="small danger eq-remove" type="button" data-eq-cat="${cat}" data-eq-id="${item.id}">Entfernen</button>
+    </div>`;
+  }).join("") || `<p style="color:var(--text-dim);font-size:.82rem">Keine Einträge.</p>`;
+}
+function renderAllEquipmentLists(){
+  ["cameras","telescopes","mounts"].forEach(renderEquipmentList);
+}
+function populateEquipmentSelects(){
+  const cams = (DB.equipment && DB.equipment.cameras) || [];
+  const scopes = (DB.equipment && DB.equipment.telescopes) || [];
+  const mounts = (DB.equipment && DB.equipment.mounts) || [];
+  const camOptions = cams.map(c=>`<option value="${c.id}">${escapeHtml(equipLabel("cameras",c))}</option>`).join("");
+  const scopeOptions = `<option value="">– kein Teleskop (Objektiv, s.u.) –</option>` +
+    scopes.map(t=>`<option value="${t.id}">${escapeHtml(equipLabel("telescopes",t))}</option>`).join("");
+  const mountOptions = mounts.map(m=>`<option value="${m.id}">${escapeHtml(equipLabel("mounts",m))}</option>`).join("");
+  ["s-camera","se-camera"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML = camOptions; });
+  ["s-telescope","se-telescope"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML = scopeOptions; });
+  ["s-mount","se-mount"].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML = mountOptions; });
+}
+document.getElementById("settings-modal").addEventListener("change", async (e)=>{
+  const el = e.target;
+  if(!el.classList.contains("eq-input")) return;
+  const cat = el.dataset.eqCat, id = el.dataset.eqId, key = el.dataset.eqKey;
+  const item = ((DB.equipment && DB.equipment[cat]) || []).find(x=>x.id===id);
+  if(!item) return;
+  let val = el.value;
+  if(el.tagName==="SELECT" && (val==="true"||val==="false")) val = (val==="true");
+  else if(el.type==="number") val = val===""? null : parseFloat(val);
+  item[key] = val;
+  await persist("Ausrüstung aktualisiert");
+  populateEquipmentSelects();
+});
+document.getElementById("settings-modal").addEventListener("click", async (e)=>{
+  const btn = e.target.closest(".eq-remove");
+  if(!btn) return;
+  const cat = btn.dataset.eqCat, id = btn.dataset.eqId;
+  if(!confirm("Diesen Ausrüstungseintrag wirklich entfernen?")) return;
+  DB.equipment[cat] = (DB.equipment[cat] || []).filter(x=>x.id!==id);
+  await persist("Ausrüstung entfernt");
+  renderEquipmentList(cat);
+  populateEquipmentSelects();
+});
+const EQUIPMENT_DEFAULTS = {
+  cameras: ()=>({brand:"", model:"", type:"", pixelSize:null, cooled:false}),
+  telescopes: ()=>({brand:"", model:"", kind:"Refraktor", design:"", apertureMm:null, focalLengthMm:null, focalRatio:null}),
+  mounts: ()=>({brand:"", model:"", mode:"parallaktisch", goto:false}),
+};
+["cameras","telescopes","mounts"].forEach(cat=>{
+  const btn = document.getElementById(`btn-eq-add-${cat}`);
+  if(!btn) return;
+  btn.addEventListener("click", async ()=>{
+    const item = {id:newEquipmentId(cat), ...EQUIPMENT_DEFAULTS[cat]()};
+    DB.equipment[cat] = DB.equipment[cat] || [];
+    DB.equipment[cat].push(item);
+    await persist("Ausrüstung hinzugefügt");
+    renderEquipmentList(cat);
+    populateEquipmentSelects();
+  });
+});
 
 function renderAll(){
   renderObjectList();
@@ -5458,15 +5676,16 @@ function renderObjectItem(o){
     if(s.mosaicPanels) extras.push(`Mosaik: ${s.mosaicPanels} Panels`);
     if(s.notes) extras.push(escapeHtml(s.notes));
     const extraRow = extras.length
-      ? `<tr class="${s.needsReview?'needs-review':''}"><td colspan="5" style="color:var(--text-dim);font-size:.75rem;white-space:normal;overflow:visible">${extras.join(' · ')}</td></tr>` : '';
+      ? `<tr class="${s.needsReview?'needs-review':''}"><td colspan="6" style="color:var(--text-dim);font-size:.75rem;white-space:normal;overflow:visible">${extras.join(' · ')}</td></tr>` : '';
     const reviewRow = s.needsReview
-      ? `<tr class="needs-review"><td colspan="5" style="white-space:normal;overflow:visible"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="event.stopPropagation();dismissSessionReview('${o.id}', ${realIdx})">OK, geprüft</button><button class="small" onclick="event.stopPropagation();openSessionEditModal('${o.id}', ${realIdx})">Bearbeiten</button></div></td></tr>` : '';
+      ? `<tr class="needs-review"><td colspan="6" style="white-space:normal;overflow:visible"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="event.stopPropagation();dismissSessionReview('${o.id}', ${realIdx})">OK, geprüft</button><button class="small" onclick="event.stopPropagation();openSessionEditModal('${o.id}', ${realIdx})">Bearbeiten</button></div></td></tr>` : '';
     return `
     <tr class="session-row${s.needsReview?' needs-review':''}" data-obj-id="${o.id}" data-idx="${realIdx}">
       <td class="col-date">${fmtDate(s.dateStart)}${s.dateEnd?(' – '+fmtDate(s.dateEnd)):''}</td>
       <td class="col-loc">${escapeHtml(s.location||"")}</td>
-      <td class="col-focal">${fmtFocal(s.focalLengthMm)}</td>
-      <td class="col-camera">${escapeHtml(s.camera || DEFAULT_CAMERA)}</td>
+      <td class="col-scope">${escapeHtml(sessionTelescopeBrand(s))}</td>
+      <td class="col-camera">${escapeHtml(sessionCameraShort(s))}</td>
+      ${photoCellHtml(o.id, realIdx, s)}
       <td class="col-eye"><button class="eye-btn" onclick="event.stopPropagation();openSessionDetailModal('${o.id}',${realIdx})" title="Details anzeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></td>
     </tr>
     ${extraRow}${reviewRow}`;
@@ -5489,7 +5708,7 @@ function renderObjectItem(o){
       ${o.needsReview?`<div class="review-panel"><span>${escapeHtml(o.reviewNote||'Objektangaben bitte prüfen.')}</span><button class="small" onclick="dismissObjectReview('${o.id}')">OK, geprüft</button><button class="small" onclick="openObjectEditModal('${o.id}')">Bearbeiten</button></div>`:''}
       <div style="overflow-x:auto">
       <table class="sessions tbl-obj">
-        <thead><tr><th class="col-date">Datum</th><th class="col-loc">Ort</th><th class="col-focal" title="Brennweite">f</th><th class="col-camera">Kam.</th><th class="col-eye"></th></tr></thead>
+        <thead><tr><th class="col-date">Datum</th><th class="col-loc">Ort</th><th class="col-scope" title="Teleskop">Tel.</th><th class="col-camera">Kam.</th><th class="col-photo"></th><th class="col-eye"></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       </div>
@@ -5513,32 +5732,37 @@ function csvEscape(v){
 }
 function exportCsv(){
   const headers = ["Objekt","Kategorie","Typ","Sternbild","Messier","NGC","IC",
-    "Datum Start","Datum Ende","Uhrzeit Start","Uhrzeit Ende","Ort","Brennweite (mm)","Kamera","Filter",
+    "Datum Start","Datum Ende","Uhrzeit Start","Uhrzeit Ende","Ort",
+    "Teleskop","Brennweite (mm)","Kamera","Nachführung","Filter",
     "Anzahl Fotos","Belichtung pro Foto (s)","Gesamtbelichtung (s)",
     "ISO","Mosaik-Panels","Objektiv","Kalibrierbilder","Darks","Flats","Biases","Notizen","Zu prüfen"];
   const rows = [headers];
   DB.objects.forEach(o=>{
     const c = o.catalog || {};
     const catLabel = CATEGORIES.find(cc=>cc.key===categoryOf(o.type))?.label || "";
+    const base = [o.displayName, catLabel, typeMeta(o.type).label, o.constellation||"",
+      c.messier||"", c.ngc||"", c.ic||""];
     if(o.sessions.length===0){
-      rows.push([o.displayName, catLabel, typeMeta(o.type).label, o.constellation||"",
-        c.messier||"", c.ngc||"", c.ic||"", "","","","","","","","","","","","","","","","","","", o.needsReview?"ja":"nein"]);
+      const row = base.concat(new Array(headers.length - base.length - 1).fill(""));
+      row.push(o.needsReview?"ja":"nein");
+      rows.push(row);
       return;
     }
     o.sessions.forEach(s=>{
       const calib = s.calibration || {};
-      rows.push([
-        o.displayName, catLabel, typeMeta(o.type).label, o.constellation||"",
-        c.messier||"", c.ngc||"", c.ic||"",
+      const telescope = getTelescope(s.telescopeId);
+      const mount = getMount(s.mountId);
+      rows.push(base.concat([
         s.dateStart||"", s.dateEnd||"", s.timeStart||"", s.timeEnd||"", s.location||"",
-        s.focalLengthMm ?? "", s.camera || DEFAULT_CAMERA, s.filter||"",
+        telescope ? equipLabel("telescopes", telescope) : "", sessionFocalLength(s) ?? "",
+        sessionCameraShort(s), mount ? equipLabel("mounts", mount) : "", s.filter||"",
         s.frames ?? "", s.exposureSec ?? "", (s.frames||0)*(s.exposureSec||0),
         s.iso ?? "",
         s.mosaicPanels ?? "", s.lens||"",
         calib.used ? "ja" : "nein", calib.darks ?? "", calib.flats ?? "", calib.biases ?? "",
         s.notes||"",
         s.needsReview ? "ja" : "nein"
-      ]);
+      ]));
     });
   });
   const csv = rows.map(r=>r.map(csvEscape).join(";")).join("\r\n");
@@ -5608,7 +5832,7 @@ function runFieldSearch(){
     o.sessions.forEach((s,idx)=>{
       if(qLoc && !(s.location||"").toLowerCase().includes(qLoc)) return;
       if(qYear && !(s.dateStart||"").startsWith(qYear)) return;
-      if(qFocal && String(s.focalLengthMm||"") !== qFocal) return;
+      if(qFocal && String(sessionFocalLength(s)||"") !== qFocal) return;
       if(qIso && String(s.iso||"") !== qIso) return;
       rows.push({o, s, idx});
     });
@@ -5619,15 +5843,16 @@ function runFieldSearch(){
   }
   rows.sort((a,b)=> (b.s.dateStart||"").localeCompare(a.s.dateStart||""));
   results.innerHTML = `<div style="overflow-x:auto"><table class="sessions tbl-search">
-    <thead><tr><th class="col-obj">Objekt</th><th class="col-date">Datum</th><th class="col-loc">Ort</th><th class="col-focal" title="Brennweite">f</th><th class="col-camera">Kam.</th><th class="col-eye"></th></tr></thead>
+    <thead><tr><th class="col-obj">Objekt</th><th class="col-date">Datum</th><th class="col-loc">Ort</th><th class="col-scope" title="Teleskop">Tel.</th><th class="col-camera">Kam.</th><th class="col-photo"></th><th class="col-eye"></th></tr></thead>
     <tbody>${rows.map(r=>{
       return `
     <tr class="session-row" data-obj-id="${r.o.id}" data-idx="${r.idx}">
       <td class="col-obj">${escapeHtml(r.o.displayName)}</td>
       <td class="col-date">${fmtDate(r.s.dateStart)}${r.s.dateEnd?(' – '+fmtDate(r.s.dateEnd)):''}</td>
       <td class="col-loc">${escapeHtml(r.s.location||"")}</td>
-      <td class="col-focal">${fmtFocal(r.s.focalLengthMm)}</td>
-      <td class="col-camera">${escapeHtml(r.s.camera || DEFAULT_CAMERA)}</td>
+      <td class="col-scope">${escapeHtml(sessionTelescopeBrand(r.s))}</td>
+      <td class="col-camera">${escapeHtml(sessionCameraShort(r.s))}</td>
+      ${photoCellHtml(r.o.id, r.idx, r.s)}
       <td class="col-eye"><button class="eye-btn" onclick="event.stopPropagation();openSessionDetailModal('${r.o.id}',${r.idx})" title="Details anzeigen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></td>
     </tr>`;
     }).join("")}</tbody>
@@ -5824,14 +6049,18 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
     }
   }
   const sCalibUsed = document.getElementById("s-calib-used").checked;
+  const sTelescopeId = document.getElementById("s-telescope").value || null;
   const session = {
     ...(uploadedPhoto || {}),
     dateStart, dateEnd: document.getElementById("s-date-end").value || null,
     timeStart: document.getElementById("s-time-start").value || null,
     timeEnd: document.getElementById("s-time-end").value || null,
     location,
-    focalLengthMm: parseFloat(document.getElementById("s-focal").value) || null,
-    camera: document.getElementById("s-camera").value.trim() || DEFAULT_CAMERA,
+    telescopeId: sTelescopeId,
+    cameraId: document.getElementById("s-camera").value || null,
+    mountId: document.getElementById("s-mount").value || null,
+    focalLengthMm: sessionFocalLength({telescopeId:sTelescopeId, focalLengthMm:null}),
+    camera: null,
     filter: document.getElementById("s-filter").value.trim() || null,
     lens: document.getElementById("s-lens").value.trim() || null,
     frames, exposureSec, iso,
@@ -5893,11 +6122,14 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
 
 function clearAddForm(){
   ["no-display","no-messier","no-ngc","no-ic","no-const","no-common","no-ra","no-dec","no-desc",
-   "s-date-start","s-date-end","s-time-start","s-time-end","s-location","s-focal","s-filter",
+   "s-date-start","s-date-end","s-time-start","s-time-end","s-location",
    "s-frames","s-exposure","s-iso","s-mosaic","s-lens","s-notes","s-photo",
    "s-calib-darks","s-calib-flats","s-calib-biases"]
    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
-  document.getElementById("s-camera").value = DEFAULT_CAMERA;
+  document.getElementById("s-camera").value = (DB.equipment.cameras.find(c=>c.id==="cam-default")||DB.equipment.cameras[0]||{}).id || "";
+  document.getElementById("s-telescope").value = "";
+  document.getElementById("s-mount").value = (DB.equipment.mounts.find(m=>m.id==="mount-none")||DB.equipment.mounts[0]||{}).id || "";
+  document.getElementById("s-filter").value = DEFAULT_FILTER;
   searchInput.value = "";
   document.getElementById("s-review").checked = false;
   document.getElementById("s-calib-used").checked = false;
@@ -5938,6 +6170,7 @@ document.getElementById("btn-settings").addEventListener("click", ()=>{
   document.getElementById("cfg-token").value = CFG.token||"";
   document.getElementById("cfg-fov").value = CFG.fov||65;
   document.getElementById("cfg-nasa-key").value = CFG.nasaKey||"";
+  renderAllEquipmentLists();
   openModal("settings-modal");
 });
 
@@ -6007,7 +6240,7 @@ document.getElementById("import-file").addEventListener("change", async (e)=>{
 });
 
 /* ======================= DOCS CONTENT ======================= */
-document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong> (für Menschen &amp; KI-Assistenten gleichermaßen lesbar). Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n<p style=\"color:var(--text-faint);font-size:.78rem\">Diese Version von <code>index.html</code> wurde erstellt am: <strong>18.08.2026, 15:56 UTC</strong></p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"repoOwner\": \"string|undefined – GitHub-Benutzer/Org, gesetzt sobald Sync konfiguriert wurde\",\n  \"repoName\": \"string|undefined – GitHub-Repo-Name\",\n  \"repoBranch\": \"string|undefined – Branch, i.d.R. \\\"main\\\"\",\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n<p><code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code> werden automatisch beim Speichern der Sync-Einstellungen in <code>data.json</code> geschrieben (nicht nur lokal im Browser). Grund: Foto-URLs (siehe Abschnitt 22) werden daraus gebaut, damit Fotos auch auf einem Gerät korrekt angezeigt werden, auf dem die Sync-Einstellungen noch nicht lokal eingerichtet sind.</p>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>timeStart</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmebeginns, optional. Bei Altdaten/vergangenen Sessions meist leer; gedacht v.a. für geplante zukünftige Aufnahmen</td></tr>\n<tr><td><code>timeEnd</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmeendes, optional</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Brennweite in mm, falls im Ordnernamen angegeben</td></tr>\n<tr><td><code>camera</code></td><td>string</td><td>Verwendete Kamera, Freitext. Voreingestellt „Fujifilm XT-30\" beim Anlegen neuer Sessions</td></tr>\n<tr><td><code>filter</code></td><td>string|null</td><td>Verwendeter Filter (z.B. Optolong L-Pro), optional</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>calibration</code></td><td>object</td><td><code>{used: boolean, darks: number|null, flats: number|null, biases: number|null}</code> – ob und wie viele Kalibrierbilder aufgenommen wurden</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n<tr><td><code>photoPath</code></td><td>string|null</td><td>Relativer Pfad im Repo zum hochgeladenen Astrofoto dieser Session, z.B. <code>images/m31-20260817-a1b2c3.jpg</code> (siehe Abschnitt 22). Nur gesetzt, wenn Sync konfiguriert ist.</td></tr>\n<tr><td><code>photoSha</code></td><td>string|null</td><td>Git-Blob-SHA der Fotodatei, benötigt von der GitHub API zum Ersetzen/Löschen der Datei</td></tr>\n<tr><td><code>photoDataUrl</code></td><td>string|null</td><td>Base64-Data-URI des Fotos, nur als lokaler Fallback gesetzt, wenn kein Sync konfiguriert ist (siehe Abschnitt 22)</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n\n<h3>13. Kategorien in der Übersicht</h3>\n<p>Die Objektliste ist nach <code>type</code> in feste Kategorien gruppiert: Nebel (<code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>), Galaxien (<code>galaxy</code>, <code>galaxy_group</code>), Sternhaufen (<code>open_cluster</code>, <code>globular_cluster</code>), Exoplaneten (<code>exoplanet</code>), Kometen (<code>comet</code>), Objekte des Solarsystems (<code>planet</code>, <code>moon</code>), Konstellationen (<code>constellation</code>, <code>asterism</code>, <code>milkyway</code>) sowie eine Sonstiges-Kategorie als Auffangbecken (<code>star</code>, <code>double_star</code>, <code>mosaic</code>, <code>other</code>). Die Zuordnung erfolgt automatisch anhand von <code>type</code>, ist also nicht separat in <code>data.json</code> gespeichert.</p>\n<p>Zum Filtern steht oben der Button „Alle\" sowie ein Dropdown zur Auswahl genau einer Kategorie zur Verfügung (gegenseitig exklusiv: Auswahl einer Kategorie deaktiviert „Alle\" und umgekehrt). Objekte bzw. Sessions mit ungeprüften Angaben bleiben weiterhin über das gelbe Warndreieck direkt in der Liste erkennbar, auch ohne einen eigenen Filter-Chip dafür.</p>\n\n<h3>14. Suche</h3>\n<p>Über das Lupen-Symbol oben rechts öffnet sich eine eigene Suchansicht mit den Feldern Objekt, Ort der Aufnahme, Jahr der Aufnahme, Brennweite und ISO. Treffer werden – anders als in der Übersicht – als flache Liste einzelner Sessions ohne Kategorie-Gruppierung angezeigt, da hier auf Session-Ebene gefiltert wird.</p>\n\n<h3>15. Bearbeiten &amp; Löschen</h3>\n<p>Unterhalb der Session-Tabelle eines Objekts befinden sich zwei Icon-Buttons: ein Plus (weitere Session für dieses Objekt anlegen) und ein Schraubenschlüssel (Objekt bearbeiten). Das Löschen eines Objekts erfolgt nicht mehr über einen eigenen Button in der Liste, sondern über „Objekt löschen\" innerhalb des Bearbeiten-Dialogs. Einzelne Sessions werden nicht direkt in der Tabelle bearbeitet, sondern über das Augensymbol bzw. Klick auf eine Tabellenzeile geöffnet (siehe Abschnitt 23) – von dort führt ein Bearbeiten-Symbol zum eigentlichen Bearbeiten-Dialog inkl. „Session löschen\". Löschen fragt vorher per Bestätigungsdialog nach. Änderungen werden wie neue Sessions über <code>persist()</code> lokal gespeichert und – falls konfiguriert – zu GitHub synchronisiert.</p>\n\n<h3>16. Sternkarte – Zoom &amp; Verschieben</h3>\n<p>Die 2D-Himmelskarte lässt sich zoomen und verschieben: am Desktop per Mausrad (Zoom zentriert auf die Cursor-Position) sowie per Maus-Drag zum Verschieben; am Handy per Zwei-Finger-Pinch-Geste (Zoom zentriert auf den Mittelpunkt der beiden Finger) und Ein-Finger-Wischen zum Verschieben. Auch die AR-Kamera-Ansicht lässt sich per Pinch/Wisch zoomen und verschieben (rein visuell per CSS-Transform auf Video- und Overlay-Ebene, ohne die zugrundeliegende Projektion zu verändern).</p>\n<p>Der Button „Jetzt\" setzt das Datum/Zeit-Feld auf den aktuellen Zeitpunkt (sichtbar als Bestätigung im Feld); die Positionsberechnung selbst folgt ohnehin laufend der echten Uhrzeit, solange kein abweichender Zeitpunkt manuell im Feld eingetragen ist. Nach erfolgreicher Standortermittlung („Standort ermitteln\") erscheint neben dem Button ein kleines blaues Häkchen als Bestätigung, dass Koordinaten empfangen wurden.</p>\n\n<h3>17. Header-Buttons &amp; Export</h3>\n<p>Oben rechts befinden sich drei Icon-Buttons: Lupe (Suche, siehe Abschnitt 14), Plus („Neues Objekt eintragen\" – öffnet das Formular; wird ein bestehendes Objekt aus dem Katalogindex ausgewählt, wechselt die Überschrift zu „Neue Session: &lt;Objektname&gt;\", da dann eine weitere Session für dieses Objekt angelegt wird) und Zahnrad (Einstellungen). Über den Button „Export\" in der unteren Navigationsleiste lässt sich die komplette Datenbank als CSV-Datei herunterladen (eine Zeile pro Session, inkl. Objekt, Kategorie, Katalognummern und allen Session-Feldern – auch Kamera, Filter, Uhrzeiten und Kalibrierbilder; Semikolon-getrennt mit UTF-8-BOM für direkte Excel-Kompatibilität). Über „Doku\" in derselben Navigationsleiste öffnet sich diese Dokumentation als eigene, vollwertige Ansicht (kein schließbares Fenster) – Zurück geht über einen anderen Tab in derselben Navigationsleiste.</p>\n\n<h3>18. AR-Kamera – Sternbildlinien</h3>\n<p>Neben den bereits fotografierten Objekten zeigt die AR-Kamera-Ansicht zusätzlich den eingebetteten Sternkatalog mit Konstellationslinien an (dieselbe Datengrundlage wie die 2D-Karte), projiziert anhand von Kompass und Neigungssensor – als zusätzliche Orientierungshilfe beim Wiedererkennen von Sternbildern.</p>\n\n<h3>19. Astronomy Picture of the Day – Fallback-Foto</h3>\n<p>Kann das tagesaktuelle NASA-Bild nicht geladen werden (z.B. kein Internetzugriff, Rate-Limit erreicht), zeigt die App stattdessen automatisch ein fest in <code>index.html</code> eingebettetes eigenes Astrofoto (Data-URI, kein externer Abruf nötig) mit Hinweis-Text. Datum/Quelle-Zeile und Erklärungstext sind sowohl beim echten APOD als auch beim Fallback-Foto standardmäßig eingeklappt und erscheinen erst nach Klick auf das „i\"-Symbol.</p>\n\n<h3>20. Kategorie beim Bearbeiten einer Session</h3>\n<p>Da die Kategorie (Nebel, Galaxie, …) technisch am Objekt hängt (Feld <code>type</code>, siehe Abschnitt 5), nicht an der einzelnen Session, lässt sie sich zur Vereinfachung direkt im Bearbeiten-Dialog einer Session mit ändern – die Änderung wirkt sich auf das gesamte Objekt (und damit auf alle seine Sessions) aus.</p>\n\n<h3>21. Gesamtbelichtungszeit</h3>\n<p>Die in jedem Objekt-Eintrag angezeigte Gesamtbelichtungszeit (Summe aus <code>sessions[].frames * sessions[].exposureSec</code> über alle Sessions) wird in Stunden und Minuten kombiniert dargestellt (z.B. „3 h 24 min\"), bei unter einer Stunde nur in Minuten.</p>\n\n<h3>22. Foto pro Session</h3>\n<p>Jede Session kann genau ein aufgenommenes Astrofoto besitzen (kein Galerie-Konzept, ein Foto pro Session). Beim Anlegen einer neuen Session oder beim Bearbeiten einer bestehenden Session lässt sich über ein Datei-Feld ein Foto auswählen – am Desktop alternativ auch per Drag&amp;Drop direkt auf das gestrichelte Feld gezogen; die App verkleinert es clientseitig automatisch (längste Kante max. 2000px, JPEG-Qualität 0,82) bevor es gespeichert wird, um Repo-Größe und Sync-Dauer klein zu halten. Existiert zu einer Session ein Foto, wird es oben in der Detailansicht dieser Session angezeigt (siehe Abschnitt 23); ein Klick darauf öffnet es groß in einem Overlay.</p>\n<p><strong>Speicherort:</strong> Ist GitHub-Sync konfiguriert, wird das komprimierte Foto als eigene Datei in einen Ordner <code>images/</code> im Repo hochgeladen (per GitHub Contents API, <code>PUT /repos/{owner}/{repo}/contents/images/{dateiname}.jpg</code>) – der Ordner wird beim ersten Foto-Upload automatisch angelegt, kein manuelles Setup nötig. In <code>data.json</code> wird nur der relative Pfad (<code>photoPath</code>) und die Blob-SHA (<code>photoSha</code>) referenziert, nicht das Bild selbst – so bleibt <code>data.json</code> klein und schnell synchronisierbar. Angezeigt wird das Foto direkt über <code>https://raw.githubusercontent.com/{repoOwner}/{repoName}/{repoBranch}/{photoPath}</code> (siehe Abschnitt 2 zu <code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code>), ohne Token, da dies nur bei einem öffentlichen Repo funktioniert (wie es für kostenlose GitHub Pages ohnehin vorausgesetzt ist).</p>\n<p><strong>Ohne Sync:</strong> Ist kein GitHub-Sync eingerichtet, wird das komprimierte Foto stattdessen als Base64-Data-URI direkt im Feld <code>photoDataUrl</code> der Session gespeichert (nur lokal im Browser via <code>localStorage</code>, analog zum sonstigen Offline-Verhalten der App).</p>\n<p><strong>Ersetzen/Löschen:</strong> Wird ein Foto ersetzt oder entfernt, wird die alte Datei im Repo per <code>DELETE /repos/{owner}/{repo}/contents/{photoPath}</code> best-effort gelöscht (schlägt der Löschversuch fehl, z.B. wegen fehlender Berechtigung, wird das ignoriert und nur eine Konsolenwarnung ausgegeben, ohne den eigentlichen Vorgang zu blockieren). Wird eine Session mit Foto gelöscht, wird ebenso versucht, die zugehörige Bilddatei im Repo zu entfernen.</p>\n\n<h3>23. Session-Tabelle &amp; Detailansicht</h3>\n<p>Die Session-Tabelle innerhalb eines aufgeklappten Objekts zeigt bewusst nur vier Spalten: Datum, Ort, Brennweite („f\") und Kamera („Kam.\"). Ganz rechts befindet sich pro Zeile ein Augensymbol; ein Klick darauf (oder auf die Zeile selbst) öffnet ein nicht bearbeitbares Detail-Popup mit allen Angaben zur Session: Name des Objekts, alternative Bezeichnungen (Katalognummern + Eigenname), Sternbild, Zeitraum der Aufnahme (inkl. Uhrzeiten, sofern eingetragen), Brennweite (mit deutscher Tausendertrennung, z.B. „1.000 mm\"), Kamera, Filter, Anzahl Fotos, Belichtungszeit pro Foto, Gesamtbelichtungszeit (Anzahl × Belichtungszeit), Kalibrierbilder (ja/nein inkl. Anzahl Darks/Flats/Biases), ISO sowie – falls vorhanden – das Session-Foto. Oben im Popup befindet sich ein Bearbeiten-Symbol (Schraubenschlüssel), das das Popup schließt und direkt den bearbeitbaren Session-Dialog mit denselben Feldern öffnet.</p>\n<p>Die Spaltenbreiten sind über beide Session-Tabellen (Objekt-Detail und Suchergebnisse) hinweg als Prozentwerte der jeweiligen Tabellenbreite definiert (nicht als feste Pixel-/em-Werte), damit die Tabelle stets die volle verfügbare Breite ausfüllt und nicht wie zuvor nur einen Teil davon.</p>\n\n<h3>24. Kein Pinch-Zoom der Gesamt-App</h3>\n<p>Die App unterbindet über das Viewport-Meta-Tag (<code>maximum-scale=1, user-scalable=no</code>) das versehentliche Vergrößern/Verkleinern der gesamten Seite per Zwei-Finger-Geste am Handy. Die eigene Pinch-Zoom-Funktion der Sternkarte und der AR-Kamera-Ansicht (siehe Abschnitt 16) ist davon unabhängig und funktioniert weiterhin, da sie über eigene Touch-Event-Handler auf dem Karten-Canvas realisiert ist, nicht über den Browser-Viewport.</p>\n";
+document.getElementById("docs-content").innerHTML = "<p><strong>Astro-Logbuch – Datendokumentation</strong> (für Menschen &amp; KI-Assistenten gleichermaßen lesbar). Diese Doku beschreibt die Struktur von <code>data.json</code>, die eigentliche \"Datenbank\" hinter dieser App.</p>\n<p style=\"color:var(--text-faint);font-size:.78rem\">Diese Version von <code>index.html</code> wurde erstellt am: <strong>18.08.2026, 17:33 UTC</strong></p>\n\n<h3>1. Grundprinzip</h3>\n<p>Diese App ist eine einzelne statische HTML-Datei (kein Server, kein Backend). Die eigentlichen Daten liegen in einer Datei <code>data.json</code> im selben GitHub-Repository. Beim Öffnen lädt die App diese Datei (bei konfiguriertem Sync direkt über die GitHub API, sonst aus dem lokalen Browser-Speicher bzw. einer mitgelieferten Startversion). Neue Einträge werden – falls Sync eingerichtet ist – automatisch per <code>PUT</code>-Request wieder als Commit in <code>data.json</code> gespeichert.</p>\n\n<h3>2. Struktur von data.json</h3>\n<pre>{\n  \"schemaVersion\": 1,\n  \"generatedAt\": \"ISO-8601 Zeitstempel\",\n  \"objectCount\": number,\n  \"sessionCount\": number,\n  \"repoOwner\": \"string|undefined – GitHub-Benutzer/Org, gesetzt sobald Sync konfiguriert wurde\",\n  \"repoName\": \"string|undefined – GitHub-Repo-Name\",\n  \"repoBranch\": \"string|undefined – Branch, i.d.R. \\\"main\\\"\",\n  \"objects\": [ Objekt, Objekt, ... ]\n}</pre>\n<p><code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code> werden automatisch beim Speichern der Sync-Einstellungen in <code>data.json</code> geschrieben (nicht nur lokal im Browser). Grund: Foto-URLs (siehe Abschnitt 22) werden daraus gebaut, damit Fotos auch auf einem Gerät korrekt angezeigt werden, auf dem die Sync-Einstellungen noch nicht lokal eingerichtet sind.</p>\n\n<h3>3. Objekt-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>id</code></td><td>string</td><td>Eindeutiger Slug, z.B. \"m31\"</td></tr>\n<tr><td><code>displayName</code></td><td>string</td><td>Anzeigename, z.B. \"M31 (Andromedagalaxie)\"</td></tr>\n<tr><td><code>catalog</code></td><td>object</td><td><code>{messier, ngc, ic, other[]}</code> – Katalogbezeichnungen, null falls nicht zutreffend</td></tr>\n<tr><td><code>commonName</code></td><td>string|null</td><td>Gebräuchlicher Eigenname</td></tr>\n<tr><td><code>type</code></td><td>string (Enum)</td><td>siehe Abschnitt 5</td></tr>\n<tr><td><code>constellation</code></td><td>string|null</td><td>Sternbild (Latein/Deutsch gemischt, informell)</td></tr>\n<tr><td><code>ra</code></td><td>string|null</td><td>Rektaszension, Format <code>HHhMMmSSs</code>, J2000 (Näherungswerte, siehe Abschnitt 7)</td></tr>\n<tr><td><code>dec</code></td><td>string|null</td><td>Deklination, Format <code>±DD°MM'SS\"</code>, J2000</td></tr>\n<tr><td><code>magnitude</code></td><td>number|null</td><td>Scheinbare Helligkeit</td></tr>\n<tr><td><code>angularSize</code></td><td>string|null</td><td>Scheinbare Ausdehnung</td></tr>\n<tr><td><code>distanceLy</code></td><td>number|null</td><td>Entfernung in Lichtjahren (grob)</td></tr>\n<tr><td><code>description</code></td><td>string|null</td><td>Kurzbeschreibung</td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Objekt-Metadaten unsicher/unvollständig → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau zu prüfen ist</td></tr>\n<tr><td><code>sessions</code></td><td>array</td><td>Liste einzelner Aufnahme-Sessions, siehe Abschnitt 4</td></tr>\n</table>\n\n<h3>4. Session-Schema</h3>\n<table>\n<tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>\n<tr><td><code>dateStart</code></td><td>string</td><td>ISO-Datum <code>YYYY-MM-DD</code> (oder <code>YYYY-MM</code> bei nur monatsgenauen Altdaten)</td></tr>\n<tr><td><code>dateEnd</code></td><td>string|null</td><td>Nur gesetzt bei Mehrnächter-/Mosaik-Summensessions</td></tr>\n<tr><td><code>timeStart</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmebeginns, optional. Bei Altdaten/vergangenen Sessions meist leer; gedacht v.a. für geplante zukünftige Aufnahmen</td></tr>\n<tr><td><code>timeEnd</code></td><td>string|null</td><td>Uhrzeit <code>HH:MM</code> des Aufnahmeendes, optional</td></tr>\n<tr><td><code>location</code></td><td>string</td><td>Beobachtungsort (Ortsname wie im Original-Ordner)</td></tr>\n<tr><td><code>focalLengthMm</code></td><td>number|null</td><td>Brennweite in mm, falls im Ordnernamen angegeben</td></tr>\n<tr><td><code>camera</code></td><td>string</td><td>Verwendete Kamera, Freitext. Voreingestellt „Fujifilm XT-30\" beim Anlegen neuer Sessions</td></tr>\n<tr><td><code>filter</code></td><td>string|null</td><td>Verwendeter Filter (z.B. Optolong L-Pro), optional</td></tr>\n<tr><td><code>lens</code></td><td>string|null</td><td>Freitext für Objektiv/Optik, falls abweichend vom Standard-Teleskop</td></tr>\n<tr><td><code>frames</code></td><td>number</td><td>Anzahl Einzelaufnahmen (\"pcs\")</td></tr>\n<tr><td><code>exposureSec</code></td><td>number</td><td>Belichtungszeit pro Einzelbild in Sekunden (Werte &lt;1 = Bruchteile, z.B. 0.05 = 1/20s, typisch bei Mond)</td></tr>\n<tr><td><code>iso</code></td><td>number|null</td><td>ISO-Wert</td></tr>\n<tr><td><code>mosaicPanels</code></td><td>number|null</td><td>Anzahl Mosaik-Kacheln, falls Mosaik-Session</td></tr>\n<tr><td><code>calibration</code></td><td>object</td><td><code>{used: boolean, darks: number|null, flats: number|null, biases: number|null}</code> – ob und wie viele Kalibrierbilder aufgenommen wurden</td></tr>\n<tr><td><code>isMosaicSummary</code></td><td>boolean</td><td>true = Session ist eine aggregierte Summe über mehrere Panels/Nächte, keine Einzelnacht</td></tr>\n<tr><td><code>notes</code></td><td>string|null</td><td>Freitext-Anmerkung</td></tr>\n<tr><td><code>rawFolderName</code></td><td>string</td><td>Originaler Ordnername zur Nachvollziehbarkeit, Format: <code>Datum_Ort_(Brennweite_)Anzahl pcs_Belichtung\"_ISO</code></td></tr>\n<tr><td><code>needsReview</code></td><td>boolean</td><td>Diese einzelne Session ist unsicher interpretiert → prüfen</td></tr>\n<tr><td><code>reviewNote</code></td><td>string|null</td><td>Erklärung, was genau unklar ist</td></tr>\n<tr><td><code>photoPath</code></td><td>string|null</td><td>Relativer Pfad im Repo zum hochgeladenen Astrofoto dieser Session, z.B. <code>images/m31-20260817-a1b2c3.jpg</code> (siehe Abschnitt 22). Nur gesetzt, wenn Sync konfiguriert ist.</td></tr>\n<tr><td><code>photoSha</code></td><td>string|null</td><td>Git-Blob-SHA der Fotodatei, benötigt von der GitHub API zum Ersetzen/Löschen der Datei</td></tr>\n<tr><td><code>photoDataUrl</code></td><td>string|null</td><td>Base64-Data-URI des Fotos, nur als lokaler Fallback gesetzt, wenn kein Sync konfiguriert ist (siehe Abschnitt 22)</td></tr>\n</table>\n\n<h3>5. Typ-Enum (<code>type</code>)</h3>\n<p><code>galaxy</code>, <code>galaxy_group</code>, <code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>, <code>open_cluster</code>, <code>globular_cluster</code>, <code>constellation</code> (Weitwinkel-Sternbildaufnahme), <code>mosaic</code>, <code>milkyway</code>, <code>comet</code>, <code>exoplanet</code>, <code>moon</code>, <code>planet</code>, <code>star</code>, <code>double_star</code>, <code>asterism</code>, <code>other</code>.</p>\n\n<h3>6. Mehrfachaufnahmen &amp; Mosaike</h3>\n<p>Jedes Objekt hat genau einen Eintrag in <code>objects[]</code>, aber beliebig viele Einträge in <code>sessions[]</code> – so werden mehrfach (an verschiedenen Terminen) fotografierte Objekte klar strukturiert abgebildet, ohne Duplikate. Mosaike (z.B. Auriga) werden als ein Objekt vom Typ <code>mosaic</code> geführt; <code>mosaicPanels</code> gibt die Anzahl der Kacheln an. Wo nur eine aggregierte Summe über mehrere Nächte/Panels bekannt ist (aus alten Ordnernamen ohne Tagesauflösung), ist <code>isMosaicSummary: true</code> gesetzt und <code>needsReview</code> aktiv.</p>\n\n<h3>7. Datenqualität / Review-Flags</h3>\n<p>Beim Import der historischen Ordnerstruktur wichen einige Ordnernamen vom Standardmuster ab oder waren im Screenshot abgeschnitten. Für diese Fälle wurden plausible Best-Guess-Werte eingetragen und <code>needsReview: true</code> mit erklärendem <code>reviewNote</code> gesetzt (sichtbar als gelbes Warndreieck in der Übersicht und als gelber Punkt auf der Sternkarte). Beim Aufklappen eines Objekts erscheint der Hinweistext mit einem Button „OK, geprüft\" – ein Klick darauf setzt <code>needsReview</code> auf <code>false</code>, löscht <code>reviewNote</code> und committet die Änderung; das Warndreieck verschwindet dann für dieses Objekt bzw. diese Session. Ebenso sind RA/Dec-Koordinaten für Objekte, bei denen sie \"aus Gedächtnis\" ergänzt wurden (Exoplaneten-Wirtssterne, Kometenposition), zur Prüfung markiert. <strong>Katalogdaten (Typ, Sternbild, RA/Dec, Magnitude) für Messier/NGC/IC-Objekte wurden anhand allgemein bekannter astronomischer Referenzwerte ergänzt</strong> – für professionelle Zwecke gegen eine Quelle wie SIMBAD/VizieR/Stellarium verifizieren.</p>\n\n<h3>8. Sync-Mechanismus</h3>\n<p>Die App speichert einen GitHub Personal Access Token (Contents: Read &amp; Write, nur für das eine Repo) in <code>localStorage</code> dieses Browsers. Bei jeder Änderung wird die komplette <code>data.json</code> per GitHub Contents API (<code>PUT /repos/{owner}/{repo}/contents/data.json</code>) neu committet. Beim Laden wird die Datei per <code>GET</code> von GitHub geholt (nicht über den evtl. gecachten GitHub-Pages-CDN-Link), damit Desktop und Handy zeitnah denselben Stand sehen. Ohne konfigurierten Sync arbeitet die App rein lokal im Browser-Speicher (<code>localStorage</code>) und kann per Export/Import-Button manuell synchronisiert werden.</p>\n\n<h3>9. Sternkarte – Funktionsweise &amp; Grenzen</h3>\n<p>Die 2D-Karte projiziert alle Objekte mit gesetztem RA/Dec sowie einen eingebetteten Katalog heller Sterne (~100 Sterne, ausgewählte Konstellationslinien) fisheye-artig auf den lokalen Himmel (Zenit = Mitte, Horizont = Rand) für Standort und Zeitpunkt. Die AR-Kamera-Ansicht nutzt Kompass (<code>DeviceOrientationEvent</code>) und Neigungssensor, um fotografierte Objekte halbtransparent über das Live-Kamerabild zu legen. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Verzeichniskorrektur der Kamera) – für eine grobe Orientierung \"was habe ich hier schon fotografiert\" gedacht, nicht für exaktes Goto/Teleskop-Pointing.</p>\n\n<h3>10. Katalogauswahl beim Anlegen neuer Objekte</h3>\n<p>Im Formular „Neue Session eintragen\" durchsucht das Eingabefeld einen kombinierten Index aus bereits erfassten Objekten sowie den Nachschlagetabellen für den Messier-Katalog (M1–M110) und den Caldwell-Katalog (C1–C109, deckt viele gängige NGC/IC-Objekte ab). Eine Auswahl aus der Trefferliste füllt Anzeigename, Typ, Sternbild und Katalognummer automatisch vor; RA/Dec sind darüber nicht abgedeckt und müssen bei Bedarf ergänzt werden. Für Objekte außerhalb dieser beiden Listen kann weiterhin frei ein neues Objekt angelegt werden.</p>\n\n<h3>11. Astronomy Picture of the Day</h3>\n<p>Die Übersicht zeigt oben das tagesaktuelle „Astronomy Picture of the Day\" der NASA (<code>api.nasa.gov/planetary/apod</code>), einmal pro Tag abgerufen und lokal zwischengespeichert. Ohne eigenen NASA-API-Key (Einstellungen) wird der gemeinsame <code>DEMO_KEY</code> verwendet, der einem strengeren Rate-Limit unterliegt; bei Fehlern erscheint stattdessen ein Link zu apod.nasa.gov.</p>\n\n<h3>12. Für KI-Assistenten (Hinweis)</h3>\n<p>Wer diese Daten programmatisch weiterverarbeitet: <code>data.json</code> ist das <em>single source of truth</em>-Dokument. Alle Objekte sind eindeutig über <code>id</code> referenzierbar. Aggregierte Kennzahlen (Gesamtbelichtungszeit etc.) lassen sich aus <code>sessions[].frames * sessions[].exposureSec</code> je Objekt aufsummieren. <code>rawFolderName</code> sollte bei Unsicherheiten immer als Primärquelle herangezogen werden, da alle strukturierten Felder daraus abgeleitet (geparst) wurden.</p>\n\n<h3>13. Kategorien in der Übersicht</h3>\n<p>Die Objektliste ist nach <code>type</code> in feste Kategorien gruppiert: Nebel (<code>nebula</code>, <code>planetary_nebula</code>, <code>supernova_remnant</code>), Galaxien (<code>galaxy</code>, <code>galaxy_group</code>), Sternhaufen (<code>open_cluster</code>, <code>globular_cluster</code>), Exoplaneten (<code>exoplanet</code>), Kometen (<code>comet</code>), Objekte des Solarsystems (<code>planet</code>, <code>moon</code>), Konstellationen (<code>constellation</code>, <code>asterism</code>, <code>milkyway</code>) sowie eine Sonstiges-Kategorie als Auffangbecken (<code>star</code>, <code>double_star</code>, <code>mosaic</code>, <code>other</code>). Die Zuordnung erfolgt automatisch anhand von <code>type</code>, ist also nicht separat in <code>data.json</code> gespeichert.</p>\n<p>Zum Filtern steht oben der Button „Alle\" sowie ein Dropdown zur Auswahl genau einer Kategorie zur Verfügung (gegenseitig exklusiv: Auswahl einer Kategorie deaktiviert „Alle\" und umgekehrt). Objekte bzw. Sessions mit ungeprüften Angaben bleiben weiterhin über das gelbe Warndreieck direkt in der Liste erkennbar, auch ohne einen eigenen Filter-Chip dafür.</p>\n\n<h3>14. Suche</h3>\n<p>Über das Lupen-Symbol oben rechts öffnet sich eine eigene Suchansicht mit den Feldern Objekt, Ort der Aufnahme, Jahr der Aufnahme, Brennweite und ISO. Treffer werden – anders als in der Übersicht – als flache Liste einzelner Sessions ohne Kategorie-Gruppierung angezeigt, da hier auf Session-Ebene gefiltert wird.</p>\n\n<h3>15. Bearbeiten &amp; Löschen</h3>\n<p>Unterhalb der Session-Tabelle eines Objekts befinden sich zwei Icon-Buttons: ein Plus (weitere Session für dieses Objekt anlegen) und ein Schraubenschlüssel (Objekt bearbeiten). Das Löschen eines Objekts erfolgt nicht mehr über einen eigenen Button in der Liste, sondern über „Objekt löschen\" innerhalb des Bearbeiten-Dialogs. Einzelne Sessions werden nicht direkt in der Tabelle bearbeitet, sondern über das Augensymbol bzw. Klick auf eine Tabellenzeile geöffnet (siehe Abschnitt 23) – von dort führt ein Bearbeiten-Symbol zum eigentlichen Bearbeiten-Dialog inkl. „Session löschen\". Löschen fragt vorher per Bestätigungsdialog nach. Änderungen werden wie neue Sessions über <code>persist()</code> lokal gespeichert und – falls konfiguriert – zu GitHub synchronisiert.</p>\n\n<h3>16. Sternkarte – Zoom &amp; Verschieben</h3>\n<p>Die 2D-Himmelskarte lässt sich zoomen und verschieben: am Desktop per Mausrad (Zoom zentriert auf die Cursor-Position) sowie per Maus-Drag zum Verschieben; am Handy per Zwei-Finger-Pinch-Geste (Zoom zentriert auf den Mittelpunkt der beiden Finger) und Ein-Finger-Wischen zum Verschieben. Auch die AR-Kamera-Ansicht lässt sich per Pinch/Wisch zoomen und verschieben (rein visuell per CSS-Transform auf Video- und Overlay-Ebene, ohne die zugrundeliegende Projektion zu verändern).</p>\n<p>Der Button „Jetzt\" setzt das Datum/Zeit-Feld auf den aktuellen Zeitpunkt (sichtbar als Bestätigung im Feld); die Positionsberechnung selbst folgt ohnehin laufend der echten Uhrzeit, solange kein abweichender Zeitpunkt manuell im Feld eingetragen ist. Nach erfolgreicher Standortermittlung („Standort ermitteln\") erscheint neben dem Button ein kleines blaues Häkchen als Bestätigung, dass Koordinaten empfangen wurden.</p>\n\n<h3>17. Header-Buttons &amp; Export</h3>\n<p>Oben rechts befinden sich drei Icon-Buttons: Lupe (Suche, siehe Abschnitt 14), Plus („Neues Objekt eintragen\" – öffnet das Formular; wird ein bestehendes Objekt aus dem Katalogindex ausgewählt, wechselt die Überschrift zu „Neue Session: &lt;Objektname&gt;\", da dann eine weitere Session für dieses Objekt angelegt wird) und Zahnrad (Einstellungen). Über den Button „Export\" in der unteren Navigationsleiste lässt sich die komplette Datenbank als CSV-Datei herunterladen (eine Zeile pro Session, inkl. Objekt, Kategorie, Katalognummern und allen Session-Feldern – auch Kamera, Filter, Uhrzeiten und Kalibrierbilder; Semikolon-getrennt mit UTF-8-BOM für direkte Excel-Kompatibilität). Über „Doku\" in derselben Navigationsleiste öffnet sich diese Dokumentation als eigene, vollwertige Ansicht (kein schließbares Fenster) – Zurück geht über einen anderen Tab in derselben Navigationsleiste.</p>\n\n<h3>18. AR-Kamera – Sternbildlinien</h3>\n<p>Neben den bereits fotografierten Objekten zeigt die AR-Kamera-Ansicht zusätzlich den eingebetteten Sternkatalog mit Konstellationslinien an (dieselbe Datengrundlage wie die 2D-Karte), projiziert anhand von Kompass und Neigungssensor – als zusätzliche Orientierungshilfe beim Wiedererkennen von Sternbildern.</p>\n\n<h3>19. Astronomy Picture of the Day – Fallback-Foto</h3>\n<p>Kann das tagesaktuelle NASA-Bild nicht geladen werden (z.B. kein Internetzugriff, Rate-Limit erreicht), zeigt die App stattdessen automatisch ein fest in <code>index.html</code> eingebettetes eigenes Astrofoto (Data-URI, kein externer Abruf nötig) mit Hinweis-Text. Datum/Quelle-Zeile und Erklärungstext sind sowohl beim echten APOD als auch beim Fallback-Foto standardmäßig eingeklappt und erscheinen erst nach Klick auf das „i\"-Symbol.</p>\n\n<h3>20. Kategorie beim Bearbeiten einer Session</h3>\n<p>Da die Kategorie (Nebel, Galaxie, …) technisch am Objekt hängt (Feld <code>type</code>, siehe Abschnitt 5), nicht an der einzelnen Session, lässt sie sich zur Vereinfachung direkt im Bearbeiten-Dialog einer Session mit ändern – die Änderung wirkt sich auf das gesamte Objekt (und damit auf alle seine Sessions) aus.</p>\n\n<h3>21. Gesamtbelichtungszeit</h3>\n<p>Die in jedem Objekt-Eintrag angezeigte Gesamtbelichtungszeit (Summe aus <code>sessions[].frames * sessions[].exposureSec</code> über alle Sessions) wird in Stunden und Minuten kombiniert dargestellt (z.B. „3 h 24 min\"), bei unter einer Stunde nur in Minuten.</p>\n\n<h3>22. Foto pro Session</h3>\n<p>Jede Session kann genau ein aufgenommenes Astrofoto besitzen (kein Galerie-Konzept, ein Foto pro Session). Beim Anlegen einer neuen Session oder beim Bearbeiten einer bestehenden Session lässt sich über ein Datei-Feld ein Foto auswählen – am Desktop alternativ auch per Drag&amp;Drop direkt auf das gestrichelte Feld gezogen; die App verkleinert es clientseitig automatisch (längste Kante max. 2000px, JPEG-Qualität 0,82) bevor es gespeichert wird, um Repo-Größe und Sync-Dauer klein zu halten. Existiert zu einer Session ein Foto, wird es oben in der Detailansicht dieser Session angezeigt (siehe Abschnitt 23); ein Klick darauf öffnet es groß in einem Overlay.</p>\n<p><strong>Speicherort:</strong> Ist GitHub-Sync konfiguriert, wird das komprimierte Foto als eigene Datei in einen Ordner <code>images/</code> im Repo hochgeladen (per GitHub Contents API, <code>PUT /repos/{owner}/{repo}/contents/images/{dateiname}.jpg</code>) – der Ordner wird beim ersten Foto-Upload automatisch angelegt, kein manuelles Setup nötig. In <code>data.json</code> wird nur der relative Pfad (<code>photoPath</code>) und die Blob-SHA (<code>photoSha</code>) referenziert, nicht das Bild selbst – so bleibt <code>data.json</code> klein und schnell synchronisierbar. Angezeigt wird das Foto direkt über <code>https://raw.githubusercontent.com/{repoOwner}/{repoName}/{repoBranch}/{photoPath}</code> (siehe Abschnitt 2 zu <code>repoOwner</code>/<code>repoName</code>/<code>repoBranch</code>), ohne Token, da dies nur bei einem öffentlichen Repo funktioniert (wie es für kostenlose GitHub Pages ohnehin vorausgesetzt ist).</p>\n<p><strong>Ohne Sync:</strong> Ist kein GitHub-Sync eingerichtet, wird das komprimierte Foto stattdessen als Base64-Data-URI direkt im Feld <code>photoDataUrl</code> der Session gespeichert (nur lokal im Browser via <code>localStorage</code>, analog zum sonstigen Offline-Verhalten der App).</p>\n<p><strong>Ersetzen/Löschen:</strong> Wird ein Foto ersetzt oder entfernt, wird die alte Datei im Repo per <code>DELETE /repos/{owner}/{repo}/contents/{photoPath}</code> best-effort gelöscht (schlägt der Löschversuch fehl, z.B. wegen fehlender Berechtigung, wird das ignoriert und nur eine Konsolenwarnung ausgegeben, ohne den eigentlichen Vorgang zu blockieren). Wird eine Session mit Foto gelöscht, wird ebenso versucht, die zugehörige Bilddatei im Repo zu entfernen.</p>\n\n<h3>23. Session-Tabelle &amp; Detailansicht</h3>\n<p>Die Session-Tabelle innerhalb eines aufgeklappten Objekts zeigt bewusst nur vier Spalten: Datum, Ort, Brennweite („f\") und Kamera („Kam.\"). Ganz rechts befindet sich pro Zeile ein Augensymbol; ein Klick darauf (oder auf die Zeile selbst) öffnet ein nicht bearbeitbares Detail-Popup mit allen Angaben zur Session: Name des Objekts, alternative Bezeichnungen (Katalognummern + Eigenname), Sternbild, Zeitraum der Aufnahme (inkl. Uhrzeiten, sofern eingetragen), Brennweite (mit deutscher Tausendertrennung, z.B. „1.000 mm\"), Kamera, Filter, Anzahl Fotos, Belichtungszeit pro Foto, Gesamtbelichtungszeit (Anzahl × Belichtungszeit), Kalibrierbilder (ja/nein inkl. Anzahl Darks/Flats/Biases), ISO sowie – falls vorhanden – das Session-Foto. Oben im Popup befindet sich ein Bearbeiten-Symbol (Schraubenschlüssel), das das Popup schließt und direkt den bearbeitbaren Session-Dialog mit denselben Feldern öffnet.</p>\n<p>Die Spaltenbreiten sind über beide Session-Tabellen (Objekt-Detail und Suchergebnisse) hinweg als Prozentwerte der jeweiligen Tabellenbreite definiert (nicht als feste Pixel-/em-Werte), damit die Tabelle stets die volle verfügbare Breite ausfüllt und nicht wie zuvor nur einen Teil davon.</p>\n\n<h3>24. Kein Pinch-Zoom der Gesamt-App</h3>\n<p>Die App unterbindet über das Viewport-Meta-Tag (<code>maximum-scale=1, user-scalable=no</code>) das versehentliche Vergrößern/Verkleinern der gesamten Seite per Zwei-Finger-Geste am Handy. Die eigene Pinch-Zoom-Funktion der Sternkarte und der AR-Kamera-Ansicht (siehe Abschnitt 16) ist davon unabhängig und funktioniert weiterhin, da sie über eigene Touch-Event-Handler auf dem Karten-Canvas realisiert ist, nicht über den Browser-Viewport.</p>\n";
 
 /* ======================= STAR MAP ======================= */
 let mapMode = "2d";
