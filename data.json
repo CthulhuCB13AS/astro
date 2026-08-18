@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T14:05:57.140Z",
+  "generatedAt": "2026-08-18T14:06:05.028Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -24,8 +24,8 @@
       "angularSize": null,
       "distanceLy": 400,
       "description": "Exoplanet-Transit des Hauptreihensterns WASP-33 (heißer Jupiter). Aufnahmen dienen der Transit-Photometrie.",
-      "needsReview": true,
-      "reviewNote": "RA/Dec des Wirtssterns aus Gedächtnis ergänzt – bitte gegen aktuellen Katalog (z.B. SIMBAD/Exoplanet Archive) prüfen.",
+      "needsReview": false,
+      "reviewNote": null,
       "sessions": [
         {
           "dateStart": "2026-08-14",
