@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:15:32.122Z",
+  "generatedAt": "2026-08-19T14:16:03.247Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -298,7 +298,7 @@
           "dateStart": "2025-05-23",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 149,
           "exposureSec": 60,
@@ -308,7 +308,21 @@
           "notes": null,
           "rawFolderName": "20250523_Bundesplatz_149 pcs_60\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/m64-20250523-stj448.jpg",
+          "photoSha": "e6afc508c7e7ce6d0a36f475f4de122f4ff1ae4c",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
