@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:06:02.408Z",
+  "generatedAt": "2026-08-19T14:06:27.579Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1573,7 +1573,7 @@
           "dateStart": "2025-02-15",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 105,
           "exposureSec": 60,
@@ -1583,7 +1583,21 @@
           "notes": null,
           "rawFolderName": "20250215_Bundesplatz_105 pcs_60\"_1600",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ngc281-20250215-t0gru9.jpg",
+          "photoSha": "1c6f2f73e29e560e12a58f19988bbd8c3f501f05",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-02-16",
