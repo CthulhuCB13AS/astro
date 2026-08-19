@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:22:47.538Z",
+  "generatedAt": "2026-08-19T14:23:16.767Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -259,7 +259,7 @@
           "dateStart": "2025-03-17",
           "dateEnd": null,
           "location": "Braunsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 120,
           "exposureSec": 30,
@@ -269,7 +269,21 @@
           "notes": null,
           "rawFolderName": "20250317_Braunsdorf_120 pcs_30\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/m51-20250317-jwe2dz.jpg",
+          "photoSha": "2cbf04e167fed231669d1b8fe0963657cf41f529",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": true,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
