@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:44:25.839Z",
+  "generatedAt": "2026-08-19T14:48:58.615Z",
   "objectCount": 34,
   "sessionCount": 67,
   "objects": [
@@ -138,7 +138,7 @@
         {
           "dateStart": "2024-12-24",
           "dateEnd": null,
-          "location": "Gomera",
+          "location": "La Gomera",
           "focalLengthMm": 432,
           "lens": null,
           "frames": 100,
