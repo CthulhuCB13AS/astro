@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:03:30.812Z",
+  "generatedAt": "2026-08-19T14:03:41.691Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1050,7 +1050,7 @@
           "dateStart": "2025-02-01",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 528,
           "exposureSec": 60,
@@ -1066,14 +1066,15 @@
           "photoDataUrl": null,
           "timeStart": null,
           "timeEnd": null,
-          "telescopeId": null,
+          "telescopeId": "tel-omegon-72432",
           "filter": null,
           "calibration": {
             "used": false,
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "mountId": "mount-ioptron-skyguider"
         },
         {
           "dateStart": "2025-02-03",
