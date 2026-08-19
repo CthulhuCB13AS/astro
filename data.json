@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:08:27.579Z",
+  "generatedAt": "2026-08-19T14:08:39.363Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1433,7 +1433,7 @@
         {
           "dateStart": "2024-12-31",
           "dateEnd": null,
-          "location": "Gomera",
+          "location": "La Gomera",
           "focalLengthMm": 432,
           "lens": null,
           "frames": 120,
@@ -1454,7 +1454,7 @@
           "mountId": "mount-ioptron-skyguider",
           "filter": null,
           "calibration": {
-            "used": false,
+            "used": true,
             "darks": null,
             "flats": null,
             "biases": null
