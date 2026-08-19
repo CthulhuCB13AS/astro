@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:36:20.824Z",
+  "generatedAt": "2026-08-19T14:37:16.222Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -847,7 +847,7 @@
           "dateStart": "2026-03-01",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 1257,
           "exposureSec": 30,
@@ -857,7 +857,21 @@
           "notes": "Nur Monat (März 2026) im Ordnernamen angegeben, exaktes Startdatum geschätzt (1. des Monats).",
           "rawFolderName": "202603_Mosaik_Bundesplatz 17_1257 pcs_30\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/auriga-mosaic-20260301-3ak57d.jpg",
+          "photoSha": "50d471e1d5fc475f87ef256924961510a9233d5d",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": true,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
