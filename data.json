@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:30:17.349Z",
+  "generatedAt": "2026-08-19T14:31:04.180Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -794,7 +794,7 @@
           "dateStart": "2025-10-18",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 52,
           "exposureSec": 60,
@@ -804,7 +804,21 @@
           "notes": null,
           "rawFolderName": "C/2025 A6 (Lemmon)_20251018_Mahlsdorf_52 pcs_60\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/comet-lemmon-20251018-uxggrk.jpg",
+          "photoSha": "0aec9e5e65fabf5f519543a96b41e3d561ec0da2",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
