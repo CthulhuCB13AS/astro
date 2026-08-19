@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T13:10:12.223Z",
+  "generatedAt": "2026-08-19T13:10:34.681Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1540,7 +1540,10 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "photoPath": "images/ngc1499-20250310-nmcin4.jpg",
+          "photoSha": "9618c9f48350c1195702aaaa6ed015af4f2cbe38",
+          "photoDataUrl": null
         },
         {
           "dateStart": "2025-03-22",
