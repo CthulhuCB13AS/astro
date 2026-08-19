@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:23:52.503Z",
+  "generatedAt": "2026-08-19T14:24:05.211Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -2381,7 +2381,18 @@
           "notes": null,
           "rawFolderName": "20260725_Bundesplatz_432mm_200 pcs_60\"_640",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": true,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
