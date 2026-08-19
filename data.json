@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:09:36.014Z",
+  "generatedAt": "2026-08-19T14:11:35.918Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -590,7 +590,10 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "photoPath": "images/ngc4725-20260525-6n29pq.jpg",
+          "photoSha": "388bbce2d33444a55ae6d1ed13eb7bc95081a59e",
+          "photoDataUrl": null
         }
       ]
     },
