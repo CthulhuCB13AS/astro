@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:21:38.931Z",
+  "generatedAt": "2026-08-19T14:22:19.112Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -570,7 +570,7 @@
           "dateStart": "2025-04-28",
           "dateEnd": null,
           "location": "Deinsberg",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 150,
           "exposureSec": 60,
@@ -580,7 +580,21 @@
           "notes": null,
           "rawFolderName": "20250428_Deinsberg_150 pcs_60\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/m104-20250428-2sppkt.jpg",
+          "photoSha": "dd14c4e971e805db908fe170cfa0a4395281cd47",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": true,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
