@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:13:54.077Z",
+  "generatedAt": "2026-08-19T14:14:15.731Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -152,7 +152,7 @@
           "dateStart": "2025-01-06",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 132,
           "exposureSec": 30,
@@ -162,7 +162,21 @@
           "notes": null,
           "rawFolderName": "20250106_Bundesplatz_132 pcs_30\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/m31-20250106-rscnk6.jpg",
+          "photoSha": "efa16065f3ed70dd062a50f6760fad777d6df4be",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-02-18",
