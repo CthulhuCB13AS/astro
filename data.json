@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:38:26.811Z",
+  "generatedAt": "2026-08-19T14:38:36.774Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -968,7 +968,7 @@
           "dateStart": "2025-12-16",
           "dateEnd": null,
           "location": "La Palma",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 75,
           "exposureSec": 120,
@@ -978,7 +978,18 @@
           "notes": null,
           "rawFolderName": "20251216_La Palma_75 pcs_120\"_2000",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
