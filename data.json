@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:41:06.188Z",
+  "generatedAt": "2026-08-19T14:41:35.034Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -698,16 +698,29 @@
           "dateEnd": null,
           "location": "Geigelstein",
           "focalLengthMm": null,
-          "lens": null,
-          "frames": 32,
-          "exposureSec": 120,
-          "iso": 800,
+          "lens": "27mm",
+          "frames": 30,
+          "exposureSec": 60,
+          "iso": 3200,
           "mosaicPanels": null,
           "isMosaicSummary": false,
           "notes": null,
           "rawFolderName": "20250118_Geigelstein_32 pcs_120\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/milkyway-20250118-ltjz2w.jpg",
+          "photoSha": "aaf5c975509a36c68ebe6e551b1c8cb744d73a40",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-01-18",
