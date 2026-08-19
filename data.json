@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:15:22.971Z",
+  "generatedAt": "2026-08-19T14:15:32.122Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -209,7 +209,7 @@
           "dateStart": "2025-08-23",
           "dateEnd": null,
           "location": "WHAT",
-          "focalLengthMm": null,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 49,
           "exposureSec": 120,
@@ -219,7 +219,18 @@
           "notes": null,
           "rawFolderName": "20250823_WHAT_49 pcs_120\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
