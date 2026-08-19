@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:07:15.728Z",
+  "generatedAt": "2026-08-19T14:07:34.000Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1434,7 +1434,7 @@
           "dateStart": "2024-12-31",
           "dateEnd": null,
           "location": "Gomera",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 120,
           "exposureSec": 120,
@@ -1444,7 +1444,21 @@
           "notes": null,
           "rawFolderName": "20241231_Gomera_120 pcs_120\"_5000",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ic434-20241231-mt7o9d.jpg",
+          "photoSha": "1ec9922a92d65f4459ab90628464b38eee49aa47",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
