@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:35:04.872Z",
+  "generatedAt": "2026-08-19T14:36:20.824Z",
   "objectCount": 34,
-  "sessionCount": 65,
+  "sessionCount": 66,
   "objects": [
     {
       "id": "wasp33b",
@@ -1279,6 +1279,38 @@
           },
           "notes": null,
           "rawFolderName": "20250809_Mahlsdorf_1 pcs_0.005\"_120",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "photoPath": "images/moon-20241224-rci3ga.jpg",
+          "photoSha": "0f68c745208c0d9a5a5f449a94bddb91c7ac008c",
+          "photoDataUrl": null,
+          "dateStart": "2024-12-24",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "La Gomera",
+          "telescopeId": "tel-omegon-72432",
+          "cameraId": "cam-default",
+          "mountId": "mount-ioptron-skyguider",
+          "focalLengthMm": 432,
+          "camera": null,
+          "filter": null,
+          "lens": null,
+          "frames": 1,
+          "exposureSec": 0.005,
+          "iso": 120,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "notes": null,
+          "rawFolderName": "20241224_La Gomera_1 pcs_0.005\"_120",
           "needsReview": false,
           "reviewNote": null
         }
