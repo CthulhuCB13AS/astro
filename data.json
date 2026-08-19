@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:29:31.563Z",
+  "generatedAt": "2026-08-19T14:30:17.349Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -96,7 +96,21 @@
           "notes": null,
           "rawFolderName": "20260802_Bundesplatz_432mm_400 pcs_30\"_640",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/xo1b-20260802-4ur0uk.jpg",
+          "photoSha": "4df7261d4a8f8f5146bd521caf9604522834384d",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": true,
+            "darks": 20,
+            "flats": 20,
+            "biases": 20
+          }
         }
       ]
     },
