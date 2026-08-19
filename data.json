@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:33:29.143Z",
+  "generatedAt": "2026-08-19T14:35:04.872Z",
   "objectCount": 34,
-  "sessionCount": 64,
+  "sessionCount": 65,
   "objects": [
     {
       "id": "wasp33b",
@@ -1249,6 +1249,38 @@
             "flats": null,
             "biases": null
           }
+        },
+        {
+          "photoPath": "images/moon-20250809-n6vkys.jpg",
+          "photoSha": "57772935a012cc0f72963f887e78155e06df5582",
+          "photoDataUrl": null,
+          "dateStart": "2025-08-09",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "Mahlsdorf",
+          "telescopeId": "tel-sw-n2001000",
+          "cameraId": "cam-default",
+          "mountId": "mount-sw-eq6r",
+          "focalLengthMm": 1000,
+          "camera": null,
+          "filter": null,
+          "lens": null,
+          "frames": 1,
+          "exposureSec": 0.005,
+          "iso": 120,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "notes": null,
+          "rawFolderName": "20250809_Mahlsdorf_1 pcs_0.005\"_120",
+          "needsReview": false,
+          "reviewNote": null
         }
       ]
     },
