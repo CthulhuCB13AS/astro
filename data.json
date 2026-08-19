@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:39:13.565Z",
+  "generatedAt": "2026-08-19T14:41:06.188Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -669,7 +669,7 @@
           "dateEnd": null,
           "location": "Geigelstein",
           "focalLengthMm": null,
-          "lens": null,
+          "lens": "27mm",
           "frames": 30,
           "exposureSec": 60,
           "iso": 3200,
@@ -678,7 +678,20 @@
           "notes": null,
           "rawFolderName": "20250118_Geigelstein_30 pcs_60\"_3200",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/milkyway-20250118-bbhyiv.jpg",
+          "photoSha": "cfbe42b6a2714eda8ee3395202b28573b83877d6",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-01-18",
