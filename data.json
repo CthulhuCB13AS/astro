@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T13:14:11.874Z",
+  "generatedAt": "2026-08-19T14:02:20.686Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1190,7 +1190,10 @@
             "flats": null,
             "biases": null
           },
-          "mountId": "mount-ioptron-skyguider"
+          "mountId": "mount-ioptron-skyguider",
+          "photoPath": "images/ic410-20250308-73kpr7.jpg",
+          "photoSha": "b764c398fc95852484ba3beee254d3fbaaadf06c",
+          "photoDataUrl": null
         }
       ]
     },
