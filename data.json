@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:38:36.774Z",
+  "generatedAt": "2026-08-19T14:39:13.565Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -901,7 +901,7 @@
           "dateEnd": null,
           "location": "Ebenreuth",
           "focalLengthMm": null,
-          "lens": null,
+          "lens": "27mm",
           "frames": 75,
           "exposureSec": 120,
           "iso": 800,
@@ -910,7 +910,20 @@
           "notes": null,
           "rawFolderName": "20250921_Ebenreuth_75 pcs_120\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/cepheus-20250921-miuxg3.jpg",
+          "photoSha": "59d03f7c85f4d9f237e9100d9167c638ca403cec",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
