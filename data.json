@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:58:23.339Z",
+  "generatedAt": "2026-08-19T14:59:03.520Z",
   "objectCount": 34,
   "sessionCount": 69,
   "objects": [
@@ -1358,7 +1358,7 @@
           "dateStart": "2025-08-08",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 1000,
           "lens": null,
           "frames": 180,
           "exposureSec": 30,
@@ -1368,7 +1368,21 @@
           "notes": null,
           "rawFolderName": "20250808_Mahlsdorf_180 pcs_30\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/polaris-20250808-2li0zb.jpg",
+          "photoSha": "2965c50360b15676b7bc8029562b04841cc75ef2",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-sw-n2001000",
+          "mountId": "mount-sw-eq6r",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-12-15",
