@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:09:06.731Z",
+  "generatedAt": "2026-08-19T14:09:36.014Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -569,7 +569,7 @@
           "dateStart": "2026-05-25",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 174,
           "exposureSec": 60,
@@ -579,7 +579,18 @@
           "notes": null,
           "rawFolderName": "20260525_NGC 4725_Bundesplatz_174 pcs_60\"_640",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": true,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
