@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:02:20.686Z",
+  "generatedAt": "2026-08-19T14:03:02.976Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1060,7 +1060,20 @@
           "notes": null,
           "rawFolderName": "202502_Bundesplatz_528 pcs_60\" (2 Nächte)",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/ic405-20250201-z7h6sa.jpg",
+          "photoSha": "67f724998be7527fa61420060de30f5b309c23bd",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-02-03",
