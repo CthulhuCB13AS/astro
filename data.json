@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T13:11:32.479Z",
+  "generatedAt": "2026-08-19T13:11:45.040Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -1656,7 +1656,7 @@
           "dateStart": "2025-03-21",
           "dateEnd": null,
           "location": "Bundesplatz",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 294,
           "exposureSec": 20,
@@ -1666,7 +1666,18 @@
           "notes": null,
           "rawFolderName": "20250321_Bundesplatz_294 pcs_20\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
