@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:57:01.773Z",
+  "generatedAt": "2026-08-19T14:58:23.339Z",
   "objectCount": 34,
   "sessionCount": 69,
   "objects": [
@@ -1307,7 +1307,7 @@
           "dateEnd": null,
           "location": "Geigelstein",
           "focalLengthMm": null,
-          "lens": null,
+          "lens": "50mm",
           "frames": 32,
           "exposureSec": 30,
           "iso": 4000,
@@ -1316,7 +1316,20 @@
           "notes": null,
           "rawFolderName": "20250118_Geigelstein_32 pcs_30\"_4000",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/orion-constellation-20250118-r2t2ok.jpg",
+          "photoSha": "76305562f6512cbb55146bc931e788b4ea923089",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": null,
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         }
       ]
     },
