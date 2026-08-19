@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:56:43.418Z",
+  "generatedAt": "2026-08-19T14:57:01.773Z",
   "objectCount": 34,
   "sessionCount": 69,
   "objects": [
@@ -802,7 +802,7 @@
           "camera": null,
           "filter": null,
           "lens": "27mm",
-          "frames": 1,
+          "frames": 3,
           "exposureSec": 25,
           "iso": 3200,
           "mosaicPanels": 3,
