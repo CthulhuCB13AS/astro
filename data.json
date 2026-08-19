@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:59:36.172Z",
-  "objectCount": 34,
-  "sessionCount": 69,
+  "generatedAt": "2026-08-19T15:05:27.704Z",
+  "objectCount": 35,
+  "sessionCount": 70,
   "objects": [
     {
       "id": "wasp33b",
@@ -2808,6 +2808,61 @@
             "flats": null,
             "biases": null
           }
+        }
+      ]
+    },
+    {
+      "id": "markarjansche-kette",
+      "displayName": "Markarjansche Kette",
+      "catalog": {
+        "messier": "M 84, M 86",
+        "ngc": "NGC 4435, NGC 4438, NGC 4461, NGC 4473, NGC 4477",
+        "ic": null,
+        "other": []
+      },
+      "commonName": null,
+      "type": "galaxy_group",
+      "constellation": "Jungfrau",
+      "ra": "12h25m03s",
+      "dec": "+12°53′13″",
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": null,
+      "needsReview": false,
+      "reviewNote": null,
+      "sessions": [
+        {
+          "photoPath": "images/markarjansche-kette-20250501-ge3nui.jpg",
+          "photoSha": "b87d03d0ab2525dcfed4f94f55fbba92edc82140",
+          "photoDataUrl": null,
+          "dateStart": "2025-05-01",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "Bundesplatz",
+          "telescopeId": "tel-omegon-72432",
+          "cameraId": "cam-default",
+          "mountId": "mount-ioptron-skyguider",
+          "focalLengthMm": 432,
+          "camera": null,
+          "filter": null,
+          "lens": null,
+          "frames": 352,
+          "exposureSec": 30,
+          "iso": 800,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": true,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "notes": null,
+          "rawFolderName": "20250501_Bundesplatz_352 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
         }
       ]
     }
