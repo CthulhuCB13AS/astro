@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:16:38.854Z",
+  "generatedAt": "2026-08-19T14:17:17.024Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -351,7 +351,7 @@
           "dateStart": "2025-03-08",
           "dateEnd": null,
           "location": "Mahlsdorf",
-          "focalLengthMm": null,
+          "focalLengthMm": 432,
           "lens": null,
           "frames": 296,
           "exposureSec": 40,
@@ -361,7 +361,21 @@
           "notes": null,
           "rawFolderName": "20250308_Mahlsdorf_296 pcs_40\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/m66group-20250308-heen63.jpg",
+          "photoSha": "59b75d695782b73f2e4e159479dd760c5ebcfad8",
+          "photoDataUrl": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "telescopeId": "tel-omegon-72432",
+          "mountId": "mount-ioptron-skyguider",
+          "filter": null,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          }
         },
         {
           "dateStart": "2025-04-30",
