@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:28:44.197Z",
+  "generatedAt": "2026-08-19T14:29:31.563Z",
   "objectCount": 34,
   "sessionCount": 66,
   "objects": [
@@ -48,11 +48,14 @@
           "mountId": "mount-sw-eq6r",
           "filter": null,
           "calibration": {
-            "used": false,
-            "darks": null,
-            "flats": null,
-            "biases": null
-          }
+            "used": true,
+            "darks": 20,
+            "flats": 20,
+            "biases": 20
+          },
+          "photoPath": "images/wasp33b-20260814-1pcr8m.jpg",
+          "photoSha": "3ad5ac23937cd975ecc685a2fd4e5a42d351875e",
+          "photoDataUrl": null
         }
       ]
     },
