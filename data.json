@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T14:42:50.909Z",
+  "generatedAt": "2026-08-19T14:44:25.839Z",
   "objectCount": 34,
-  "sessionCount": 66,
+  "sessionCount": 67,
   "objects": [
     {
       "id": "wasp33b",
@@ -751,6 +751,38 @@
           },
           "notes": null,
           "rawFolderName": "20250920_Ebenreuth_1 pcs_20\"_3200",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "photoPath": "images/milkyway-20250923-lj68nd.jpg",
+          "photoSha": "4b66710e9b67cd3e00ef3108051832d65dd541ad",
+          "photoDataUrl": null,
+          "dateStart": "2025-09-23",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "Madlitz",
+          "telescopeId": null,
+          "cameraId": "cam-default",
+          "mountId": "mount-none",
+          "focalLengthMm": null,
+          "camera": null,
+          "filter": "Omegon Pro CLS Filter",
+          "lens": "27mm",
+          "frames": 1,
+          "exposureSec": 25,
+          "iso": 3200,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "notes": null,
+          "rawFolderName": "20250923_Madlitz_1 pcs_25\"_3200",
           "needsReview": false,
           "reviewNote": null
         }
