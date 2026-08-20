@@ -13971,12 +13971,18 @@ let arStarting = false; // verhindert, dass ein zweiter (z.B. Doppeltipp-ausgel�
                          // vor Abschluss des ersten (während der Berechtigungsabfrage) läuft und dabei
                          // dessen Kamera-Stream verwaist bzw. eine zweite requestAnimationFrame-Schleife startet
 let arLoopRunning = false; // stellt sicher, dass drawARFrame() nur eine einzige rAF-Kette am Laufen hat
+let arStartedAt = 0; // Zeitpunkt (performance.now()) des letzten startAR() – für die Kompass-Kalibrierungswarnung (s. drawARFrame)
 async function startAR(){
   if(arStarting) return;
   arStarting = true;
   const status = document.getElementById('map-status');
   if(userLat==null){ userLat=52.52; userLon=13.405; }
   resetArTransform();
+  // Sensor-Historie/Status eines evtl. vorherigen AR-Laufs verwerfen: sonst könnte z.B. ein Winkel-
+  // Unwrap im Median-Filter (s.u.) noch auf Werten der letzten Sitzung aufbauen, oder eine bereits erfolgte
+  // Kompass-Kalibrierung würde fälschlich auch für diesen (neuen) Start als gegeben angenommen.
+  resetArSensorState();
+  deviceHeading = null; devicePitch = null;
   try{
     if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
       const perm = await DeviceOrientationEvent.requestPermission();
@@ -13987,6 +13993,7 @@ async function startAR(){
     arOrientationHandler = onDeviceOrientation;
     window.addEventListener('deviceorientationabsolute', arOrientationHandler, true);
     window.addEventListener('deviceorientation', arOrientationHandler, true);
+    arStartedAt = performance.now();
     status.className = 'banner ok';
     status.textContent = 'AR aktiv – Handy in den Himmel halten. Kompass-basiert, nicht teleskop-präzise. Mit zwei Fingern zoomen, mit einem Finger verschieben.';
     if(!arLoopRunning){ arLoopRunning = true; requestAnimationFrame(drawARFrame); }
@@ -14125,6 +14132,48 @@ function adaptiveSmoothingAlpha(diffDeg){
   return MIN_ALPHA + (MAX_ALPHA - MIN_ALPHA) * t;
 }
 let arHaveAbsolute = false; // sobald echte 'deviceorientationabsolute'-Events kommen, werden die (evtl. nur relativen) 'deviceorientation'-Events ignoriert
+let arHeadingIsCalibrated = false; // true, sobald mind. einmal ein ECHT nordkalibrierter Kompasswert einging (webkitCompassHeading ODER e.absolute===true) – siehe Kommentar unten
+function resetArSensorState(){
+  arHaveAbsolute = false;
+  arHeadingIsCalibrated = false;
+  headingRawHistory = [];
+  pitchRawHistory = [];
+}
+
+// Median-Filter (letzte 3 rohe, noch UNGEGLÄTTETE Zielwerte) gegen einzelne Sensor-Ausreißer, BEVOR diese
+// überhaupt in die exponentielle Glättung weiter unten einfließen. Hintergrund: alpha/beta/gamma sind
+// Euler-Winkel und daher nahe bestimmter Gerätelagen numerisch instabil ("Gimbal Lock") – genau die Lage,
+// in der das Handy für die AR-Ansicht typischerweise gehalten wird (nahezu senkrecht, Kamera schräg nach
+// oben in den Himmel). Dort verstärkt die Sensor-Fusion des Browsers kleinstes Rauschen mitunter zu einem
+// einzelnen, deutlich falschen (alpha,beta,gamma)-Tripel, das im nächsten Frame schon wieder verschwindet –
+// das erzeugte den gemeldeten, an einer festen Neigung reproduzierbaren "Sprung" der Darstellung beim
+// Hoch-/Runterneigen. Ein Median aus 3 Werten unterdrückt einen solchen isolierten Ausreißer zuverlässig,
+// ohne echtes, über mehrere Frames andauerndes Schwenken zu verzögern (dafür sorgt weiterhin die
+// adaptive Glättung unten).
+function medianOf3(a,b,c){ return Math.max(Math.min(a,b), Math.min(Math.max(a,b), c)); }
+let headingRawHistory = [];
+let pitchRawHistory = [];
+function medianFilterHeading(targetDeg){
+  // Vor dem Median müssen die Werte "entfaltet" (unwrapped) werden – sonst ergäbe z.B. 359°/1°/2° fälschlich
+  // einen Median um 180° statt der tatsächlich gemeinten ~0°.
+  const last = headingRawHistory.length ? headingRawHistory[headingRawHistory.length-1] : targetDeg;
+  const delta = ((targetDeg - ((last%360)+360)%360 + 540) % 360) - 180;
+  const unwrapped = last + delta;
+  headingRawHistory.push(unwrapped);
+  if(headingRawHistory.length > 3) headingRawHistory.shift();
+  const filtered = headingRawHistory.length === 3
+    ? medianOf3(headingRawHistory[0], headingRawHistory[1], headingRawHistory[2])
+    : unwrapped;
+  return ((filtered % 360) + 360) % 360;
+}
+function medianFilterPitch(targetDeg){
+  pitchRawHistory.push(targetDeg);
+  if(pitchRawHistory.length > 3) pitchRawHistory.shift();
+  return pitchRawHistory.length === 3
+    ? medianOf3(pitchRawHistory[0], pitchRawHistory[1], pitchRawHistory[2])
+    : targetDeg;
+}
+
 function onDeviceOrientation(e){
   // Manche Android-Browser feuern 'deviceorientation' UND 'deviceorientationabsolute' parallel,
   // teils mit unterschiedlichen Referenzrahmen (absolut vs. relativ zur Startausrichtung). Werden
@@ -14134,27 +14183,82 @@ function onDeviceOrientation(e){
   if(e.type === 'deviceorientationabsolute'){ arHaveAbsolute = true; }
   else if(arHaveAbsolute && !e.absolute){ return; }
 
+  // WICHTIG (Fix für "Sternbilder an komplett anderem Ort"): Für die Himmelsrichtung (Kompass/Azimut)
+  // wird zwingend ein zu Norden kalibrierter Wert benötigt. Browser liefern den entweder über
+  // webkitCompassHeading (iOS, immer kalibriert) oder über alpha/beta/gamma – ABER NUR, wenn
+  // e.absolute===true. Auf Browsern/Geräten, die nie ein 'deviceorientationabsolute'-Event feuern (u.a.
+  // einige Nicht-Chrome-Browser auf Android) und nur das einfache 'deviceorientation'-Event mit
+  // e.absolute===false liefern, ist alpha NICHT auf Norden bezogen, sondern eine willkürliche, beim
+  // Tracking-Start festgelegte Referenz. Der frühere Code nutzte diesen Wert trotzdem als Kompassrichtung –
+  // die Sterne erschienen dadurch um einen zufälligen (aber konstanten) Betrag verdreht, was wie "komplett
+  // falscher Ort am Himmel" wirkte. Fix: ohne einen wirklich kalibrierten Wert bleibt deviceHeading
+  // unbestimmt (null), statt einen falschen Wert anzuzeigen – die App zeigt stattdessen einen Hinweis
+  // (siehe drawARFrame). Die Neigung (s.u.) ist davon NICHT betroffen: sie folgt allein aus der Schwerkraft
+  // (Beschleunigungssensor in beta/gamma) und stimmt unabhängig von einer Kompass-Kalibrierung immer.
   let heading = null;
   if(typeof e.webkitCompassHeading === 'number'){
-    heading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten Kompasswert
-  }else if(e.alpha!=null && e.beta!=null && e.gamma!=null){
+    heading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten, kalibrierten Kompasswert
+    arHeadingIsCalibrated = true;
+  }else if(e.absolute===true && e.alpha!=null && e.beta!=null && e.gamma!=null){
     heading = computeCompassHeading(e.alpha, e.beta, e.gamma);
+    arHeadingIsCalibrated = true;
   }
   if(heading!=null){
-    const targetHeading = (heading+360)%360;
+    const targetHeading = medianFilterHeading((heading+360)%360);
     const headingDiff = deviceHeading==null ? 999 : Math.abs(((targetHeading - deviceHeading + 540) % 360) - 180);
     deviceHeading = smoothAngleDeg(deviceHeading, targetHeading, adaptiveSmoothingAlpha(headingDiff));
   }
   if(e.beta!=null && e.gamma!=null){
-    const targetPitch = computeDevicePitch(e.beta, e.gamma);
+    const targetPitch = medianFilterPitch(computeDevicePitch(e.beta, e.gamma));
     const pitchDiff = devicePitch==null ? 999 : Math.abs(targetPitch - devicePitch);
     devicePitch = smoothLinear(devicePitch, targetPitch, adaptiveSmoothingAlpha(pitchDiff));
   }else if(e.beta!=null){
     // Fallback ohne gamma (sollte praktisch nie vorkommen): alte, einfache Näherung.
-    const targetPitch = e.beta - 90;
+    const targetPitch = medianFilterPitch(e.beta - 90);
     const pitchDiff = devicePitch==null ? 999 : Math.abs(targetPitch - devicePitch);
     devicePitch = smoothLinear(devicePitch, targetPitch, adaptiveSmoothingAlpha(pitchDiff));
   }
+}
+// Wandelt Alt/Az (Grad) in einen 3D-Einheitsvektor im lokalen Horizontsystem um: e=Ost, n=Nord, u=Oben.
+function altAzToVec(altDeg, azDeg){
+  const altR = deg2rad(altDeg), azR = deg2rad(azDeg);
+  const cosAlt = Math.cos(altR);
+  return { e: cosAlt*Math.sin(azR), n: cosAlt*Math.cos(azR), u: Math.sin(altR) };
+}
+// Baut die Kamera-Basis (Blickrichtung + Bildebenen-Achsen "rechts"/"oben" + Brennweite in Pixeln) für die
+// gnomonische Projektion einmal pro Frame auf (statt pro Objekt neu zu berechnen).
+function makeArCamera(headingDeg, pitchDeg, fovDeg, canvas){
+  const dir = altAzToVec(pitchDeg, headingDeg);
+  // "Rechts" = Kreuzprodukt aus Blickrichtung und Welt-"Oben" (0,0,1) - entspricht der Annahme, dass das
+  // Bild nicht um die Blickachse verdreht ist (kein Rollwinkel-Tracking, siehe Doku/Abschnitt 9).
+  const horizLen = Math.hypot(dir.e, dir.n); // = cos(pitch); nur direkt im Zenit/Nadir nahe 0 (Sonderfall unten)
+  let right;
+  if(horizLen < 1e-6){
+    // Blick (nahezu) exakt senkrecht nach oben/unten: "Rechts" lässt sich hier nicht mehr sinnvoll aus der
+    // Blickrichtung ableiten (Pol-Singularität) - Rückfall auf die reine Kompassrichtung.
+    const hr = deg2rad(headingDeg);
+    right = { e: Math.cos(hr), n: -Math.sin(hr), u: 0 };
+  }else{
+    right = { e: dir.n/horizLen, n: -dir.e/horizLen, u: 0 };
+  }
+  // "Oben" im Bild = rechtwinklig zu Blickrichtung UND Rechts-Vektor.
+  const up = {
+    e: right.n*dir.u - right.u*dir.n,
+    n: right.u*dir.e - right.e*dir.u,
+    u: right.e*dir.n - right.n*dir.e
+  };
+  const f = (canvas.width/2) / Math.tan(deg2rad(fovDeg)/2); // gemeinsame Brennweite (Pixel) für beide Achsen
+  return {dir, right, up, f};
+}
+// Projiziert eine Alt/Az-Richtung auf Bildschirmkoordinaten; liefert null, wenn das Ziel HINTER der Kamera
+// liegt (kann trotz alt>0 vorkommen, wenn das Objekt weit außerhalb des Blickfelds seitlich/hinter einem steht).
+function projectAltAz(cam, altDeg, azDeg, canvas){
+  const v = altAzToVec(altDeg, azDeg);
+  const camX = v.e*cam.right.e + v.n*cam.right.n + v.u*cam.right.u;
+  const camY = v.e*cam.up.e    + v.n*cam.up.n    + v.u*cam.up.u;
+  const camZ = v.e*cam.dir.e   + v.n*cam.dir.n   + v.u*cam.dir.u;
+  if(camZ <= 0.01) return null;
+  return { x: canvas.width/2 + (camX/camZ) * cam.f, y: canvas.height/2 - (camY/camZ) * cam.f };
 }
 function canvasPillPath(ctx, x, y, w, h, r){
   // Kleine Hilfsfunktion, die nur den Pfad für ein abgerundetes "Pill" aufbaut (kein fill/stroke) -
@@ -14201,39 +14305,57 @@ function drawARFrame(){
   const uiScale = canvas.clientWidth ? (canvas.width / canvas.clientWidth) : 1;
   if(deviceHeading!=null && devicePitch!=null){
     const fov = CFG.fov || 65;
-    const date = currentMapDate();
+    // Die AR-Ansicht zeigt das LIVE-Kamerabild - sie muss daher immer für "jetzt" rechnen, nie für eine im
+    // 2D-Kartenmodus evtl. gesetzte Zeitreise-Uhrzeit (mapTimeOverride, currentMapDate()). Vorher wurde
+    // hier dieselbe (globale) Zeitquelle wie die 2D-Karte verwendet: Wer im 2D-Modus vorher/nachher ein
+    // anderes Datum/Uhrzeit eingestellt hatte (Button "Jetzt" nicht erneut geklickt), bekam in der AR-
+    // Ansicht Sternpositionen für DIESEN fremden Zeitpunkt statt für den tatsächlichen Moment, den die
+    // Kamera gerade zeigt - der Himmel stand dadurch (je nach Zeitdifferenz) an einer komplett anderen
+    // Stelle als real zu sehen. Da der Sternhimmel sich messbar auch schon innerhalb von Minuten weiterdreht,
+    // wird die Uhrzeit hier zudem bei jedem Frame neu geholt statt einmalig gecacht.
+    const date = new Date();
+
+    // Perspektivisch korrekte (gnomonische) Projektion von Alt/Az auf den Bildschirm, statt der früheren
+    // naiven linearen Skalierung von (Objekt-Az − Kompass) und (Objekt-Alt − Neigung) in Bildschirmpixel:
+    // Die alte Methode behandelte Grad-Differenzen im Azimut wie Grad-Differenzen im Bildschirmabstand -
+    // das ignoriert, dass dieselbe Azimut-Differenz in der Nähe des Zenits einer viel KLEINEREN
+    // tatsächlichen Distanz am Himmel entspricht (die Meridiane laufen dort zusammen), und entspricht auch
+    // sonst nicht der Perspektive einer echten Lochkamera (die auf dem Tangens des Winkels beruht, nicht
+    // auf dem Winkel selbst). Ergebnis waren Objekte, die - vor allem hoch am Himmel bzw. nahe am Bildrand -
+    // an einer spürbar falschen Stelle im Kamerabild erschienen. Die gnomonische Projektion (Standard für
+    // Kamera-/Teleskop-Overlays) bildet jedes Objekt stattdessen über einen echten 3D-Richtungsvektor auf
+    // die Bildebene der (rollwinkel-freien, s. Doku) Kamera ab.
+    const cam = makeArCamera(deviceHeading, devicePitch, fov, canvas);
+    const margin = 40 * uiScale;
+    const outOfCanvas = p => !p || p.x < -margin || p.x > canvas.width+margin || p.y < -margin || p.y > canvas.height+margin;
 
     // Sterne + Sternbildlinien
     const starPos = {};
     STAR_CATALOG.stars.forEach(st=>{
       const {alt,az} = raDecToAltAz(st.ra, st.dec, userLat, userLon, date);
-      const dAz = ((az - deviceHeading + 540) % 360) - 180;
-      const dAlt = alt - devicePitch;
-      const x = canvas.width/2 + (dAz/(fov/2)) * (canvas.width/2);
-      const y = canvas.height/2 - (dAlt/(fov/2)) * (canvas.height/2);
-      const inView = Math.abs(dAz)<=fov/2 && Math.abs(dAlt)<=fov/2;
-      starPos[st.name] = {x,y,alt,inView};
+      const p = alt>0 ? projectAltAz(cam, alt, az, canvas) : null;
+      const inView = !outOfCanvas(p);
+      starPos[st.name] = {p, alt, inView};
       if(alt>0 && inView){
         const r = Math.max(1, 3.2 - st.mag*0.5) * uiScale;
-        ctx.beginPath(); ctx.arc(x,y,r,0,7);
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7);
         ctx.fillStyle = 'rgba(210,220,240,.85)'; ctx.fill();
       }
     });
     ctx.strokeStyle = 'rgba(140,165,210,.5)'; ctx.lineWidth = 1.3 * uiScale;
     STAR_CATALOG.lines.forEach(([a,b])=>{
       const pa = starPos[a], pb = starPos[b];
-      if(!pa||!pb||pa.alt<0||pb.alt<0) return;
+      if(!pa||!pb||!pa.p||!pb.p) return;
       if(!pa.inView && !pb.inView) return;
-      ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pa.p.x,pa.p.y); ctx.lineTo(pb.p.x,pb.p.y); ctx.stroke();
     });
 
     getPhotographedTargets().forEach(t=>{
       const {alt,az} = raDecToAltAz(t.raDeg, t.decDeg, userLat, userLon, date);
-      let dAz = ((az - deviceHeading + 540) % 360) - 180;
-      let dAlt = alt - devicePitch;
-      if(Math.abs(dAz) > fov/2 || Math.abs(dAlt) > fov/2) return;
-      const x = canvas.width/2 + (dAz/(fov/2)) * (canvas.width/2);
-      const y = canvas.height/2 - (dAlt/(fov/2)) * (canvas.height/2);
+      if(alt<=0) return;
+      const p = projectAltAz(cam, alt, az, canvas);
+      if(outOfCanvas(p)) return;
+      const {x,y} = p;
       const color = t.obj.needsReview ? '#f5c451' : '#6ea8fe';
       ctx.globalAlpha = 0.55;
       ctx.beginPath(); ctx.arc(x,y,22*uiScale,0,7); ctx.fillStyle=color; ctx.fill();
@@ -14271,16 +14393,38 @@ function drawARFrame(){
     ctx.fillText(hudText, hudX+hudPadX, hudY+hudH/2+1*uiScale);
     ctx.textBaseline = 'alphabetic';
   }else{
-    const waitFontPx = 16 * uiScale;
+    // Unterscheidung zweier Wartezustände statt eines pauschalen "Warte auf Sensordaten": Kommen nach ein
+    // paar Sekunden zwar Neigungs- (devicePitch), aber nie kalibrierte Kompassdaten an (deviceHeading bleibt
+    // dauerhaft null, s. onDeviceOrientation), liefen die Sensoren zwar, aber ohne Nordreferenz - ein
+    // dauerhaftes "Warte…" wäre hier irreführend, da nie ein Bild erscheinen würde. Fix zeigt stattdessen
+    // einen konkreten Hinweis samt Lösungsansatz, statt (wie vor dem Fix) einfach falsch positionierte
+    // Sterne anzuzeigen.
+    const waitedMs = arStartedAt ? (performance.now() - arStartedAt) : 0;
+    const noCompass = devicePitch!=null && !arHeadingIsCalibrated && waitedMs > 4000;
+    const waitText = noCompass
+      ? 'Kein kalibrierter Kompass verfügbar – Sternüberlagerung nicht möglich. Handy in einer liegenden Acht bewegen (Kompass-Kalibrierung) oder Chrome für Android verwenden.'
+      : 'Warte auf Sensordaten … Handy bewegen.';
+    const waitFontPx = (noCompass ? 14 : 16) * uiScale;
     ctx.font = `${waitFontPx}px sans-serif`;
-    const waitText = 'Warte auf Sensordaten … Handy bewegen.';
-    const waitTextW = ctx.measureText(waitText).width;
-    const waitPadX = 14*uiScale, waitPadY = 10*uiScale, waitTextH = waitFontPx;
-    const waitW = waitTextW + waitPadX*2, waitH = waitTextH + waitPadY*2;
+    const maxWidth = canvas.width * 0.8;
+    const words = waitText.split(' ');
+    const lines = [];
+    let line = '';
+    words.forEach(w=>{
+      const test = line ? line + ' ' + w : w;
+      if(ctx.measureText(test).width > maxWidth && line){ lines.push(line); line = w; }
+      else line = test;
+    });
+    if(line) lines.push(line);
+    const lineH = waitFontPx * 1.35;
+    const waitTextW = Math.max(...lines.map(l=>ctx.measureText(l).width));
+    const waitPadX = 14*uiScale, waitPadY = 10*uiScale;
+    const waitW = waitTextW + waitPadX*2, waitH = lines.length*lineH + waitPadY*2;
     canvasPillPath(ctx, canvas.width/2 - waitW/2, canvas.height/2 - waitH/2, waitW, waitH, 10*uiScale);
     ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(waitText, canvas.width/2, canvas.height/2+1*uiScale);
+    const firstLineY = canvas.height/2 - waitH/2 + waitPadY + lineH/2;
+    lines.forEach((l,i)=> ctx.fillText(l, canvas.width/2, firstLineY + i*lineH));
     ctx.textBaseline = 'alphabetic';
   }
   }catch(err){
