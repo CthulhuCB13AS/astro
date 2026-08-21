@@ -14100,6 +14100,7 @@ function renderArDebugPanel(){
   }
   html += `\n--- Berechnete/angezeigte Werte ---\n`;
   html += `Kompass kalibriert: ${arHeadingIsCalibrated}\n`;
+  html += `Kompass-Korrektur aktiv (Neigung im vertrauenswürdigen Bereich): ${arCompassTrusted}\n`;
   html += `zuletzt berechneter Bewegungs-Kompass (gyroHeading): ${fmt(lastGyroHeading)}°\n`;
   html += `angezeigter Kompass (deviceHeading): ${fmt(deviceHeading)}°\n`;
   html += `angezeigte Neigung (devicePitch): ${fmt(devicePitch)}°\n`;
@@ -14189,6 +14190,7 @@ let arHeadingIsCalibrated = false; // true, sobald mind. einmal ein ECHT nordkal
 let headingRawHistory = [];
 let pitchRawHistory = [];
 let lastGyroHeading = null; // letzter (noch nicht nordkalibrierter, aber glatter) Bewegungs-Kompasswert, s. onDeviceOrientation
+let arCompassTrusted = true; // false, solange die Neigung zu stark für eine verlässliche Magnetkompass-Korrektur ist (s. onDeviceOrientation)
 let arLoggedFirstEvent = false, arLoggedCalibrated = false, arLoggedFirstDraw = false; // je einmalige Debug-Meldungen, s.u.
 // ---- Diagnose-Panel (temporär, für die Fehlersuche) ----
 // Schreibt laufend die zuletzt empfangenen ROHEN Sensordaten mit UND protokolliert jeden "Sprung"
@@ -14210,6 +14212,7 @@ function resetArSensorState(){
   headingRawHistory = [];
   pitchRawHistory = [];
   lastGyroHeading = null;
+  arCompassTrusted = true;
   arLoggedFirstEvent = false; arLoggedCalibrated = false; arLoggedFirstDraw = false;
   arDebug.jumpLog = [];
 }
@@ -14297,13 +14300,35 @@ function onDeviceOrientation(e){
   if(calibratedHeading != null){
     if(!arLoggedCalibrated){ arLoggedCalibrated = true; console.log('[AR] Schritt 2: kalibrierter Kompasswert erhalten', calibratedHeading.toFixed(1)+'°', typeof e.webkitCompassHeading==='number' ? '(webkitCompassHeading)' : '(alpha, absolute)'); }
     arHeadingIsCalibrated = true;
-    const filteredCalibrated = medianFilterHeading((calibratedHeading+360)%360);
+    // BESTÄTIGT per Diagnose-Log (zwei Screenshots des Nutzers): webkitCompassHeading selbst - Apples
+    // EIGENER, bereits fertig berechneter Kompasswert, kein Wert aus unserer Formel - kippte zwischen zwei
+    // fast identischen Handy-Lagen (Neigung 42.7°->46.4°, alpha/beta/gamma kaum verändert) um ca. 180°
+    // (155.0°->340.9°), während unser bewegungsbasierter gyroHeading in der gleichen Zeit stabil blieb
+    // (357.4°->352.4°, nur 5° Änderung - passend zur tatsächlichen minimalen Handybewegung). Das ist eine
+    // bekannte Schwäche von Handy-Kompassen: die eingebaute Neigungs-Kompensation des Magnetometers wird
+    // bei starker Neigung des Geräts instabil und kann für die GESAMTE Dauer der Neigung einen falschen,
+    // oft um ~180° gedrehten Wert liefern - das erklärte, warum die vorherige "langsame Korrektur" (2 %
+    // pro Bild) den Sprung nicht verhindern konnte: hält man die Neigung nur ein paar Sekunden, hat sich
+    // die Korrektur trotz der niedrigen Rate längst zum falschen Wert hingezogen.
+    // Fix: der Magnetkompass wird nur noch dann überhaupt zur Korrektur herangezogen, wenn das Handy nicht
+    // zu stark geneigt ist (|devicePitch| <= COMPASS_TRUST_MAX_PITCH_DEG, mit Sicherheitsabstand unter dem
+    // beobachteten Kipp-Bereich um 43-46° gewählt). Bei stärkerer Neigung – also genau dann, wenn man
+    // tatsächlich in den Himmel schaut – wird der Kompasswert komplett ignoriert und deviceHeading läuft
+    // ausschließlich über die (nachweislich stabile) Bewegungsverfolgung weiter; sobald man das Handy
+    // wieder näher zum Horizont senkt, greift die Korrektur automatisch wieder.
+    const COMPASS_TRUST_MAX_PITCH_DEG = 25;
+    const pitchTrustsCompass = devicePitch == null || Math.abs(devicePitch) <= COMPASS_TRUST_MAX_PITCH_DEG;
     if(deviceHeading == null){
-      deviceHeading = filteredCalibrated;
-    }else{
+      deviceHeading = medianFilterHeading((calibratedHeading+360)%360);
+    }else if(pitchTrustsCompass){
+      const filteredCalibrated = medianFilterHeading((calibratedHeading+360)%360);
       const HEADING_CORRECTION_RATE = 0.02;
       const corrDiff = ((filteredCalibrated - deviceHeading + 540) % 360) - 180;
       deviceHeading = (deviceHeading + corrDiff*HEADING_CORRECTION_RATE + 360) % 360;
+      if(!arCompassTrusted){ arCompassTrusted = true; console.log('[AR] Kompass-Korrektur wieder aktiv (Neigung im vertrauenswürdigen Bereich)'); }
+    }else if(arCompassTrusted){
+      arCompassTrusted = false;
+      console.log('[AR] Kompass-Korrektur pausiert (Neigung', devicePitch.toFixed(0)+'° übersteigt', COMPASS_TRUST_MAX_PITCH_DEG+'° - Magnetkompass bei dieser Neigung unzuverlässig, siehe Kommentar)');
     }
   }
 
