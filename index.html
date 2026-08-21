@@ -262,6 +262,10 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 .banner.info{background:var(--accent-bg);color:var(--accent)}
 
 #map-wrap{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;aspect-ratio:1/1;max-width:520px;margin:0 auto;touch-action:none}
+/* Temporäres Diagnose-Panel für die AR-Fehlersuche (Rohsensordaten + Sprung-Log) - siehe onDeviceOrientation/drawARFrame */
+#ar-debug-toggle{position:absolute;top:8px;right:8px;z-index:5;width:2.2em;height:2.2em;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;font-size:1.1rem;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#ar-debug-toggle.visible{display:flex}
+#ar-debug-panel{position:fixed;left:8px;right:8px;bottom:8px;max-height:70vh;overflow-y:auto;background:rgba(0,0,0,.9);color:#7CFC7C;font:11px/1.45 ui-monospace,monospace;padding:.7em;border-radius:10px;z-index:1000;white-space:pre-wrap;border:1px solid rgba(255,255,255,.25)}
 #skyCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #skyCanvas.dragging{cursor:grabbing}
 #arVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;touch-action:none}
@@ -526,7 +530,9 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       <canvas id="skyCanvas" width="600" height="600" tabindex="0" aria-label="Interaktive Sternkarte. Mit den Pfeiltasten verschieben, mit Plus/Minus zoomen."></canvas>
       <video id="arVideo" autoplay playsinline muted></video>
       <canvas id="arCanvas"></canvas>
+      <button type="button" id="ar-debug-toggle" title="Debug-Infos ein/ausblenden" aria-label="Debug-Infos ein/ausblenden">🐞</button>
     </div>
+    <div id="ar-debug-panel" hidden></div>
     <div class="map-controls">
       <button class="small" id="btn-geo">Standort ermitteln<span id="geo-check" class="geo-check">✓</span></button>
       <div class="map-time-row">
@@ -13975,6 +13981,7 @@ let arStartedAt = 0; // Zeitpunkt (performance.now()) des letzten startAR() – 
 async function startAR(){
   if(arStarting) return;
   arStarting = true;
+  console.log('[AR] Schritt 0: startAR() aufgerufen');
   const status = document.getElementById('map-status');
   if(userLat==null){ userLat=52.52; userLon=13.405; }
   resetArTransform();
@@ -13983,9 +13990,11 @@ async function startAR(){
   // Kompass-Kalibrierung würde fälschlich auch für diesen (neuen) Start als gegeben angenommen.
   resetArSensorState();
   deviceHeading = null; devicePitch = null;
+  document.getElementById('ar-debug-toggle').classList.add('visible');
   try{
     if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
       const perm = await DeviceOrientationEvent.requestPermission();
+      console.log('[AR] Bewegungssensor-Berechtigung:', perm);
       if(perm !== 'granted') throw new Error('Bewegungssensor-Zugriff verweigert.');
     }
     arStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
@@ -13994,10 +14003,12 @@ async function startAR(){
     window.addEventListener('deviceorientationabsolute', arOrientationHandler, true);
     window.addEventListener('deviceorientation', arOrientationHandler, true);
     arStartedAt = performance.now();
+    console.log('[AR] Kamera-Stream erhalten, Sensor-Listener registriert – warte auf erstes Sensor-Event …');
     status.className = 'banner ok';
     status.textContent = 'AR aktiv – Handy in den Himmel halten. Kompass-basiert, nicht teleskop-präzise. Mit zwei Fingern zoomen, mit einem Finger verschieben.';
     if(!arLoopRunning){ arLoopRunning = true; requestAnimationFrame(drawARFrame); }
   }catch(e){
+    console.error('[AR] startAR() fehlgeschlagen:', e);
     status.className = 'banner warn';
     status.textContent = 'AR nicht verfügbar: ' + e.message + ' (Kamera/Sensor-Zugriff nötig, funktioniert nur über HTTPS auf dem Handy).';
     document.querySelector('[data-mapmode="2d"]').click();
@@ -14006,6 +14017,8 @@ async function startAR(){
   }
 }
 function stopAR(){
+  document.getElementById('ar-debug-toggle').classList.remove('visible');
+  document.getElementById('ar-debug-panel').hidden = true;
   if(arStream){ arStream.getTracks().forEach(t=>t.stop()); arStream=null; }
   if(arOrientationHandler){
     window.removeEventListener('deviceorientationabsolute', arOrientationHandler, true);
@@ -14063,6 +14076,43 @@ mapWrapEl.addEventListener('touchend', e=>{
   else if(e.touches.length===1) arTouchState = {mode:'pan', lastX:e.touches[0].clientX, lastY:e.touches[0].clientY};
   else if(e.touches.length>=2) rebaseArPinch(e.touches); // z.B. 3->2 Finger: Basis auf verbliebenes Paar neu setzen
 });
+document.getElementById('ar-debug-toggle').addEventListener('click', ()=>{
+  arDebug.enabled = !arDebug.enabled;
+  document.getElementById('ar-debug-panel').hidden = !arDebug.enabled;
+  if(arDebug.enabled) renderArDebugPanel();
+});
+// Baut das Diagnose-Panel neu auf (Rohdaten + Sprung-Log) - wird aus drawARFrame heraus aufgerufen,
+// aber nur wenn arDebug.enabled ist, um im Normalbetrieb keine unnötige Arbeit pro Frame zu verursachen.
+function renderArDebugPanel(){
+  const el = document.getElementById('ar-debug-panel');
+  if(!el || el.hidden) return;
+  const ev = arDebug.lastEvent;
+  const fmt = v => (v==null ? '–' : (typeof v==='number' ? v.toFixed(1) : String(v)));
+  let html = 'AR-DIAGNOSE (zum Schließen 🐞 erneut antippen)\n\n';
+  html += '--- Rohe Sensordaten (letztes Event) ---\n';
+  if(ev){
+    html += `Event-Typ: ${ev.type}\n`;
+    html += `absolute: ${ev.absolute}\n`;
+    html += `alpha: ${fmt(ev.alpha)}°  beta: ${fmt(ev.beta)}°  gamma: ${fmt(ev.gamma)}°\n`;
+    html += `webkitCompassHeading: ${fmt(ev.webkitCompassHeading)}\n`;
+  }else{
+    html += '(noch kein Sensor-Event erhalten)\n';
+  }
+  html += `\n--- Berechnete/angezeigte Werte ---\n`;
+  html += `Kompass kalibriert: ${arHeadingIsCalibrated}\n`;
+  html += `zuletzt berechneter Bewegungs-Kompass (gyroHeading): ${fmt(lastGyroHeading)}°\n`;
+  html += `angezeigter Kompass (deviceHeading): ${fmt(deviceHeading)}°\n`;
+  html += `angezeigte Neigung (devicePitch): ${fmt(devicePitch)}°\n`;
+  html += `\n--- Sprung-Log (letzte ${arDebug.jumpLog.length} von max. 15, neueste zuerst) ---\n`;
+  if(!arDebug.jumpLog.length){
+    html += '(noch kein Sprung >' + AR_JUMP_THRESHOLD_DEG + '° aufgezeichnet)\n';
+  }else{
+    arDebug.jumpLog.forEach(j=>{
+      html += `${j.t}  ${j.kind}: ${j.from}° -> ${j.to}°\n    raw: ${JSON.stringify(j.raw)}\n`;
+    });
+  }
+  el.textContent = html;
+}
 // Korrekte Kompass-Umrechnung aus alpha/beta/gamma (statt der naiven "360-alpha"-Formel,
 // die nur stimmt, wenn das Handy flach auf dem Tisch liegt). Beim AR-Modus wird das Handy
 // aber typischerweise hochkant Richtung Himmel gehalten (beta≈70-160°) – dort führt die
@@ -14127,32 +14177,45 @@ function adaptiveSmoothingAlpha(diffDeg){
   // "One-Euro-Filter"-Ansätze) - kleine Änderungen (Sensor-Rauschen bei ruhig gehaltenem Handy) werden
   // weiterhin stark geglättet, große Änderungen (aktives Schwenken) werden nahezu verzögerungsfrei
   // übernommen, damit Objekte am tatsächlichen Zielpunkt "kleben" statt hinterherzuwandern.
-  const MIN_ALPHA = 0.25, MAX_ALPHA = 0.9, LOW_DEG = 2, HIGH_DEG = 15;
+  // MIN_ALPHA von 0.25 auf 0.35 angehoben und LOW_DEG von 2 auf 1.5 gesenkt: Rückmeldung war, dass die
+  // Markierungen der Bewegung des Handys spürbar "verzögert nachwandern" - mit dem alten, niedrigeren
+  // MIN_ALPHA brauchte selbst eine ruhige, aber stetige Schwenkbewegung mehrere Frames, um aufzuholen.
+  const MIN_ALPHA = 0.35, MAX_ALPHA = 0.9, LOW_DEG = 1.5, HIGH_DEG = 15;
   const t = Math.min(1, Math.max(0, (diffDeg - LOW_DEG) / (HIGH_DEG - LOW_DEG)));
   return MIN_ALPHA + (MAX_ALPHA - MIN_ALPHA) * t;
 }
 let arHaveAbsolute = false; // sobald echte 'deviceorientationabsolute'-Events kommen, werden die (evtl. nur relativen) 'deviceorientation'-Events ignoriert
 let arHeadingIsCalibrated = false; // true, sobald mind. einmal ein ECHT nordkalibrierter Kompasswert einging (webkitCompassHeading ODER e.absolute===true) – siehe Kommentar unten
+let headingRawHistory = [];
+let pitchRawHistory = [];
+let lastGyroHeading = null; // letzter (noch nicht nordkalibrierter, aber glatter) Bewegungs-Kompasswert, s. onDeviceOrientation
+let arLoggedFirstEvent = false, arLoggedCalibrated = false, arLoggedFirstDraw = false; // je einmalige Debug-Meldungen, s.u.
+// ---- Diagnose-Panel (temporär, für die Fehlersuche) ----
+// Schreibt laufend die zuletzt empfangenen ROHEN Sensordaten mit UND protokolliert jeden "Sprung"
+// (großer Ausschlag zwischen zwei aufeinanderfolgenden ANGEZEIGTEN Werten) inkl. der zugehörigen Rohdaten,
+// jeweils auch als console.log/-warn (auf dem iPhone einsehbar via Mac: Safari -> Entwickler-Menü -> unter
+// dem iPhone-Namen die geöffnete Seite auswählen -> Web-Inspector -> Konsole). Zusätzlich über den
+// 🐞-Button direkt in der AR-Ansicht als Panel sichtbar (kein Mac nötig, auch als Screenshot festhaltbar).
+let arDebug = { enabled:false, lastEvent:null, jumpLog:[] };
+const AR_JUMP_THRESHOLD_DEG = 12; // ab dieser Differenz zwischen zwei angezeigten Werten gilt es als "Sprung"
+function arLogJump(kind, from, to, raw){
+  const entry = { t:new Date().toLocaleTimeString('de-DE'), kind, from:Math.round(from), to:Math.round(to), raw };
+  arDebug.jumpLog.unshift(entry);
+  if(arDebug.jumpLog.length>15) arDebug.jumpLog.length=15;
+  console.warn('[AR-SPRUNG]', kind, Math.round(from)+'°', '->', Math.round(to)+'°', raw);
+}
 function resetArSensorState(){
   arHaveAbsolute = false;
   arHeadingIsCalibrated = false;
   headingRawHistory = [];
   pitchRawHistory = [];
+  lastGyroHeading = null;
+  arLoggedFirstEvent = false; arLoggedCalibrated = false; arLoggedFirstDraw = false;
+  arDebug.jumpLog = [];
 }
 
-// Median-Filter (letzte 3 rohe, noch UNGEGLÄTTETE Zielwerte) gegen einzelne Sensor-Ausreißer, BEVOR diese
-// überhaupt in die exponentielle Glättung weiter unten einfließen. Hintergrund: alpha/beta/gamma sind
-// Euler-Winkel und daher nahe bestimmter Gerätelagen numerisch instabil ("Gimbal Lock") – genau die Lage,
-// in der das Handy für die AR-Ansicht typischerweise gehalten wird (nahezu senkrecht, Kamera schräg nach
-// oben in den Himmel). Dort verstärkt die Sensor-Fusion des Browsers kleinstes Rauschen mitunter zu einem
-// einzelnen, deutlich falschen (alpha,beta,gamma)-Tripel, das im nächsten Frame schon wieder verschwindet –
-// das erzeugte den gemeldeten, an einer festen Neigung reproduzierbaren "Sprung" der Darstellung beim
-// Hoch-/Runterneigen. Ein Median aus 3 Werten unterdrückt einen solchen isolierten Ausreißer zuverlässig,
-// ohne echtes, über mehrere Frames andauerndes Schwenken zu verzögern (dafür sorgt weiterhin die
-// adaptive Glättung unten).
+// Median-Filter (letzte 3 rohe, noch UNGEGLÄTTETE Zielwerte) gegen einzelne Sensor-Ausreißer.
 function medianOf3(a,b,c){ return Math.max(Math.min(a,b), Math.min(Math.max(a,b), c)); }
-let headingRawHistory = [];
-let pitchRawHistory = [];
 function medianFilterHeading(targetDeg){
   // Vor dem Median müssen die Werte "entfaltet" (unwrapped) werden – sonst ergäbe z.B. 359°/1°/2° fälschlich
   // einen Median um 180° statt der tatsächlich gemeinten ~0°.
@@ -14175,6 +14238,9 @@ function medianFilterPitch(targetDeg){
 }
 
 function onDeviceOrientation(e){
+  arDebug.lastEvent = { type:e.type, absolute:e.absolute, alpha:e.alpha, beta:e.beta, gamma:e.gamma, webkitCompassHeading:e.webkitCompassHeading };
+  if(!arLoggedFirstEvent){ arLoggedFirstEvent = true; console.log('[AR] Schritt 1: erstes Sensor-Event erhalten', arDebug.lastEvent); }
+
   // Manche Android-Browser feuern 'deviceorientation' UND 'deviceorientationabsolute' parallel,
   // teils mit unterschiedlichen Referenzrahmen (absolut vs. relativ zur Startausrichtung). Werden
   // beide gemischt in dieselben Variablen geschrieben, springt der Kompasswert bei jeder Bewegung
@@ -14183,35 +14249,72 @@ function onDeviceOrientation(e){
   if(e.type === 'deviceorientationabsolute'){ arHaveAbsolute = true; }
   else if(arHaveAbsolute && !e.absolute){ return; }
 
-  // WICHTIG (Fix für "Sternbilder an komplett anderem Ort"): Für die Himmelsrichtung (Kompass/Azimut)
-  // wird zwingend ein zu Norden kalibrierter Wert benötigt. Browser liefern den entweder über
-  // webkitCompassHeading (iOS, immer kalibriert) oder über alpha/beta/gamma – ABER NUR, wenn
-  // e.absolute===true. Auf Browsern/Geräten, die nie ein 'deviceorientationabsolute'-Event feuern (u.a.
-  // einige Nicht-Chrome-Browser auf Android) und nur das einfache 'deviceorientation'-Event mit
-  // e.absolute===false liefern, ist alpha NICHT auf Norden bezogen, sondern eine willkürliche, beim
-  // Tracking-Start festgelegte Referenz. Der frühere Code nutzte diesen Wert trotzdem als Kompassrichtung –
-  // die Sterne erschienen dadurch um einen zufälligen (aber konstanten) Betrag verdreht, was wie "komplett
-  // falscher Ort am Himmel" wirkte. Fix: ohne einen wirklich kalibrierten Wert bleibt deviceHeading
-  // unbestimmt (null), statt einen falschen Wert anzuzeigen – die App zeigt stattdessen einen Hinweis
-  // (siehe drawARFrame). Die Neigung (s.u.) ist davon NICHT betroffen: sie folgt allein aus der Schwerkraft
-  // (Beschleunigungssensor in beta/gamma) und stimmt unabhängig von einer Kompass-Kalibrierung immer.
-  let heading = null;
+  const gyroHeadingNow = (e.alpha!=null && e.beta!=null && e.gamma!=null)
+    ? computeCompassHeading(e.alpha, e.beta, e.gamma) : null;
+
+  // NEU (Fix für "springt bei ~45° Neigung, geht bei Rückneigung wieder zurück" + "wandert verzögert
+  // nach"): Handy-Magnetkompasse (webkitCompassHeading auf iOS, aber auch die aus alpha/beta/gamma
+  // berechnete Richtung) gleichen die Neigung des Geräts rechnerisch aus ("Tilt-Kompensation") - bei
+  // starker Neigung, wie sie beim Blick in den Himmel typisch ist, ist dieser Ausgleich bekanntermaßen
+  // instabil und kann für die GESAMTE Dauer der Neigung einen deutlich falschen (aber stabilen) Wert
+  // liefern, der beim Zurückneigen wieder auf den ursprünglichen Wert zurückspringt - ein einfacher
+  // Ausreißer-Filter (Median o.ä.) kann so einen über mehrere Sekunden STABIL falschen Wert nicht erkennen,
+  // da er nicht "kurz aufblitzt", sondern durchgehend anliegt.
+  // Deshalb wird deviceHeading jetzt nicht mehr direkt auf den Kompasswert gezogen, sondern per
+  // "komplementärem Filter" geführt: die tatsächliche BEWEGUNG (das Delta zwischen zwei aufeinander-
+  // folgenden Ablesungen von computeCompassHeading(alpha,beta,gamma)) wird verzögerungsfrei übernommen -
+  // dieses Delta stammt aus der Gyroskop/Beschleunigungssensor-Fusion des Geräts und bleibt auch bei
+  // starker Neigung glatt (mathematisch unabhängig von einer Kompass-/Magnetometer-Kalibrierung, siehe
+  // Doku-Kommentar bei computeCompassHeading). Der eigentliche Magnetkompasswert (webkitCompassHeading
+  // bzw. bei Android ein wirklich abs.-kalibrierter alpha-Wert) fließt separat nur noch als LANGSAME
+  // Korrektur ein (HEADING_CORRECTION_RATE = 2 % pro Frame) - das zieht die Anzeige über mehrere Sekunden
+  // sanft in Richtung echtem Norden, ein bei starker Neigung kurzzeitig oder dauerhaft falscher Kompasswert
+  // schlägt dadurch aber nur noch minimal statt sofort/komplett durch.
+  if(gyroHeadingNow != null){
+    if(deviceHeading == null){
+      deviceHeading = gyroHeadingNow;
+    }else if(lastGyroHeading != null){
+      const delta = ((gyroHeadingNow - lastGyroHeading + 540) % 360) - 180;
+      const prevHeading = deviceHeading;
+      deviceHeading = (deviceHeading + delta + 360) % 360;
+      if(Math.abs(delta) > AR_JUMP_THRESHOLD_DEG){
+        arLogJump('heading-bewegung', prevHeading, deviceHeading, {gyroHeadingNow:gyroHeadingNow.toFixed(1), lastGyroHeading:lastGyroHeading.toFixed(1), event:arDebug.lastEvent});
+      }
+    }
+    lastGyroHeading = gyroHeadingNow;
+  }
+
+  // WICHTIG (Fix für "Sternbilder an komplett anderem Ort"): für die LANGSAME Korrektur oben wird
+  // zwingend ein zu Norden kalibrierter Wert benötigt - entweder webkitCompassHeading (iOS, immer
+  // kalibriert) oder alpha/beta/gamma, aber NUR wenn e.absolute===true (auf Browsern/Geräten ohne
+  // 'deviceorientationabsolute'-Support ist alpha sonst eine willkürliche Referenz, kein echter Norden).
+  let calibratedHeading = null;
   if(typeof e.webkitCompassHeading === 'number'){
-    heading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten, kalibrierten Kompasswert
-    arHeadingIsCalibrated = true;
-  }else if(e.absolute===true && e.alpha!=null && e.beta!=null && e.gamma!=null){
-    heading = computeCompassHeading(e.alpha, e.beta, e.gamma);
-    arHeadingIsCalibrated = true;
+    calibratedHeading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten, kalibrierten Kompasswert
+  }else if(e.absolute===true && gyroHeadingNow!=null){
+    calibratedHeading = gyroHeadingNow;
   }
-  if(heading!=null){
-    const targetHeading = medianFilterHeading((heading+360)%360);
-    const headingDiff = deviceHeading==null ? 999 : Math.abs(((targetHeading - deviceHeading + 540) % 360) - 180);
-    deviceHeading = smoothAngleDeg(deviceHeading, targetHeading, adaptiveSmoothingAlpha(headingDiff));
+  if(calibratedHeading != null){
+    if(!arLoggedCalibrated){ arLoggedCalibrated = true; console.log('[AR] Schritt 2: kalibrierter Kompasswert erhalten', calibratedHeading.toFixed(1)+'°', typeof e.webkitCompassHeading==='number' ? '(webkitCompassHeading)' : '(alpha, absolute)'); }
+    arHeadingIsCalibrated = true;
+    const filteredCalibrated = medianFilterHeading((calibratedHeading+360)%360);
+    if(deviceHeading == null){
+      deviceHeading = filteredCalibrated;
+    }else{
+      const HEADING_CORRECTION_RATE = 0.02;
+      const corrDiff = ((filteredCalibrated - deviceHeading + 540) % 360) - 180;
+      deviceHeading = (deviceHeading + corrDiff*HEADING_CORRECTION_RATE + 360) % 360;
+    }
   }
+
   if(e.beta!=null && e.gamma!=null){
     const targetPitch = medianFilterPitch(computeDevicePitch(e.beta, e.gamma));
     const pitchDiff = devicePitch==null ? 999 : Math.abs(targetPitch - devicePitch);
+    const prevPitch = devicePitch;
     devicePitch = smoothLinear(devicePitch, targetPitch, adaptiveSmoothingAlpha(pitchDiff));
+    if(prevPitch!=null && Math.abs(devicePitch-prevPitch) > AR_JUMP_THRESHOLD_DEG){
+      arLogJump('neigung', prevPitch, devicePitch, {beta:e.beta.toFixed(1), gamma:e.gamma.toFixed(1), targetPitch:targetPitch.toFixed(1)});
+    }
   }else if(e.beta!=null){
     // Fallback ohne gamma (sollte praktisch nie vorkommen): alte, einfache Näherung.
     const targetPitch = medianFilterPitch(e.beta - 90);
@@ -14303,7 +14406,9 @@ function drawARFrame(){
   // mit uiScale multipliziert, sodass sie unabhängig von der tatsächlichen Kameraauflösung stets in der
   // gewünschten CSS-Pixel-Größe erscheinen.
   const uiScale = canvas.clientWidth ? (canvas.width / canvas.clientWidth) : 1;
+  if(arDebug.enabled) renderArDebugPanel();
   if(deviceHeading!=null && devicePitch!=null){
+    if(!arLoggedFirstDraw){ arLoggedFirstDraw = true; console.log('[AR] Schritt 3: erster Frame mit Sternen/Objekten gezeichnet', {deviceHeading, devicePitch}); }
     const fov = CFG.fov || 65;
     // Die AR-Ansicht zeigt das LIVE-Kamerabild - sie muss daher immer für "jetzt" rechnen, nie für eine im
     // 2D-Kartenmodus evtl. gesetzte Zeitreise-Uhrzeit (mapTimeOverride, currentMapDate()). Vorher wurde
