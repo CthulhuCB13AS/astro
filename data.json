@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-19T15:05:27.704Z",
+  "generatedAt": "2026-08-23T12:21:28.327Z",
   "objectCount": 35,
-  "sessionCount": 70,
+  "sessionCount": 71,
   "objects": [
     {
       "id": "wasp33b",
@@ -2499,6 +2499,35 @@
           "photoPath": "images/ngc6992-20251018-jrlh0n.jpg",
           "photoSha": "f2b8962faa055d0cbfbe155a8380574bff1d110b",
           "photoDataUrl": null
+        },
+        {
+          "dateStart": "2026-08-21",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "kiohiuh",
+          "telescopeId": null,
+          "cameraId": "cam-default",
+          "mountId": "mount-none",
+          "focalLengthMm": null,
+          "camera": null,
+          "filter": "Omegon Pro CLS Filter",
+          "lens": null,
+          "frames": 5,
+          "exposureSec": 56,
+          "iso": 900,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "notes": null,
+          "rawFolderName": "20260821_kiohiuh_5 pcs_56\"_900",
+          "needsReview": false,
+          "reviewNote": null
         }
       ]
     },
