@@ -28,6 +28,7 @@
 html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);
   -webkit-font-smoothing:antialiased;}
 body{padding-bottom:70px;}
+body.pics-active{overflow:hidden}
 a{color:var(--accent)}
 h1,h2,h3,h4{font-weight:600;margin:0 0 .5em}
 hr{border:none;border-top:1px solid var(--border);margin:1.2em 0}
@@ -159,6 +160,12 @@ main{max-width:920px;margin:0 auto;padding:1em;}
 .badge.review{background:transparent;color:var(--warn);border:none;padding:0;font-size:.9rem}
 .obj-body{display:none;padding:0 1em 1em}
 .obj-item.open .obj-body{display:block}
+/* Das i-Info-Symbol neben dem Objektnamen (öffnet die Beschreibung, s. .obj-desc) soll erst erscheinen,
+   wenn das Objekt per + aufgeklappt ist - im geschlossenen Zustand war es zwar sichtbar, ein Klick darauf
+   blieb aber wirkungslos (die Beschreibung selbst liegt in .obj-body, das geschlossen display:none hat) -
+   das wirkte wie ein kaputter Button. */
+.obj-item .info-btn{display:none}
+.obj-item.open .info-btn{display:inline-flex}
 .obj-desc{font-size:.82rem;color:var(--text-dim);margin-bottom:.7em;line-height:1.5;display:none}
 .obj-desc.open{display:block}
 table.sessions{table-layout:fixed;width:100%;border-collapse:collapse;font-size:.8rem}
@@ -263,17 +270,33 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 
 #map-wrap{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;aspect-ratio:1/1;max-width:520px;margin:0 auto;touch-action:none}
 /* Temporäres Diagnose-Panel für die AR-Fehlersuche (Rohsensordaten + Sprung-Log) - siehe onDeviceOrientation/drawARFrame */
-#ar-debug-toggle{position:absolute;top:8px;right:8px;z-index:5;width:2.2em;height:2.2em;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;font-size:1.1rem;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0}
-#ar-debug-toggle.visible{display:flex}
+#ar-debug-toggle,#ar-calibrate-btn{position:absolute;top:8px;z-index:5;width:2.2em;height:2.2em;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;font-size:1.1rem;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#ar-debug-toggle{right:8px}
+#ar-calibrate-btn{right:58px}
+#ar-debug-toggle.visible,#ar-calibrate-btn.visible{display:flex}
 #ar-debug-panel{position:fixed;left:8px;right:8px;bottom:8px;max-height:70vh;overflow-y:auto;background:rgba(0,0,0,.9);color:#7CFC7C;font:11px/1.45 ui-monospace,monospace;padding:.7em;border-radius:10px;z-index:1000;white-space:pre-wrap;border:1px solid rgba(255,255,255,.25)}
 #skyCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #skyCanvas.dragging{cursor:grabbing}
 #arVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;touch-action:none}
 #arCanvas{position:absolute;inset:0;width:100%;height:100%;display:none;touch-action:none}
-.map-controls{display:flex;gap:.6em;flex-wrap:wrap;justify-content:center;margin:.8em 0;row-gap:.7em}
-.map-controls>*{flex:none;min-height:2.6em;box-sizing:border-box}
+/* Immer EINE Zeile (nicht mehr flex-wrap:wrap): "Standort ermitteln", Datum/Uhrzeit und "Jetzt" brachen auf
+   schmalen Handys (z.B. iPhone) trotz reservierter Häkchen-Breite (s.u.) auf zwei Zeilen um, sobald die
+   Summe der Breiten knapp über den verfügbaren Platz kam - je nach Gerät/Systemschrift/Datumsformat war
+   das nicht zuverlässig vorherzusagen. Fix: nowrap erzwingt eine Zeile; reicht der Platz auf einem sehr
+   schmalen Gerät trotz der verkleinerten Schrift unten (@media) nicht ganz, scrollt die Zeile horizontal
+   statt umzubrechen - optisch bleibt es immer eine Zeile.
+*/
+.map-controls{display:flex;gap:.6em;flex-wrap:nowrap;justify-content:center;margin:.8em 0;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.map-controls>*{flex:none;min-height:2.6em;box-sizing:border-box;white-space:nowrap}
 .map-time-row{display:flex;gap:.4em;flex:none}
 .map-time-row input[type=datetime-local]{width:auto;min-width:0;max-width:11em;font-size:.78rem;padding:.55em .5em}
+@media (max-width:480px){
+  .map-controls{gap:.4em;justify-content:flex-start}
+  .map-controls #btn-geo{padding:.3em .5em;font-size:.74rem}
+  .map-time-row{gap:.3em}
+  .map-time-row input[type=datetime-local]{max-width:9.5em;font-size:.72rem;padding:.5em .4em}
+  .map-time-row #btn-map-now{padding:.3em .55em;font-size:.74rem}
+}
 /* visibility:hidden statt display:none (per [hidden]-Attribut) - das Häkchen bleibt dadurch layout-technisch
    IMMER an derselben Stelle reserviert, auch wenn (noch) unsichtbar. So ändert sich beim Ein-/Ausblenden
    nicht die Breite des Buttons "Standort ermitteln", was sonst dazu führte, dass "Standort ermitteln",
@@ -293,9 +316,12 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 #pics-wrap{
   position:relative;background:#000;overflow:hidden;width:100%;
   height:calc(100svh - 130px);min-height:340px;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:center;touch-action:none;
 }
-#pics-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+#pics-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block;touch-action:none}
+/* Info-Button ("i") sitzt bewusst OBEN (Nutzerwunsch), nicht bei den seitlichen, vertikal zentrierten
+   Vor/Zurück-Pfeilen (.pics-nav-btn hat top:50%) - daher hier gezielt überschrieben. */
+#pics-info-btn{top:.6em;right:.6em;left:auto;bottom:auto;transform:none;font-weight:700;font-style:italic;font-family:Georgia,serif}
 .pics-nav-btn{
   position:absolute;top:50%;transform:translateY(-50%);z-index:2;
   width:2.6em;height:2.6em;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;
@@ -348,6 +374,36 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 #stats-empty{color:var(--text-dim);font-size:.85rem;margin:1em 0}
 #stats-drilldown{margin-top:1em}
 #stats-drilldown h4{margin:.2em 0 .5em;font-size:.85rem;color:var(--text-dim)}
+.stats-empty-msg{color:var(--text-dim);font-size:.85rem;margin:1em 0}
+
+/* ---- Statistik: Kategorien (Kuchendiagramme) ---- */
+.pie-grid{display:flex;flex-wrap:wrap;gap:1em;justify-content:center;margin-top:.6em}
+.pie-grid-years{gap:.8em}
+.pie-block{display:flex;flex-direction:column;align-items:center;max-width:220px}
+.pie-title{font-size:.78rem;color:var(--text-dim);margin-bottom:.5em;font-weight:600}
+.pie-chart{border-radius:50%;flex:none}
+.pie-grid-years .pie-title{font-size:.7rem}
+.pie-legend{margin-top:.6em;width:100%;display:flex;flex-direction:column;gap:.25em}
+.pie-legend-row{display:flex;align-items:center;gap:.4em;font-size:.68rem;color:var(--text-dim)}
+.pie-grid-years .pie-legend-row{font-size:.6rem}
+.pie-swatch{width:.7em;height:.7em;border-radius:3px;flex:none}
+.pie-legend-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pie-legend-value{flex:none;color:var(--text-faint)}
+.pie-empty{color:var(--text-faint);font-size:.7rem}
+
+/* ---- Statistik: Einzelbelichtungen (Streudiagramm) ---- */
+.stats-subs-hint{font-size:.72rem;color:var(--text-faint);margin-bottom:.6em;line-height:1.4}
+.stats-subs-svg{width:100%;height:auto;display:block}
+.stats-subs-svg circle{cursor:pointer}
+
+/* ---- Statistik: Orte (Balkenliste) ---- */
+.stats-loc-list{display:flex;flex-direction:column;gap:.6em}
+.stats-loc-row{display:flex;flex-direction:column;gap:.25em}
+.stats-loc-name{font-size:.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stats-loc-bar-track{height:10px;background:var(--bg3);border-radius:5px;overflow:hidden}
+.stats-loc-bar{height:100%;background:var(--accent);border-radius:5px}
+.stats-loc-vals{display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-faint)}
+.stats-loc-count{color:var(--text-dim)}
 
 .hidden{display:none !important}
 .sync-status{font-size:.72rem;color:var(--text-faint)}
@@ -530,6 +586,7 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       <canvas id="skyCanvas" width="600" height="600" tabindex="0" aria-label="Interaktive Sternkarte. Mit den Pfeiltasten verschieben, mit Plus/Minus zoomen."></canvas>
       <video id="arVideo" autoplay playsinline muted></video>
       <canvas id="arCanvas"></canvas>
+      <button type="button" id="ar-calibrate-btn" title="Kompass kalibrieren (Handy Richtung Horizont halten)" aria-label="Kompass kalibrieren">🧭</button>
       <button type="button" id="ar-debug-toggle" title="Debug-Infos ein/ausblenden" aria-label="Debug-Infos ein/ausblenden">🐞</button>
     </div>
     <div id="ar-debug-panel" hidden></div>
@@ -551,6 +608,7 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       <button class="pics-nav-btn" id="pics-next" title="Nächstes Foto" aria-label="Nächstes Foto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
       </button>
+      <button class="pics-nav-btn" id="pics-info-btn" title="Mehr Informationen zu Objekt/Sternbild" aria-label="Mehr Informationen zu Objekt/Sternbild">i</button>
       <div id="pics-caption" aria-live="polite"></div>
       <span id="pics-position-sr" class="sr-only" aria-live="polite"></span>
     </div>
@@ -777,16 +835,37 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 <div class="modal-overlay" id="stats-modal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="stats-modal-title">
     <div class="modal-head"><h2 id="stats-modal-title">Statistik</h2><button class="icon-btn" data-close="stats-modal" aria-label="Schließen">×</button></div>
-    <div class="toolbar" style="justify-content:center">
-      <button type="button" class="chip" data-statsgroup="day" aria-pressed="false">Tage</button>
-      <button type="button" class="chip active" data-statsgroup="month" aria-pressed="true">Monate</button>
-      <button type="button" class="chip" data-statsgroup="year" aria-pressed="false">Jahre</button>
+    <div class="toolbar" style="justify-content:center;flex-wrap:wrap">
+      <button type="button" class="chip active" data-statsview="exposure" aria-pressed="true">Belichtungszeit</button>
+      <button type="button" class="chip" data-statsview="categories" aria-pressed="false">Kategorien</button>
+      <button type="button" class="chip" data-statsview="subs" aria-pressed="false">Einzelbelichtungen</button>
+      <button type="button" class="chip" data-statsview="locations" aria-pressed="false">Orte</button>
     </div>
-    <div id="stats-chart-wrap">
-      <div class="stats-bars" id="stats-bars"></div>
-      <div id="stats-empty" hidden>Noch keine Sessions mit Datum vorhanden.</div>
+
+    <div id="stats-view-exposure">
+      <div class="toolbar" style="justify-content:center">
+        <button type="button" class="chip" data-statsgroup="day" aria-pressed="false">Tage</button>
+        <button type="button" class="chip active" data-statsgroup="month" aria-pressed="true">Monate</button>
+        <button type="button" class="chip" data-statsgroup="year" aria-pressed="false">Jahre</button>
+      </div>
+      <div id="stats-chart-wrap">
+        <div class="stats-bars" id="stats-bars"></div>
+        <div id="stats-empty" hidden>Noch keine Sessions mit Datum vorhanden.</div>
+      </div>
+      <div id="stats-drilldown"></div>
     </div>
-    <div id="stats-drilldown"></div>
+
+    <div id="stats-view-categories" hidden>
+      <div id="stats-categories-wrap"></div>
+    </div>
+
+    <div id="stats-view-subs" hidden>
+      <div id="stats-subs-wrap"></div>
+    </div>
+
+    <div id="stats-view-locations" hidden>
+      <div id="stats-locations-wrap"></div>
+    </div>
   </div>
 </div>
 
@@ -794,6 +873,13 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="docs-modal-title">
     <div class="modal-head"><h2 id="docs-modal-title">Dokumentation</h2><button class="icon-btn" data-close="docs-modal" aria-label="Schließen">×</button></div>
     <div class="doc-content" id="docs-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pics-info-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pics-info-modal-title">
+    <div class="modal-head"><h2 id="pics-info-modal-title">Mehr erfahren</h2><button class="icon-btn" data-close="pics-info-modal" aria-label="Schließen">×</button></div>
+    <div class="doc-content" id="pics-info-content"></div>
   </div>
 </div>
 
@@ -12155,6 +12241,7 @@ function renderPicsGallery(){
   wrap.insertAdjacentHTML("afterbegin",
     `<img src="${escapeHtml(url)}" alt="Foto: ${escapeHtml(o.displayName)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'banner warn',textContent:'Foto konnte nicht geladen werden.'}))">`
   );
+  resetPicsTransform(); // neues Foto -> vorherigen Zoom/Verschub (falls gesetzt) nicht übernehmen
   // Kompakte, kommagetrennte Bildunterschrift (max. 1-2 Zeilen): Aufnahmedatum, Katalogbezeichnung,
   // gebräuchlicher Name, Ort, Gesamtbelichtungszeit, Teleskop (nur die Marke, z.B. "Omegon" statt vollem
   // Modellnamen - bei fehlendem Teleskop ersatzweise das Objektiv, bei beidem fehlend wird das Feld einfach
@@ -12185,6 +12272,97 @@ function picsStep(delta){
 }
 document.getElementById("pics-prev").addEventListener("click", ()=>picsStep(-1));
 document.getElementById("pics-next").addEventListener("click", ()=>picsStep(1));
+
+/* ---- Pics: Pinch-Zoom (Zwei-Finger) + Verschieben (Ein-Finger, nur solange gezoomt) ---- */
+/* Analog zum bereits vorhandenen Pinch-Zoom der AR-Kamera-Ansicht (arZoom/arPanX/arPanY) - eigene
+   Variablen, da unabhängig von dieser Ansicht. */
+let picsZoom = 1, picsPanX = 0, picsPanY = 0, picsTouchState = null;
+function clampPicsZoom(z){ return Math.max(1, Math.min(5, z)); }
+function applyPicsTransform(){
+  const img = document.querySelector("#pics-wrap img");
+  if(img) img.style.transform = `translate(${picsPanX}px, ${picsPanY}px) scale(${picsZoom})`;
+}
+function resetPicsTransform(){ picsZoom = 1; picsPanX = 0; picsPanY = 0; applyPicsTransform(); }
+function rebasePicsPinch(touches){
+  const d = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY);
+  picsTouchState = {mode:"pinch", dist:d, zoomStart:picsZoom};
+}
+const picsWrapEl = document.getElementById("pics-wrap");
+picsWrapEl.addEventListener("touchstart", e=>{
+  if(e.touches.length>=2){ rebasePicsPinch(e.touches); }
+  else if(e.touches.length===1 && picsZoom>1){ picsTouchState = {mode:"pan", lastX:e.touches[0].clientX, lastY:e.touches[0].clientY}; }
+}, {passive:true});
+picsWrapEl.addEventListener("touchmove", e=>{
+  if(!picsTouchState) return;
+  if(picsTouchState.mode==="pinch" && e.touches.length===2){
+    e.preventDefault();
+    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    picsZoom = clampPicsZoom(picsTouchState.zoomStart * (d/picsTouchState.dist));
+    applyPicsTransform();
+  }else if(picsTouchState.mode==="pan" && e.touches.length===1){
+    e.preventDefault();
+    const dx = e.touches[0].clientX - picsTouchState.lastX, dy = e.touches[0].clientY - picsTouchState.lastY;
+    picsPanX += dx; picsPanY += dy;
+    picsTouchState.lastX = e.touches[0].clientX; picsTouchState.lastY = e.touches[0].clientY;
+    applyPicsTransform();
+  }
+}, {passive:false});
+picsWrapEl.addEventListener("touchend", e=>{
+  if(e.touches.length===0) picsTouchState = null;
+  else if(e.touches.length===1) picsTouchState = picsZoom>1 ? {mode:"pan", lastX:e.touches[0].clientX, lastY:e.touches[0].clientY} : null;
+  else if(e.touches.length>=2) rebasePicsPinch(e.touches);
+});
+// Doppeltipp setzt Zoom/Verschub zurück (übliche Geste, schnellerer Weg zurück zur Normalansicht als Kneifen).
+let picsLastTapAt = 0;
+picsWrapEl.addEventListener("touchend", e=>{
+  if(e.touches.length>0) return;
+  const now = Date.now();
+  if(now - picsLastTapAt < 300) resetPicsTransform();
+  picsLastTapAt = now;
+});
+
+/* ---- Pics: Info-Button - weiterführende Links zu Objekt/Sternbild (Wikipedia EN, bei Messier-Objekten
+   zusätzlich die SEDS-Messier-Datenbank) ---- */
+// Sternbildnamen in data.json sind laut Doku "Latein/Deutsch gemischt, informell" - statt eine exakte
+// Wikipedia-Artikel-URL zu raten (die bei Groß-/Kleinschreibung, Sprache oder Klammerzusätzen wie
+// "(constellation)" leicht danebenliegen kann), wird die Wikipedia-EIGENE Suche verlinkt: die leitet bei
+// eindeutigem Treffer automatisch zum richtigen Artikel weiter und zeigt sonst eine Trefferliste - robust
+// unabhängig von Schreibweise/Sprache des gespeicherten Namens.
+function wikipediaSearchUrl(term){
+  return `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(term)}&title=Special:Search&fulltext=1`;
+}
+function sedsMessierUrl(messier){
+  // z.B. "M31" -> "m031" (SEDS nummeriert dreistellig mit führenden Nullen)
+  const num = String(messier).replace(/\D/g, "");
+  if(!num) return null;
+  return `http://www.messier.seds.org/m/m${num.padStart(3,"0")}.html`;
+}
+function renderPicsInfo(o){
+  const content = document.getElementById("pics-info-content");
+  const designation = objectCatalogDesignation(o) || o.commonName || o.displayName;
+  const objectLinks = [];
+  if(o.catalog && o.catalog.messier){
+    const seds = sedsMessierUrl(o.catalog.messier);
+    if(seds) objectLinks.push(`<a href="${seds}" target="_blank" rel="noopener">SEDS Messier-Datenbank (EN): ${escapeHtml(o.catalog.messier)}</a>`);
+  }
+  objectLinks.push(`<a href="${wikipediaSearchUrl(designation + (o.commonName ? " " + o.commonName : ""))}" target="_blank" rel="noopener">Wikipedia EN: ${escapeHtml(designation)}${o.commonName ? " ("+escapeHtml(o.commonName)+")" : ""}</a>`);
+  const constellationLinks = o.constellation
+    ? [`<a href="${wikipediaSearchUrl(o.constellation + " constellation")}" target="_blank" rel="noopener">Wikipedia EN: ${escapeHtml(o.constellation)}</a>`]
+    : [];
+  content.innerHTML = `
+    <p><strong>${escapeHtml(o.displayName)}</strong>${o.type ? " · " + escapeHtml(typeMeta(o.type).label) : ""}</p>
+    ${o.description ? `<p>${escapeHtml(o.description)}</p>` : ""}
+    <h3>Objekt</h3>
+    <p>${objectLinks.join("<br>")}</p>
+    ${o.constellation ? `<h3>Sternbild: ${escapeHtml(o.constellation)}</h3><p>${constellationLinks.join("<br>")}</p>` : ""}
+    <p style="color:var(--text-faint);font-size:.78rem">Externe Links öffnen in einem neuen Tab. Wikipedia-Suche statt fester Artikel-URL, da der gespeicherte Name nicht immer exakt dem Artikeltitel entspricht.</p>
+  `;
+}
+document.getElementById("pics-info-btn").addEventListener("click", ()=>{
+  if(!picsOrder.length) return;
+  renderPicsInfo(picsOrder[picsIndex].o);
+  openModal("pics-info-modal");
+});
 
 /* ======================= STATISTIK-POPUP ======================= */
 let statsGroupMode = "month"; // "day" | "month" | "year"
@@ -12345,13 +12523,163 @@ document.querySelectorAll("#stats-modal [data-statsgroup]").forEach(chip=>{
     renderStatsChart();
   });
 });
+
+/* ======================= STATISTIK: weitere Ansichten (Kategorien / Einzelbelichtungen / Orte) ======================= */
+// Feste Farbzuordnung je Kategorie (dieselben Kategorien wie CATEGORIES/categoryOf), damit die Farbe eines
+// Kuchendiagramm-Segments über alle Diagramme (Gesamt + jedes Jahr) hinweg konsistent bleibt.
+const CATEGORY_COLORS = {
+  nebel:"#6ea8fe", galaxien:"#f5c451", sternhaufen:"#7be07e", exoplaneten:"#e07be0",
+  kometen:"#7bdde0", solarsystem:"#e08b5b", konstellationen:"#a0a8ff", sonstiges:"#9aa4b8"
+};
+// Baut ein Kuchendiagramm rein aus CSS (conic-gradient) statt SVG-Pfaden - deutlich weniger Code/Fehlerquellen
+// für gleich mehrere, unterschiedlich große Diagramme (1x groß "Gesamt" + N kleine pro Jahr).
+function pieChartHtml(entries, sizePx, title){
+  const filtered = entries.filter(e=>e.value>0).sort((a,b)=>b.value-a.value);
+  const total = filtered.reduce((a,e)=>a+e.value,0);
+  if(!total){
+    return `<div class="pie-block"><div class="pie-title">${escapeHtml(title)}</div><div class="pie-chart" style="width:${sizePx}px;height:${sizePx}px;background:var(--bg3)"></div><div class="pie-empty">Keine Daten</div></div>`;
+  }
+  let acc = 0;
+  const stops = filtered.map(e=>{
+    const from = (acc/total*360).toFixed(2); acc += e.value; const to = (acc/total*360).toFixed(2);
+    return `${CATEGORY_COLORS[e.key]||"#888"} ${from}deg ${to}deg`;
+  }).join(", ");
+  const legend = filtered.map(e=>{
+    const pct = Math.round(e.value/total*100);
+    return `<div class="pie-legend-row"><span class="pie-swatch" style="background:${CATEGORY_COLORS[e.key]||"#888"}"></span><span class="pie-legend-label">${escapeHtml(e.label)}</span><span class="pie-legend-value">${fmtHHMM(e.value)} (${pct}%)</span></div>`;
+  }).join("");
+  return `<div class="pie-block">
+    <div class="pie-title">${escapeHtml(title)}</div>
+    <div class="pie-chart" style="width:${sizePx}px;height:${sizePx}px;background:conic-gradient(${stops})"></div>
+    <div class="pie-legend">${legend}</div>
+  </div>`;
+}
+function statsCategoryTotals(rows){
+  const totals = {};
+  CATEGORIES.forEach(c=>totals[c.key]=0);
+  rows.forEach(({o,s})=>{
+    const key = categoryOf(o.type);
+    totals[key] = (totals[key]||0) + (s.frames||0)*(s.exposureSec||0);
+  });
+  return totals;
+}
+function renderStatsCategories(){
+  const wrap = document.getElementById("stats-categories-wrap");
+  const all = [];
+  DB.objects.forEach(o=>o.sessions.forEach(s=>{ if(s.dateStart) all.push({o,s}); }));
+  if(!all.length){ wrap.innerHTML = `<div class="stats-empty-msg">Noch keine Sessions mit Datum vorhanden.</div>`; return; }
+  const totalsAll = statsCategoryTotals(all);
+  const entriesAll = CATEGORIES.map(c=>({key:c.key, label:c.label, value:totalsAll[c.key]||0}));
+  let html = `<div class="pie-grid pie-grid-main">${pieChartHtml(entriesAll, 190, "Gesamt")}</div>`;
+  const years = [...new Set(all.map(r=>r.s.dateStart.slice(0,4)))].sort();
+  const perYearHtml = years.map(y=>{
+    const rowsY = all.filter(r=>r.s.dateStart.slice(0,4)===y);
+    const totalsY = statsCategoryTotals(rowsY);
+    const entriesY = CATEGORIES.map(c=>({key:c.key, label:c.label, value:totalsY[c.key]||0}));
+    return pieChartHtml(entriesY, 120, y);
+  }).join("");
+  html += `<div class="pie-grid pie-grid-years">${perYearHtml}</div>`;
+  wrap.innerHTML = html;
+}
+// Streudiagramm: waagerecht der Aufnahmezeitpunkt, senkrecht die Einzelbelichtungszeit (pro Bild, nicht
+// die Gesamtbelichtungszeit der Session) - so lässt sich ablesen, wann mit welchen Belichtungszeiten
+// fotografiert wurde. Punktgröße = Anzahl Einzelbilder der Session (mehr Bilder = größerer Punkt).
+function renderStatsSubExposures(){
+  const wrap = document.getElementById("stats-subs-wrap");
+  const pts = [];
+  DB.objects.forEach(o=>o.sessions.forEach(s=>{
+    if(!s.dateStart || !s.exposureSec) return;
+    pts.push({date:s.dateStart, sec:s.exposureSec, frames:s.frames||0, name:o.displayName||""});
+  }));
+  if(!pts.length){ wrap.innerHTML = `<div class="stats-empty-msg">Noch keine Sessions mit Einzelbelichtungszeit vorhanden.</div>`; return; }
+  pts.sort((a,b)=>a.date.localeCompare(b.date));
+  const W = 680, H = 260, padL = 42, padR = 14, padT = 14, padB = 32;
+  const t0 = new Date(pts[0].date).getTime();
+  const t1 = new Date(pts[pts.length-1].date).getTime();
+  const tSpan = Math.max(1, t1 - t0);
+  const secMax = Math.max(...pts.map(p=>p.sec));
+  const yMax = Math.ceil(secMax*1.1 / 10) * 10 || 10;
+  const xOf = t => padL + (tSpan>0 ? (t - t0)/tSpan : 0.5) * (W - padL - padR);
+  const yOf = sec => H - padB - (sec/yMax) * (H - padT - padB);
+  let yTickEls = "";
+  const yTicks = 5;
+  for(let i=0;i<=yTicks;i++){
+    const sec = Math.round(yMax*i/yTicks);
+    const y = yOf(sec);
+    yTickEls += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
+    yTickEls += `<text x="${padL-6}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--text-faint)">${sec}s</text>`;
+  }
+  const years = [...new Set(pts.map(p=>p.date.slice(0,4)))];
+  let xTickEls = "";
+  years.forEach(y=>{
+    const t = new Date(`${y}-01-01`).getTime();
+    if(t < t0 || t > t1) return;
+    const x = xOf(t);
+    xTickEls += `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${H-padB}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,2"/>`;
+    xTickEls += `<text x="${x.toFixed(1)}" y="${H-padB+14}" text-anchor="middle" font-size="9" fill="var(--text-faint)">${escapeHtml(y)}</text>`;
+  });
+  const dots = pts.map(p=>{
+    const r = Math.max(2.5, Math.min(9, Math.sqrt(p.frames||1)*1.3));
+    const title = `${fmtDate(p.date)} · ${p.name} · ${fmtExposure(p.sec)} × ${p.frames||"?"}`;
+    return `<circle cx="${xOf(new Date(p.date).getTime()).toFixed(1)}" cy="${yOf(p.sec).toFixed(1)}" r="${r.toFixed(1)}" fill="var(--accent)" fill-opacity=".65" stroke="var(--accent)" stroke-width="1"><title>${escapeHtml(title)}</title></circle>`;
+  }).join("");
+  wrap.innerHTML = `
+    <div class="stats-subs-hint">Jeder Punkt ist eine Session: waagerecht wann fotografiert wurde, senkrecht die Einzelbelichtungszeit pro Bild. Größere Punkte = mehr Einzelbilder. Antippen zeigt Details.</div>
+    <svg viewBox="0 0 ${W} ${H}" class="stats-subs-svg" preserveAspectRatio="xMidYMid meet">
+      ${yTickEls}${xTickEls}
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--text-faint)" stroke-width="1"/>
+      ${dots}
+    </svg>`;
+}
+// Balkenliste je Aufnahmeort: eine Zeile pro Ort, sortiert nach Gesamtbelichtungszeit absteigend. Der Balken
+// zeigt die Belichtungszeit (Hauptkriterium), die Bilderanzahl steht als Zahl daneben - zwei parallele
+// Balken (Zeit + Anzahl) wären bei sehr unterschiedlichen Wertebereichen schwer gemeinsam lesbar gewesen.
+function renderStatsLocations(){
+  const wrap = document.getElementById("stats-locations-wrap");
+  const map = new Map();
+  DB.objects.forEach(o=>o.sessions.forEach(s=>{
+    const loc = (s.location||"").trim() || "Ohne Ortsangabe";
+    if(!map.has(loc)) map.set(loc, {frames:0, sec:0});
+    const e = map.get(loc);
+    e.frames += (s.frames||0);
+    e.sec += (s.frames||0)*(s.exposureSec||0);
+  }));
+  const rows = [...map.entries()].map(([loc,v])=>({loc, ...v})).filter(r=>r.frames>0 || r.sec>0);
+  if(!rows.length){ wrap.innerHTML = `<div class="stats-empty-msg">Noch keine Sessions vorhanden.</div>`; return; }
+  rows.sort((a,b)=>b.sec-a.sec);
+  const maxSec = Math.max(...rows.map(r=>r.sec), 1);
+  wrap.innerHTML = `<div class="stats-loc-list">` + rows.map(r=>{
+    const pct = Math.max(2, Math.round(r.sec/maxSec*100));
+    return `<div class="stats-loc-row">
+      <div class="stats-loc-name">${escapeHtml(r.loc)}</div>
+      <div class="stats-loc-bar-track"><div class="stats-loc-bar" style="width:${pct}%"></div></div>
+      <div class="stats-loc-vals"><span>${fmtHHMM(r.sec)}</span><span class="stats-loc-count">${r.frames} Bild${r.frames===1?"":"er"}</span></div>
+    </div>`;
+  }).join("") + `</div>`;
+}
+let statsViewMode = "exposure"; // "exposure" | "categories" | "subs" | "locations"
+function switchStatsView(mode){
+  statsViewMode = mode;
+  document.querySelectorAll("#stats-modal [data-statsview]").forEach(c=>setChipPressed(c, c.dataset.statsview===mode));
+  document.getElementById("stats-view-exposure").hidden = mode!=="exposure";
+  document.getElementById("stats-view-categories").hidden = mode!=="categories";
+  document.getElementById("stats-view-subs").hidden = mode!=="subs";
+  document.getElementById("stats-view-locations").hidden = mode!=="locations";
+  if(mode==="exposure") renderStatsChart();
+  else if(mode==="categories") renderStatsCategories();
+  else if(mode==="subs") renderStatsSubExposures();
+  else if(mode==="locations") renderStatsLocations();
+}
+document.querySelectorAll("#stats-modal [data-statsview]").forEach(chip=>{
+  chip.addEventListener("click", ()=> switchStatsView(chip.dataset.statsview));
+});
 document.getElementById("btn-stats").addEventListener("click", ()=>{
   // Reihenfolge wichtig: das Modal muss ZUERST sichtbar werden, bevor renderStatsChart() das Diagramm
   // zeichnet - solange "stats-modal" noch [hidden] (display:none) ist, liefert scrollWidth/clientWidth
   // des Chart-Containers 0, wodurch das automatische "zum jüngsten Zeitraum scrollen" am Ende von
   // renderStatsChart() folgenlos blieb (scrollLeft wurde auf 0 statt den tatsächlichen Maximalwert gesetzt).
   openModal("stats-modal");
-  renderStatsChart();
+  switchStatsView(statsViewMode);
 });
 
 /* ======================= SESSION-DETAILANSICHT (nicht bearbeitbar) ======================= */
@@ -13451,6 +13779,17 @@ function switchView(name){
   if(name==="map") initMapViewOnce();
   if(name==="search" && searchResultsStale){ runFieldSearch(); searchResultsStale = false; }
   if(name==="pics") openPicsGallery();
+  // Der globale Sync-Status-Banner ("Verbunden mit GitHub …", ganz unten im body, s. #banner-area) wird
+  // sonst auf JEDER Ansicht mitgerendert - in der Pics-Galerie will der Nutzer aber ein wirklich randloses,
+  // vollflächiges Foto ohne zusätzliche Kopfzeile: die Extra-Höhe des Banners drückte die Ansicht bisher
+  // über den Viewport hinaus (die Galerie ist auf 100svh minus einer festen Kopf/Fuß-Höhe ausgelegt), so
+  // dass die Seite scrollbar wurde und die Bildunterschrift teilweise aus dem sichtbaren Bereich rutschte.
+  document.getElementById("banner-area").style.display = (name==="pics") ? "none" : "";
+  // Zusätzliches Sicherheitsnetz gegen Scrollen der ganzen Seite in der Pics-Galerie (die Höhe von
+  // #pics-wrap ist auf 100svh minus einer festen Kopf/Fuß-Höhe berechnet - reicht diese Schätzung auf
+  // einem bestimmten Gerät/Browser nicht exakt, würde die Seite sonst insgesamt minimal scrollbar, wodurch
+  // die unten im Bild liegende Beschriftung teilweise aus dem sichtbaren Bereich rutschen kann).
+  document.body.classList.toggle("pics-active", name==="pics");
 }
 document.querySelectorAll("nav.tabbar button").forEach(b=>{
   b.addEventListener("click", ()=>switchView(b.dataset.view));
@@ -13858,8 +14197,15 @@ function clampMapZoom(z){ return Math.max(1, Math.min(6, z)); }
 // per Reload wiederherstellbar.
 function clampMapPan(px, py){
   const canvas = document.getElementById('skyCanvas');
-  const maxPan = Math.max(canvas.width, canvas.height) * mapZoom;
-  return { x: Math.max(-maxPan, Math.min(maxPan, px)), y: Math.max(-maxPan, Math.min(maxPan, py)) };
+  // Die Karte füllt bei mapZoom=1 exakt die Canvas-Fläche [0,W]x[0,H]. Nach der
+  // zentrierten Skalierung um (cx,cy) ragt der Karteninhalt pro Achse um genau
+  // Breite*(Zoom-1)/2 bzw. Höhe*(Zoom-1)/2 über den Rand hinaus - das ist der
+  // maximale Verschiebeweg, bei dem die Karte den Bildschirm gerade noch komplett
+  // ausfüllt. Bei Zoom=1 ist der Spielraum also 0 (kein Verschieben ohne vorheriges
+  // Einzoomen), vorher konnte man die Karte komplett aus dem sichtbaren Bereich ziehen.
+  const maxPanX = canvas.width * (mapZoom - 1) / 2;
+  const maxPanY = canvas.height * (mapZoom - 1) / 2;
+  return { x: Math.max(-maxPanX, Math.min(maxPanX, px)), y: Math.max(-maxPanY, Math.min(maxPanY, py)) };
 }
 function zoomMapAt(px, py, factor){
   const canvas = document.getElementById('skyCanvas');
@@ -13991,6 +14337,7 @@ async function startAR(){
   resetArSensorState();
   deviceHeading = null; devicePitch = null;
   document.getElementById('ar-debug-toggle').classList.add('visible');
+  document.getElementById('ar-calibrate-btn').classList.add('visible');
   try{
     if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
       const perm = await DeviceOrientationEvent.requestPermission();
@@ -14005,7 +14352,7 @@ async function startAR(){
     arStartedAt = performance.now();
     console.log('[AR] Kamera-Stream erhalten, Sensor-Listener registriert – warte auf erstes Sensor-Event …');
     status.className = 'banner ok';
-    status.textContent = 'AR aktiv – Handy in den Himmel halten. Kompass-basiert, nicht teleskop-präzise. Mit zwei Fingern zoomen, mit einem Finger verschieben.';
+    status.textContent = 'AR aktiv – zum Ausrichten Handy kurz Richtung Horizont halten und 🧭 antippen, danach frei in den Himmel halten. Mit zwei Fingern zoomen, mit einem Finger verschieben.';
     if(!arLoopRunning){ arLoopRunning = true; requestAnimationFrame(drawARFrame); }
   }catch(e){
     console.error('[AR] startAR() fehlgeschlagen:', e);
@@ -14018,6 +14365,7 @@ async function startAR(){
 }
 function stopAR(){
   document.getElementById('ar-debug-toggle').classList.remove('visible');
+  document.getElementById('ar-calibrate-btn').classList.remove('visible');
   document.getElementById('ar-debug-panel').hidden = true;
   if(arStream){ arStream.getTracks().forEach(t=>t.stop()); arStream=null; }
   if(arOrientationHandler){
@@ -14081,6 +14429,30 @@ document.getElementById('ar-debug-toggle').addEventListener('click', ()=>{
   document.getElementById('ar-debug-panel').hidden = !arDebug.enabled;
   if(arDebug.enabled) renderArDebugPanel();
 });
+// Manuelle Kalibrierung (🧭-Button): siehe großer Kommentar in onDeviceOrientation - der Magnetkompass
+// wird bewusst NICHT mehr laufend automatisch eingemischt, weil er bei starker Neigung nachweislich für
+// Sekunden einen um ~180° falschen, aber stabilen Wert liefern kann. Stattdessen richtet man die Anzeige
+// wie bei Stellarium einmalig aus: Handy Richtung Horizont halten, Button antippen - danach läuft die
+// Ausrichtung rein über die (nachweislich stabile) Bewegungsverfolgung weiter, bis erneut kalibriert wird.
+function calibrateArHeading(){
+  const status = document.getElementById('map-status');
+  if(lastCalibratedHeadingSample == null){
+    status.className = 'banner warn';
+    status.textContent = 'Noch kein Kompasswert empfangen - kurz warten und erneut versuchen.';
+    return;
+  }
+  if(devicePitch != null && Math.abs(devicePitch) > COMPASS_TRUST_MAX_PITCH_DEG){
+    status.className = 'banner warn';
+    status.textContent = `Für eine genaue Kalibrierung das Handy näher zum Horizont halten (aktuelle Neigung: ${devicePitch.toFixed(0)}°, empfohlen unter ${COMPASS_TRUST_MAX_PITCH_DEG}°) und erneut antippen.`;
+    return;
+  }
+  deviceHeading = lastCalibratedHeadingSample;
+  arLastCalibratedAt = performance.now();
+  console.log('[AR] manuell kalibriert auf', deviceHeading.toFixed(1)+'°');
+  status.className = 'banner ok';
+  status.textContent = 'Kompass kalibriert. Handy jetzt frei in den Himmel halten - die Ausrichtung folgt der Bewegung.';
+}
+document.getElementById('ar-calibrate-btn').addEventListener('click', calibrateArHeading);
 // Baut das Diagnose-Panel neu auf (Rohdaten + Sprung-Log) - wird aus drawARFrame heraus aufgerufen,
 // aber nur wenn arDebug.enabled ist, um im Normalbetrieb keine unnötige Arbeit pro Frame zu verursachen.
 function renderArDebugPanel(){
@@ -14099,8 +14471,9 @@ function renderArDebugPanel(){
     html += '(noch kein Sensor-Event erhalten)\n';
   }
   html += `\n--- Berechnete/angezeigte Werte ---\n`;
-  html += `Kompass kalibriert: ${arHeadingIsCalibrated}\n`;
-  html += `Kompass-Korrektur aktiv (Neigung im vertrauenswürdigen Bereich): ${arCompassTrusted}\n`;
+  html += `Kompasswert schon mal empfangen: ${arHeadingIsCalibrated}\n`;
+  html += `zuletzt empfangener Kompasswert (für 🧭-Button): ${fmt(lastCalibratedHeadingSample)}°\n`;
+  html += `letzte Kalibrierung: ${arLastCalibratedAt ? Math.round((performance.now()-arLastCalibratedAt)/1000)+'s her' : 'noch nie'}\n`;
   html += `zuletzt berechneter Bewegungs-Kompass (gyroHeading): ${fmt(lastGyroHeading)}°\n`;
   html += `angezeigter Kompass (deviceHeading): ${fmt(deviceHeading)}°\n`;
   html += `angezeigte Neigung (devicePitch): ${fmt(devicePitch)}°\n`;
@@ -14189,8 +14562,11 @@ let arHaveAbsolute = false; // sobald echte 'deviceorientationabsolute'-Events k
 let arHeadingIsCalibrated = false; // true, sobald mind. einmal ein ECHT nordkalibrierter Kompasswert einging (webkitCompassHeading ODER e.absolute===true) – siehe Kommentar unten
 let headingRawHistory = [];
 let pitchRawHistory = [];
-let lastGyroHeading = null; // letzter (noch nicht nordkalibrierter, aber glatter) Bewegungs-Kompasswert, s. onDeviceOrientation
-let arCompassTrusted = true; // false, solange die Neigung zu stark für eine verlässliche Magnetkompass-Korrektur ist (s. onDeviceOrientation)
+let lastGyroHeading = null; // letzter Bewegungs-Kompasswert (glatt, aber nicht zwingend nordkalibriert), s. onDeviceOrientation
+let lastCalibratedHeadingSample = null; // zuletzt empfangener ECHTER (Magnetkompass-)Wert, geglättet - Basis für den Kalibrieren-Button
+let arAutoCalibrated = false; // wurde die einmalige Auto-Kalibrierung beim AR-Start schon durchgeführt?
+let arLastCalibratedAt = 0; // performance.now() der letzten (auto. oder manuellen) Kalibrierung, für die HUD-Anzeige
+const COMPASS_TRUST_MAX_PITCH_DEG = 25; // s. Kommentar in calibrateArHeading()
 let arLoggedFirstEvent = false, arLoggedCalibrated = false, arLoggedFirstDraw = false; // je einmalige Debug-Meldungen, s.u.
 // ---- Diagnose-Panel (temporär, für die Fehlersuche) ----
 // Schreibt laufend die zuletzt empfangenen ROHEN Sensordaten mit UND protokolliert jeden "Sprung"
@@ -14212,7 +14588,9 @@ function resetArSensorState(){
   headingRawHistory = [];
   pitchRawHistory = [];
   lastGyroHeading = null;
-  arCompassTrusted = true;
+  lastCalibratedHeadingSample = null;
+  arAutoCalibrated = false;
+  arLastCalibratedAt = 0;
   arLoggedFirstEvent = false; arLoggedCalibrated = false; arLoggedFirstDraw = false;
   arDebug.jumpLog = [];
 }
@@ -14255,27 +14633,27 @@ function onDeviceOrientation(e){
   const gyroHeadingNow = (e.alpha!=null && e.beta!=null && e.gamma!=null)
     ? computeCompassHeading(e.alpha, e.beta, e.gamma) : null;
 
-  // NEU (Fix für "springt bei ~45° Neigung, geht bei Rückneigung wieder zurück" + "wandert verzögert
-  // nach"): Handy-Magnetkompasse (webkitCompassHeading auf iOS, aber auch die aus alpha/beta/gamma
-  // berechnete Richtung) gleichen die Neigung des Geräts rechnerisch aus ("Tilt-Kompensation") - bei
-  // starker Neigung, wie sie beim Blick in den Himmel typisch ist, ist dieser Ausgleich bekanntermaßen
-  // instabil und kann für die GESAMTE Dauer der Neigung einen deutlich falschen (aber stabilen) Wert
-  // liefern, der beim Zurückneigen wieder auf den ursprünglichen Wert zurückspringt - ein einfacher
-  // Ausreißer-Filter (Median o.ä.) kann so einen über mehrere Sekunden STABIL falschen Wert nicht erkennen,
-  // da er nicht "kurz aufblitzt", sondern durchgehend anliegt.
-  // Deshalb wird deviceHeading jetzt nicht mehr direkt auf den Kompasswert gezogen, sondern per
-  // "komplementärem Filter" geführt: die tatsächliche BEWEGUNG (das Delta zwischen zwei aufeinander-
-  // folgenden Ablesungen von computeCompassHeading(alpha,beta,gamma)) wird verzögerungsfrei übernommen -
-  // dieses Delta stammt aus der Gyroskop/Beschleunigungssensor-Fusion des Geräts und bleibt auch bei
-  // starker Neigung glatt (mathematisch unabhängig von einer Kompass-/Magnetometer-Kalibrierung, siehe
-  // Doku-Kommentar bei computeCompassHeading). Der eigentliche Magnetkompasswert (webkitCompassHeading
-  // bzw. bei Android ein wirklich abs.-kalibrierter alpha-Wert) fließt separat nur noch als LANGSAME
-  // Korrektur ein (HEADING_CORRECTION_RATE = 2 % pro Frame) - das zieht die Anzeige über mehrere Sekunden
-  // sanft in Richtung echtem Norden, ein bei starker Neigung kurzzeitig oder dauerhaft falscher Kompasswert
-  // schlägt dadurch aber nur noch minimal statt sofort/komplett durch.
+  // NEU, ersetzt den vorherigen Ansatz komplett (Fix für "Ansicht spielt bei starker Neigung verrückt"):
+  // Per Diagnose-Log (zwei Nutzer-Screenshots) war bestätigt, dass Apples EIGENER, fertiger Kompasswert
+  // (webkitCompassHeading) zwischen zwei fast identischen Handy-Lagen um ~180° kippte (155°->340.9°),
+  // während unser bewegungsbasierter Wert (gyroHeadingNow) im selben Moment stabil blieb (357.4°->352.4°).
+  // Selbst eine nur LANGSAME, stark gedämpfte Korrektur Richtung Kompass (der vorherige Versuch) zieht die
+  // Anzeige über ein paar Sekunden trotzdem zum falschen Wert, sobald man die Neigung länger hält - der
+  // Magnetkompass ist bei der für AR nötigen starken Neigung schlicht nicht durchgehend vertrauenswürdig
+  // genug für eine automatische, laufende Korrektur.
+  // Neues Prinzip (wie vom Nutzer vorgeschlagen, entspricht dem Vorgehen von Stellarium & Co.): Kompass
+  // wird NICHT mehr laufend eingemischt. deviceHeading läuft ausschließlich über die Bewegung fort (Delta
+  // von computeCompassHeading(alpha,beta,gamma) zwischen zwei Events - das bleibt bei jeder Neigung glatt,
+  // da rein aus Gyroskop/Beschleunigungssensor, s. Doku-Kommentar bei computeCompassHeading). Die
+  // Nordausrichtung wird stattdessen EINMALIG hergestellt: automatisch beim ersten brauchbaren Kompasswert
+  // nach dem Start (nur, wenn das Handy dabei nicht zu stark geneigt ist) sowie jederzeit erneut über den
+  // 🧭-Button (calibrateArHeading()), wenn man das Handy kurz Richtung Horizont hält. Zwischen zwei
+  // Kalibrierungen kann die Richtung durch reine Sensordrift langsam abweichen (typisch: klein über
+  // mehrere Minuten) - das ist ein deutlich kleineres Problem als der 180°-Sprung und lässt sich jederzeit
+  // per Knopfdruck wieder korrigieren.
   if(gyroHeadingNow != null){
     if(deviceHeading == null){
-      deviceHeading = gyroHeadingNow;
+      deviceHeading = gyroHeadingNow; // Startwert (noch nicht nordkalibriert); wird unten ggf. sofort durch Auto-Kalibrierung ersetzt
     }else if(lastGyroHeading != null){
       const delta = ((gyroHeadingNow - lastGyroHeading + 540) % 360) - 180;
       const prevHeading = deviceHeading;
@@ -14287,10 +14665,8 @@ function onDeviceOrientation(e){
     lastGyroHeading = gyroHeadingNow;
   }
 
-  // WICHTIG (Fix für "Sternbilder an komplett anderem Ort"): für die LANGSAME Korrektur oben wird
-  // zwingend ein zu Norden kalibrierter Wert benötigt - entweder webkitCompassHeading (iOS, immer
-  // kalibriert) oder alpha/beta/gamma, aber NUR wenn e.absolute===true (auf Browsern/Geräten ohne
-  // 'deviceorientationabsolute'-Support ist alpha sonst eine willkürliche Referenz, kein echter Norden).
+  // Echten (kalibrierten) Kompasswert nur MERKEN (für Auto- und manuelle Kalibrierung) - siehe oben, wird
+  // nicht mehr automatisch laufend in deviceHeading eingemischt.
   let calibratedHeading = null;
   if(typeof e.webkitCompassHeading === 'number'){
     calibratedHeading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten, kalibrierten Kompasswert
@@ -14300,35 +14676,16 @@ function onDeviceOrientation(e){
   if(calibratedHeading != null){
     if(!arLoggedCalibrated){ arLoggedCalibrated = true; console.log('[AR] Schritt 2: kalibrierter Kompasswert erhalten', calibratedHeading.toFixed(1)+'°', typeof e.webkitCompassHeading==='number' ? '(webkitCompassHeading)' : '(alpha, absolute)'); }
     arHeadingIsCalibrated = true;
-    // BESTÄTIGT per Diagnose-Log (zwei Screenshots des Nutzers): webkitCompassHeading selbst - Apples
-    // EIGENER, bereits fertig berechneter Kompasswert, kein Wert aus unserer Formel - kippte zwischen zwei
-    // fast identischen Handy-Lagen (Neigung 42.7°->46.4°, alpha/beta/gamma kaum verändert) um ca. 180°
-    // (155.0°->340.9°), während unser bewegungsbasierter gyroHeading in der gleichen Zeit stabil blieb
-    // (357.4°->352.4°, nur 5° Änderung - passend zur tatsächlichen minimalen Handybewegung). Das ist eine
-    // bekannte Schwäche von Handy-Kompassen: die eingebaute Neigungs-Kompensation des Magnetometers wird
-    // bei starker Neigung des Geräts instabil und kann für die GESAMTE Dauer der Neigung einen falschen,
-    // oft um ~180° gedrehten Wert liefern - das erklärte, warum die vorherige "langsame Korrektur" (2 %
-    // pro Bild) den Sprung nicht verhindern konnte: hält man die Neigung nur ein paar Sekunden, hat sich
-    // die Korrektur trotz der niedrigen Rate längst zum falschen Wert hingezogen.
-    // Fix: der Magnetkompass wird nur noch dann überhaupt zur Korrektur herangezogen, wenn das Handy nicht
-    // zu stark geneigt ist (|devicePitch| <= COMPASS_TRUST_MAX_PITCH_DEG, mit Sicherheitsabstand unter dem
-    // beobachteten Kipp-Bereich um 43-46° gewählt). Bei stärkerer Neigung – also genau dann, wenn man
-    // tatsächlich in den Himmel schaut – wird der Kompasswert komplett ignoriert und deviceHeading läuft
-    // ausschließlich über die (nachweislich stabile) Bewegungsverfolgung weiter; sobald man das Handy
-    // wieder näher zum Horizont senkt, greift die Korrektur automatisch wieder.
-    const COMPASS_TRUST_MAX_PITCH_DEG = 25;
-    const pitchTrustsCompass = devicePitch == null || Math.abs(devicePitch) <= COMPASS_TRUST_MAX_PITCH_DEG;
-    if(deviceHeading == null){
-      deviceHeading = medianFilterHeading((calibratedHeading+360)%360);
-    }else if(pitchTrustsCompass){
-      const filteredCalibrated = medianFilterHeading((calibratedHeading+360)%360);
-      const HEADING_CORRECTION_RATE = 0.02;
-      const corrDiff = ((filteredCalibrated - deviceHeading + 540) % 360) - 180;
-      deviceHeading = (deviceHeading + corrDiff*HEADING_CORRECTION_RATE + 360) % 360;
-      if(!arCompassTrusted){ arCompassTrusted = true; console.log('[AR] Kompass-Korrektur wieder aktiv (Neigung im vertrauenswürdigen Bereich)'); }
-    }else if(arCompassTrusted){
-      arCompassTrusted = false;
-      console.log('[AR] Kompass-Korrektur pausiert (Neigung', devicePitch.toFixed(0)+'° übersteigt', COMPASS_TRUST_MAX_PITCH_DEG+'° - Magnetkompass bei dieser Neigung unzuverlässig, siehe Kommentar)');
+    lastCalibratedHeadingSample = medianFilterHeading((calibratedHeading+360)%360);
+    const pitchOkForCalibration = devicePitch == null || Math.abs(devicePitch) <= COMPASS_TRUST_MAX_PITCH_DEG;
+    if(!arAutoCalibrated && pitchOkForCalibration){
+      // Einmalige automatische Kalibrierung kurz nach dem Start, aber nur wenn das Handy dabei nicht schon
+      // stark geneigt ist (sonst warten wir lieber auf eine bessere Gelegenheit bzw. der Nutzer kalibriert
+      // manuell über den Button, sobald er das Handy Richtung Horizont hält).
+      arAutoCalibrated = true;
+      deviceHeading = lastCalibratedHeadingSample;
+      arLastCalibratedAt = performance.now();
+      console.log('[AR] Schritt 3: automatisch kalibriert auf', deviceHeading.toFixed(1)+'°');
     }
   }
 
