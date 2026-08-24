@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T06:35:05.682Z",
+  "generatedAt": "2026-08-24T06:35:09.296Z",
   "objectCount": 36,
   "sessionCount": 71,
   "objects": [
@@ -2884,8 +2884,8 @@
       "angularSize": null,
       "distanceLy": null,
       "description": "Hauptstern 11.0 mag, Überdeckung 1.31%, Dauer 1.85 h, Höhe 26°–49°, Azimuth 234°→261°",
-      "needsReview": true,
-      "reviewNote": "Neu angelegt ohne vollständige RA/Dec-Koordinaten – für Sternkarte bitte ergänzen.",
+      "needsReview": false,
+      "reviewNote": null,
       "sessions": [
         {
           "dateStart": "2026-08-23",
