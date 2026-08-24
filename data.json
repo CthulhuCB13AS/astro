@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T12:17:01.228Z",
+  "generatedAt": "2026-08-24T12:25:27.844Z",
   "objectCount": 36,
   "sessionCount": 71,
   "objects": [
@@ -53,9 +53,26 @@
             "flats": 20,
             "biases": 20
           },
-          "photoPath": "images/wasp33b-20260814-1pcr8m.jpg",
-          "photoSha": "3ad5ac23937cd975ecc685a2fd4e5a42d351875e",
-          "photoDataUrl": null
+          "photoPath": null,
+          "photoSha": null,
+          "photoDataUrl": null,
+          "graphImages": [
+            {
+              "path": "images/wasp33b-20260814-qg2k01.jpg",
+              "sha": "c5783a746266a08dd55ecdcb2f05e5cb8771c3e1",
+              "dataUrl": null
+            },
+            {
+              "path": "images/wasp33b-20260814-rcnyrj.jpg",
+              "sha": "3ad5ac23937cd975ecc685a2fd4e5a42d351875e",
+              "dataUrl": null
+            },
+            {
+              "path": "images/wasp33b-20260814-v9g6hi.jpg",
+              "sha": "99d133dc4e86bb27ef99fb74076b184c4e8b88b7",
+              "dataUrl": null
+            }
+          ]
         }
       ]
     },
