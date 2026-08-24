@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T06:35:09.296Z",
+  "generatedAt": "2026-08-24T12:17:01.228Z",
   "objectCount": 36,
   "sessionCount": 71,
   "objects": [
@@ -2914,7 +2914,22 @@
           "notes": null,
           "rawFolderName": "20260823_Bundesplatz_140 pcs_60\"_640",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "photoPath": "images/toi-4463-a-b-20260823-ncsf2u.jpg",
+          "photoSha": "df965367077955df625615bf44bc7b712d4668b1",
+          "photoDataUrl": null,
+          "graphImages": [
+            {
+              "path": "images/toi-4463-a-b-20260823-f7dxa5.jpg",
+              "sha": "6b3683ce401cb7f188cde210fc0fb8223de98432",
+              "dataUrl": null
+            },
+            {
+              "path": "images/toi-4463-a-b-20260823-f255cv.jpg",
+              "sha": "fd65b19408ccc7e5e7ec7277c91f527d463c04b1",
+              "dataUrl": null
+            }
+          ]
         }
       ]
     }
