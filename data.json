@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T06:33:10.329Z",
+  "generatedAt": "2026-08-24T06:35:05.682Z",
   "objectCount": 36,
   "sessionCount": 71,
   "objects": [
@@ -2878,8 +2878,8 @@
       "commonName": null,
       "type": "exoplanet",
       "constellation": "Sagitta",
-      "ra": null,
-      "dec": null,
+      "ra": "18h 37m 25.95s",
+      "dec": "+18d 43m 47.83s",
       "magnitude": null,
       "angularSize": null,
       "distanceLy": null,
