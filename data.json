@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T12:25:27.844Z",
+  "generatedAt": "2026-08-24T12:26:14.517Z",
   "objectCount": 36,
   "sessionCount": 71,
   "objects": [
@@ -114,8 +114,8 @@
           "rawFolderName": "20260802_Bundesplatz_432mm_400 pcs_30\"_640",
           "needsReview": false,
           "reviewNote": null,
-          "photoPath": "images/xo1b-20260802-4ur0uk.jpg",
-          "photoSha": "4df7261d4a8f8f5146bd521caf9604522834384d",
+          "photoPath": null,
+          "photoSha": null,
           "photoDataUrl": null,
           "timeStart": null,
           "timeEnd": null,
@@ -127,7 +127,24 @@
             "darks": 20,
             "flats": 20,
             "biases": 20
-          }
+          },
+          "graphImages": [
+            {
+              "path": "images/xo1b-20260802-uvhpiu.jpg",
+              "sha": "4df7261d4a8f8f5146bd521caf9604522834384d",
+              "dataUrl": null
+            },
+            {
+              "path": "images/xo1b-20260802-u8cyzc.jpg",
+              "sha": "dc23ed515712f0582f3ea4bfdd23109d9adaa28f",
+              "dataUrl": null
+            },
+            {
+              "path": "images/xo1b-20260802-lh3p9y.jpg",
+              "sha": "3c92efa30b0453c13cce5fa5e5d04f0bd20f1d7a",
+              "dataUrl": null
+            }
+          ]
         }
       ]
     },
