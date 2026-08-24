@@ -198,8 +198,20 @@ table.sessions th.col-scope,table.sessions th.col-camera{white-space:nowrap}
 /* Icon-Spalten (Foto/Graph/Auge) bewusst mit minimalem Padding statt zentriert in einer breiten Spalte -
    die Icons sollen nah beieinander stehen statt mit großem Leerraum auseinandergezogen zu wirken
    (Nutzerwunsch). Der Abstand zwischen zwei Icons INNERHALB derselben Zelle (Graph+Foto bei Exoplaneten)
-   kommt separat aus ".col-photo button + button" (siehe unten bei .eye-btn/.photo-btn/.graph-btn). */
-table.sessions th.col-photo,table.sessions td.col-photo,table.sessions th.col-eye,table.sessions td.col-eye{padding-left:.15em;padding-right:.15em;text-align:center}
+   kommt separat aus ".col-photo button + button" (siehe unten bei .eye-btn/.photo-btn/.graph-btn).
+   Auf schmalen (Handy-)Bildschirmen sind die Spalten ohnehin knapp auf die Icongröße zugeschnitten (s.u.),
+   text-align:center machte dort kaum einen Unterschied. Auf breiten (Desktop-)Bildschirmen wächst die
+   Spaltenbreite mit der Tabelle aber mit (Prozent-Breiten), wodurch die zentrierten Icons bei viel Platz
+   sichtbar weit auseinanderrückten - genau der große Leerraum zwischen Foto- und Auge-Icon, den es laut
+   Nutzer-Feedback NICHT geben soll. Statt mit einer Bildschirmbreiten-Abfrage zwischen Handy/Desktop zu
+   unterscheiden, rücken die beiden Spalten ihren Inhalt einfach zur gemeinsamen Grenze hin zusammen
+   (col-photo rechtsbündig, col-eye linksbündig) - der Abstand zwischen den beiden Icons entspricht dann
+   IMMER nur der Summe ihrer beiden Innenabstände (padding-right hier + padding-left col-eye), unabhängig
+   von der tatsächlichen Spalten-/Tabellenbreite. Überschüssiger Platz wandert dadurch an die äußeren
+   Ränder der beiden Spalten statt zwischen die Icons. */
+table.sessions th.col-photo,table.sessions td.col-photo,table.sessions th.col-eye,table.sessions td.col-eye{padding-left:.15em;padding-right:.15em}
+table.sessions td.col-photo{text-align:right}
+table.sessions td.col-eye{text-align:left}
 /* Objekt-Detail-Tabelle (kein Objekt-Spalte, mehr Platz für Ort): Datum hat Vorrang (immer einzeilig,
    s.o.) und bekommt daher den größten Anteil; Ort/Teleskop/Kamera bleiben untereinander gleich breit,
    dürfen dafür aber sehr schmal werden. Foto- und Auge-Spalte sind knapp auf die Icongröße zugeschnitten
@@ -467,8 +479,9 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 .stats-subs-svg{width:100%;height:auto;display:block}
 .stats-subs-svg circle{touch-action:manipulation}
 /* Eigene Tooltip statt nur <title> (Browser-Standard-Tooltip erscheint per Antippen auf dem Handy gar
-   nicht bzw. erst nach langem Drücken) - wird per JS bei pointerenter/pointerdown auf einem Punkt ein-
-   und bei pointerleave/Antippen außerhalb wieder ausgeblendet (siehe renderStatsSubExposures). */
+   nicht bzw. erst nach langem Drücken). Am Desktop: pointerenter/pointerleave (Hover, bleibt bestehen
+   solange die Maus über dem Punkt ist). Am Handy: ausschließlich pointerdown (Tap) zeigt sie, sie bleibt
+   dann bestehen bis zum nächsten Tap außerhalb des Punkts (siehe renderStatsSubExposures). */
 /* transform wird bewusst NICHT hier fest vorgegeben, sondern von showTip() (renderStatsSubExposures)
    inline gesetzt - je nachdem, ob für den jeweiligen Punkt genug Platz oberhalb ist, erscheint die
    Tooltip darüber oder darunter (siehe dortiger Kommentar zu Rand-Fällen). */
@@ -13012,8 +13025,14 @@ function renderStatsSubExposures(){
       ${dots}
     </svg>
     <div class="stats-subs-tip" id="stats-subs-tip" hidden></div>`;
-  // Eigene Tooltip statt <title>: pointerenter deckt Maus-Hover ab, pointerdown zusätzlich das Antippen
-  // am Handy (dort feuert pointerenter nicht, da es dort kein "Hover" gibt). Position wird relativ zu
+  // Eigene Tooltip statt <title>: pointerenter/pointerleave decken Maus-Hover ab (bleibt wie gehabt
+  // bestehen, solange die Maus über dem Punkt ist). Am Handy feuert pointerenter/pointerleave bei einem
+  // Tap ABER ebenfalls (viele mobile Browser simulieren dabei kurz einen Hover-Zyklus) - ungefiltert
+  // sorgte das dafür, dass die Tooltip beim Loslassen des Fingers (pointerleave) sofort wieder
+  // verschwand, statt wie gewünscht bis zum nächsten Antippen an anderer Stelle bestehen zu bleiben.
+  // Daher werden pointerenter/pointerleave per e.pointerType auf "nicht touch" (Maus/Stift) beschränkt;
+  // am Handy übernimmt stattdessen ausschließlich pointerdown (Tap) das Anzeigen, und die Tooltip bleibt
+  // bis zum nächsten Tap außerhalb sichtbar (siehe wrap-Listener weiter unten). Position wird relativ zu
   // #stats-subs-wrap (position:relative, siehe CSS) aus der Punktposition im SVG-Koordinatensystem
   // berechnet, damit die Tooltip auch bei per preserveAspectRatio skalierter SVG-Darstellung exakt am
   // richtigen Bildschirmort erscheint.
@@ -13051,13 +13070,13 @@ function renderStatsSubExposures(){
   function hideTip(){ tipEl.hidden = true; }
   subsHideTip = hideTip;
   wrap.querySelectorAll("circle[data-idx]").forEach(circle=>{
-    circle.addEventListener("pointerenter", ()=>showTip(circle));
-    circle.addEventListener("pointerleave", hideTip);
+    circle.addEventListener("pointerenter", e=>{ if(e.pointerType!=="touch") showTip(circle); });
+    circle.addEventListener("pointerleave", e=>{ if(e.pointerType!=="touch") hideTip(); });
     circle.addEventListener("pointerdown", e=>{ e.stopPropagation(); showTip(circle); });
   });
 }
 // Antippen/Klicken außerhalb eines Punkts blendet eine noch offene Tooltip wieder aus (v.a. relevant am
-// Handy, wo es kein pointerleave beim Wegtippen gibt). Einmalig registriert (nicht in renderStatsSubExposures
+// Handy, wo pointerleave für Touch-Eingaben oben bewusst ignoriert wird). Einmalig registriert (nicht in renderStatsSubExposures
 // selbst, siehe Kommentar bei subsHideTip oben), da #stats-subs-wrap als Element über Neu-Renderings hinweg
 // bestehen bleibt (nur sein innerHTML wird ersetzt).
 document.getElementById("stats-subs-wrap").addEventListener("pointerdown", e=>{
