@@ -63,7 +63,18 @@ input[type=date]{min-width:0}
    ander (kein Zeilenumbruch nötig), während das native Steuerelement optisch trotzdem breiter gezeichnet
    wurde und ins Nachbarfeld hineinragte - das sichtbare "Überlappen" der Eingabefelder. Ohne diese
    Override greift wieder die normale Mindestbreite von .row>.field (140px), sodass bei zu wenig Platz
-   stattdessen sauber in eine zweite Zeile umgebrochen wird (flex-wrap:wrap ist auf .row bereits aktiv).
+   stattdessen sauber in eine zweite Zeile umgebrochen wird (flex-wrap:wrap ist auf .row bereits aktiv). */
+
+/* Zusätzliche Absicherung gegen Überlappung bei Datum/Uhrzeit (Start/Ende): die native Breite von
+   <input type=date>/<input type=time> variiert stark je nach Browser/Betriebssystem (Safari auf iOS
+   zeichnet sie spürbar breiter als Chromium) und ist per CSS nicht zuverlässig messbar. Statt uns auf
+   Zeilenumbruch-Heuristiken der Flexbox zu verlassen, erzwingen wir auf schmalen Bildschirmen einfach
+   eine vertikale Stapelung der beiden Felder pro Zeile - so ist ein Überlappen strukturell unmöglich,
+   unabhängig davon, wie breit das native Steuerelement tatsächlich gezeichnet wird. */
+@media (max-width:480px){
+  .row.date-row{flex-direction:column}
+  .row.date-row>.field{width:100%;min-width:0}
+}
 
 header.topbar{
   position:sticky;top:0;z-index:20;background:rgba(11,13,19,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
@@ -177,29 +188,37 @@ main{max-width:920px;margin:0 auto;padding:1em;}
 table.sessions{table-layout:fixed;width:100%;border-collapse:collapse;font-size:.8rem}
 table.sessions th{text-align:left;color:var(--text-faint);font-weight:500;padding:.3em .5em;border-bottom:1px solid var(--border);white-space:normal;overflow-wrap:break-word;word-break:break-word;line-height:1.2;vertical-align:bottom}
 table.sessions td{padding:.55em .5em;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-table.sessions td.col-date{white-space:normal;overflow:visible;text-overflow:clip}
+/* white-space:normal+overflow-wrap:break-word statt eines starren nowrap/ellipsis: das Datum (z.B.
+   "24.08.2026 20:15 Uhr") soll nie abgeschnitten werden, sondern bei Platzmangel innerhalb der eigenen
+   Zelle umbrechen. Vorher stand hier nur overflow:visible ohne overflow-wrap - dadurch konnte ein
+   einzelnes "Wort" wie "24.08.2026" (keine Leerzeichen) bei schmaler Spalte (z.B. am Handy) nicht
+   umbrechen und lief stattdessen sichtbar über den Zellrand hinaus in die Ort-Spalte hinein, sodass
+   Datum und Ort ohne jeden Abstand aneinanderklebten. padding-right sorgt zusätzlich für einen sicht-
+   baren Mindestabstand zur nächsten Spalte, auch wenn das Datum genau in die Spaltenbreite passt. */
+table.sessions td.col-date{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word;word-break:break-word;padding-right:.7em}
 table.sessions th.col-scope,table.sessions th.col-camera{white-space:nowrap}
 table.sessions th.col-photo,table.sessions td.col-photo,table.sessions th.col-eye,table.sessions td.col-eye{padding-left:.2em;padding-right:.2em;text-align:center}
 /* Objekt-Detail-Tabelle (kein Objekt-Spalte, mehr Platz für Ort): Ort/Teleskop/Kamera erhalten bewusst
    dieselbe Breite (statt vorher 28/10/20% - die Teleskop-Spalte war dadurch extrem eng). Datum bleibt wie
-   gehabt. Überlange Inhalte werden per text-overflow:ellipsis (siehe table.sessions td oben) abgeschnitten. */
+   gehabt. Überlange Inhalte werden per text-overflow:ellipsis (siehe table.sessions td oben) abgeschnitten.
+   col-photo wurde zu Lasten von Ort/Teleskop/Kamera verbreitert (19.33% -> 18%), damit bei Exoplaneten-
+   Sessions die beiden Icons (Graph + Foto) in dieser Zelle am Handy nebeneinander Platz finden und nicht
+   abgeschnitten werden bzw. umbrechen; col-eye ebenfalls leicht verbreitert (10% -> 11%) aus demselben Grund. */
 table.sessions.tbl-obj th.col-date,table.sessions.tbl-obj td.col-date{width:20%}
 table.sessions.tbl-obj th.col-loc,table.sessions.tbl-obj td.col-loc,
 table.sessions.tbl-obj th.col-scope,table.sessions.tbl-obj td.col-scope,
-table.sessions.tbl-obj th.col-camera,table.sessions.tbl-obj td.col-camera{width:19.33%}
-/* col-photo etwas breiter als reine 8% (Foto-Icon allein bräuchte), da bei Exoplaneten-Sessions mit
-   Graph(en) zusätzlich zum Kamera-Icon noch ein zweites Icon (Graph-Icon) in derselben Zelle steht. */
-table.sessions.tbl-obj th.col-photo,table.sessions.tbl-obj td.col-photo{width:12%}
-table.sessions.tbl-obj th.col-eye,table.sessions.tbl-obj td.col-eye{width:10%}
-/* Such-Tabelle (mit zusätzlicher Objekt-Spalte): gleiches Prinzip - Ort/Teleskop/Kamera gleich breit. */
+table.sessions.tbl-obj th.col-camera,table.sessions.tbl-obj td.col-camera{width:18%}
+table.sessions.tbl-obj th.col-photo,table.sessions.tbl-obj td.col-photo{width:15%}
+table.sessions.tbl-obj th.col-eye,table.sessions.tbl-obj td.col-eye{width:11%}
+/* Such-Tabelle (mit zusätzlicher Objekt-Spalte): gleiches Prinzip - Ort/Teleskop/Kamera gleich breit,
+   col-photo/col-eye zu ihren Lasten verbreitert (siehe Kommentar bei .tbl-obj oben). */
 table.sessions.tbl-search th.col-obj,table.sessions.tbl-search td.col-obj{width:16%}
 table.sessions.tbl-search th.col-date,table.sessions.tbl-search td.col-date{width:18%}
 table.sessions.tbl-search th.col-loc,table.sessions.tbl-search td.col-loc,
 table.sessions.tbl-search th.col-scope,table.sessions.tbl-search td.col-scope,
-table.sessions.tbl-search th.col-camera,table.sessions.tbl-search td.col-camera{width:14.67%}
-/* siehe Kommentar bei .tbl-obj th.col-photo oben - gleicher Grund (Platz für ein zweites Icon). */
-table.sessions.tbl-search th.col-photo,table.sessions.tbl-search td.col-photo{width:12%}
-table.sessions.tbl-search th.col-eye,table.sessions.tbl-search td.col-eye{width:10%}
+table.sessions.tbl-search th.col-camera,table.sessions.tbl-search td.col-camera{width:13.67%}
+table.sessions.tbl-search th.col-photo,table.sessions.tbl-search td.col-photo{width:14%}
+table.sessions.tbl-search th.col-eye,table.sessions.tbl-search td.col-eye{width:11%}
 table.sessions tr:last-child td{border-bottom:none}
 table.sessions tr.needs-review{background:rgba(245,196,81,.06)}
 table.sessions tr.session-row{cursor:pointer}
@@ -210,7 +229,11 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
   display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex:none;
 }
 .eye-btn svg,.photo-btn svg,.graph-btn svg{width:1.1em;height:1.1em}
-.photo-btn + .graph-btn{margin-left:.4em}
+/* Gilt für beide Reihenfolgen (früher nur .photo-btn + .graph-btn) - die Icons in der col-photo-Zelle
+   stehen jetzt in Anzeigereihenfolge Graph vor Foto (siehe photoCellHtml), daher generisch auf
+   "beliebiger Icon-Button direkt nach einem anderen" statt auf eine feste Reihenfolge festgelegt, damit
+   der Abstand unabhängig von der Reihenfolge gleich bleibt. */
+.col-photo button + button{margin-left:.4em}
 .review-note{font-size:.72rem;color:var(--warn);margin-top:.15em}
 .obj-actions{display:flex;gap:.5em;flex-wrap:wrap;margin-top:.7em}
 .icon-only-btn{display:inline-flex;align-items:center;justify-content:center;width:2.4em;height:2.4em;padding:0;flex:none}
@@ -238,14 +261,18 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
   color:#fff;border-radius:50%;width:2.4em;height:2.4em;display:flex;align-items:center;justify-content:center;
   font-size:1.3rem;line-height:1;cursor:pointer;
 }
-#photo-modal-body{text-align:center;max-width:100%;max-height:100%}
-#photo-modal-body img{max-width:100%;max-height:100dvh;object-fit:contain;display:block}
+/* overflow:hidden + touch-action:none analog zu #pics-wrap (siehe dortiger Kommentar): notwendig, damit
+   (a) der Browser die Zwei-Finger-Geste nicht selbst als Seiten-/Viewport-Zoom abfängt statt sie unserem
+   Pinch-Zoom-Handler (createPinchZoomController) zu überlassen, und (b) ein herangezoomtes/verschobenes
+   Bild am Rand des sichtbaren Bereichs abgeschnitten statt sichtbar überlaufend dargestellt wird. */
+#photo-modal-body{text-align:center;max-width:100%;max-height:100%;width:100%;height:100%;position:relative;overflow:hidden;touch-action:none;display:flex;align-items:center;justify-content:center}
+#photo-modal-body img{max-width:100%;max-height:100dvh;object-fit:contain;display:block;touch-action:none}
 #photo-modal-body .banner{text-align:left;margin:1em}
 /* Graphen-Ansicht (Exoplaneten) - gleiches Vollbild-Muster wie #photo-modal, zusätzlich mit
    Vor/Zurück-Navigation (.pics-nav-btn, s. Pics-Galerie) für mehrere Graphen pro Session. */
 #graphs-modal{align-items:stretch;justify-content:stretch;padding:0;background:#000}
-#graphs-modal-body{text-align:center;max-width:100%;max-height:100%}
-#graphs-modal-body img{max-width:100%;max-height:100dvh;object-fit:contain;display:block}
+#graphs-modal-body{text-align:center;max-width:100%;max-height:100%;width:100%;height:100%;position:relative;overflow:hidden;touch-action:none;display:flex;align-items:center;justify-content:center}
+#graphs-modal-body img{max-width:100%;max-height:100dvh;object-fit:contain;display:block;touch-action:none}
 #graphs-modal-body .banner{text-align:left;margin:1em}
 #graphs-modal-caption{position:absolute;left:0;right:0;bottom:.8em;text-align:center;color:#fff;font-size:.78rem;text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none}
 .eq-item{border:1px solid var(--border);border-radius:var(--radius);padding:.7em .7em .3em;margin-bottom:.7em;background:var(--bg3)}
@@ -432,7 +459,6 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 /* ---- Statistik: Einzelbelichtungen (Streudiagramm) ---- */
 .stats-subs-hint{font-size:.72rem;color:var(--text-faint);margin-bottom:.6em;line-height:1.4}
 .stats-subs-svg{width:100%;height:auto;display:block}
-.stats-subs-svg circle{cursor:pointer}
 
 /* ---- Statistik: Orte (Balkenliste) ---- */
 .stats-loc-list{display:flex;flex-direction:column;gap:.6em}
@@ -596,6 +622,9 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
         <div class="field"><label for="s-calib-darks">Darks (Anzahl)</label><input type="number" id="s-calib-darks" placeholder="optional"></div>
         <div class="field"><label for="s-calib-flats">Flats (Anzahl)</label><input type="number" id="s-calib-flats" placeholder="optional"></div>
         <div class="field"><label for="s-calib-biases">Biases (Anzahl)</label><input type="number" id="s-calib-biases" placeholder="optional"></div>
+      </div>
+      <div class="field"><label for="s-rawfit">Rohdatei „results_xxxx.fit" vorhanden</label>
+        <select id="s-rawfit"><option value="true">Ja</option><option value="false">Nein</option></select>
       </div>
       <div class="field"><label for="s-notes">Notizen</label><textarea id="s-notes" rows="2" placeholder="optional"></textarea></div>
       <div class="field">
@@ -837,6 +866,9 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       <div class="field"><label for="se-calib-darks">Darks (Anzahl)</label><input type="number" id="se-calib-darks"></div>
       <div class="field"><label for="se-calib-flats">Flats (Anzahl)</label><input type="number" id="se-calib-flats"></div>
       <div class="field"><label for="se-calib-biases">Biases (Anzahl)</label><input type="number" id="se-calib-biases"></div>
+    </div>
+    <div class="field"><label for="se-rawfit">Rohdatei „results_xxxx.fit" vorhanden</label>
+      <select id="se-rawfit"><option value="true">Ja</option><option value="false">Nein</option></select>
     </div>
     <div class="field"><label for="se-notes">Notizen</label><textarea id="se-notes" rows="2"></textarea></div>
     <div class="field">
@@ -11663,8 +11695,19 @@ function saveLocalDB(db){
   }
 }
 
+// Neues Feld je Session: "Rohdatei "results_xxxx.fit" vorhanden" (s.rawFitExists). Bei bereits
+// bestehenden Sessions (Altdaten ohne dieses Feld) wird es standardmäßig auf "Ja" gesetzt - ein bereits
+// explizit gesetzter Wert (auch "false", falls z.B. schon einmal importiert) bleibt unangetastet.
+function ensureRawFitDefaults(db){
+  (db.objects || []).forEach(o=>{
+    (o.sessions || []).forEach(s=>{
+      if(s.rawFitExists === undefined || s.rawFitExists === null) s.rawFitExists = true;
+    });
+  });
+}
 function finishDataLoad(){
   ensureEquipment(DB);
+  ensureRawFitDefaults(DB);
   populateEquipmentSelects();
   renderAll();
 }
@@ -12216,6 +12259,7 @@ function openSessionEditModal(objId, idx){
   document.getElementById("se-calib-darks").value = calib.darks ?? "";
   document.getElementById("se-calib-flats").value = calib.flats ?? "";
   document.getElementById("se-calib-biases").value = calib.biases ?? "";
+  document.getElementById("se-rawfit").value = s.rawFitExists === false ? "false" : "true";
   const curWrap = document.getElementById("se-photo-current");
   const curUrl = photoUrl(s);
   const removeBtn = document.getElementById("btn-remove-photo");
@@ -12340,6 +12384,7 @@ document.getElementById("btn-save-session-edit").addEventListener("click", async
       flats: parseInt(document.getElementById("se-calib-flats").value) || null,
       biases: parseInt(document.getElementById("se-calib-biases").value) || null,
     } : { used: false, darks: null, flats: null, biases: null };
+    s.rawFitExists = document.getElementById("se-rawfit").value === "true";
     s.needsReview = document.getElementById("se-review").checked;
     if(!s.needsReview) s.reviewNote = null;
     else if(!s.reviewNote) s.reviewNote = "Manuell als zu prüfen markiert.";
@@ -12383,6 +12428,7 @@ function openPhotoViewer(objId, idx){
   }else{
     body.innerHTML = `<div class="banner warn">Kein Foto vorhanden.</div>`;
   }
+  photoZoomCtl.reset(); // neues Bild -> vorherigen Zoom/Verschub (falls gesetzt) nicht übernehmen
   openModal("photo-modal");
 }
 
@@ -12407,6 +12453,7 @@ function renderGraphsViewer(){
   body.innerHTML = url
     ? `<img src="${escapeHtml(url)}" alt="Graph ${graphsViewerIndex+1}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'banner warn',textContent:'Graph konnte nicht geladen werden.'}))">`
     : `<div class="banner warn">Kein Graph vorhanden.</div>`;
+  graphsZoomCtl.reset(); // neues Bild -> vorherigen Zoom/Verschub (falls gesetzt) nicht übernehmen
   const many = graphsViewerList.length > 1;
   document.getElementById("graphs-prev").hidden = !many;
   document.getElementById("graphs-next").hidden = !many;
@@ -12508,72 +12555,81 @@ function picsStep(delta){
 document.getElementById("pics-prev").addEventListener("click", ()=>picsStep(-1));
 document.getElementById("pics-next").addEventListener("click", ()=>picsStep(1));
 
-/* ---- Pics: Pinch-Zoom (Zwei-Finger) + Verschieben (Ein-Finger, nur solange gezoomt) ---- */
-/* Analog zum bereits vorhandenen Pinch-Zoom der AR-Kamera-Ansicht (arZoom/arPanX/arPanY) - eigene
-   Variablen, da unabhängig von dieser Ansicht. */
-let picsZoom = 1, picsPanX = 0, picsPanY = 0, picsTouchState = null;
-function clampPicsZoom(z){ return Math.max(1, Math.min(5, z)); }
-// Ohne diese Begrenzung ließ sich das gezoomte Foto per Ein-Finger-Verschieben beliebig weit aus dem
-// sichtbaren Bereich herausschieben (bis komplett schwarz/leer) - "Bild aus der Ansicht schieben" war
-// möglich, obwohl nur gezoomt werden sollte. clampPicsPan() begrenzt picsPanX/Y so, dass der sichtbare
-// Bildbereich immer mindestens den Container ausfüllt (wie in üblichen Foto-Apps): bei aktuellem Zoom
-// darf höchstens um die Hälfte der Differenz zwischen skalierter Bildgröße und Containergröße verschoben
-// werden. offsetWidth/offsetHeight liefern dabei bewusst die UNskalierte Layout-Größe (CSS transform:
-// scale() ändert die Layout-Box nicht), also genau die Basis für diese Rechnung.
-function clampPicsPan(){
-  const img = document.querySelector("#pics-wrap img");
-  if(!img) return;
-  const baseW = img.offsetWidth, baseH = img.offsetHeight;
-  const contW = picsWrapEl.clientWidth, contH = picsWrapEl.clientHeight;
-  const maxX = Math.max(0, (baseW*picsZoom - contW) / 2);
-  const maxY = Math.max(0, (baseH*picsZoom - contH) / 2);
-  picsPanX = Math.max(-maxX, Math.min(maxX, picsPanX));
-  picsPanY = Math.max(-maxY, Math.min(maxY, picsPanY));
-}
-function applyPicsTransform(){
-  const img = document.querySelector("#pics-wrap img");
-  if(img) img.style.transform = `translate(${picsPanX}px, ${picsPanY}px) scale(${picsZoom})`;
-}
-function resetPicsTransform(){ picsZoom = 1; picsPanX = 0; picsPanY = 0; applyPicsTransform(); }
-function rebasePicsPinch(touches){
-  const d = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY);
-  picsTouchState = {mode:"pinch", dist:d, zoomStart:picsZoom};
-}
-const picsWrapEl = document.getElementById("pics-wrap");
-picsWrapEl.addEventListener("touchstart", e=>{
-  if(e.touches.length>=2){ rebasePicsPinch(e.touches); }
-  else if(e.touches.length===1 && picsZoom>1){ picsTouchState = {mode:"pan", lastX:e.touches[0].clientX, lastY:e.touches[0].clientY}; }
-}, {passive:true});
-picsWrapEl.addEventListener("touchmove", e=>{
-  if(!picsTouchState) return;
-  if(picsTouchState.mode==="pinch" && e.touches.length===2){
-    e.preventDefault();
-    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-    picsZoom = clampPicsZoom(picsTouchState.zoomStart * (d/picsTouchState.dist));
-    clampPicsPan();
-    applyPicsTransform();
-  }else if(picsTouchState.mode==="pan" && e.touches.length===1){
-    e.preventDefault();
-    const dx = e.touches[0].clientX - picsTouchState.lastX, dy = e.touches[0].clientY - picsTouchState.lastY;
-    picsPanX += dx; picsPanY += dy;
-    picsTouchState.lastX = e.touches[0].clientX; picsTouchState.lastY = e.touches[0].clientY;
-    clampPicsPan();
-    applyPicsTransform();
+/* ---- Pinch-Zoom (Zwei-Finger) + Verschieben (Ein-Finger, nur solange gezoomt) ---- */
+/* Analog zum bereits vorhandenen Pinch-Zoom der AR-Kamera-Ansicht (arZoom/arPanX/arPanY). Als
+   wiederverwendbare Fabrikfunktion umgesetzt (vorher: fest an #pics-wrap verdrahtete Variablen/Listener),
+   damit dieselbe Zoom-/Verschiebe-Logik samt Begrenzung (kein "Bild aus der Ansicht schieben") auch für den
+   Foto-Viewer der Sessions (#photo-modal-body) und den Graphen-Viewer der Exoplaneten (#graphs-modal-body)
+   genutzt werden kann, statt sie drei Mal zu duplizieren. */
+function createPinchZoomController(wrapEl, imgSelector){
+  let zoom = 1, panX = 0, panY = 0, touchState = null;
+  function clampZoom(z){ return Math.max(1, Math.min(5, z)); }
+  // Ohne diese Begrenzung ließe sich das gezoomte Bild per Ein-Finger-Verschieben beliebig weit aus dem
+  // sichtbaren Bereich herausschieben (bis komplett schwarz/leer) - "Bild aus der Ansicht schieben" wäre
+  // möglich, obwohl nur gezoomt werden sollte. clampPan() begrenzt panX/Y so, dass der sichtbare
+  // Bildbereich immer mindestens den Container ausfüllt (wie in üblichen Foto-Apps): bei aktuellem Zoom
+  // darf höchstens um die Hälfte der Differenz zwischen skalierter Bildgröße und Containergröße verschoben
+  // werden. offsetWidth/offsetHeight liefern dabei bewusst die UNskalierte Layout-Größe (CSS transform:
+  // scale() ändert die Layout-Box nicht), also genau die Basis für diese Rechnung.
+  function clampPan(){
+    const img = wrapEl.querySelector(imgSelector);
+    if(!img) return;
+    const baseW = img.offsetWidth, baseH = img.offsetHeight;
+    const contW = wrapEl.clientWidth, contH = wrapEl.clientHeight;
+    const maxX = Math.max(0, (baseW*zoom - contW) / 2);
+    const maxY = Math.max(0, (baseH*zoom - contH) / 2);
+    panX = Math.max(-maxX, Math.min(maxX, panX));
+    panY = Math.max(-maxY, Math.min(maxY, panY));
   }
-}, {passive:false});
-picsWrapEl.addEventListener("touchend", e=>{
-  if(e.touches.length===0) picsTouchState = null;
-  else if(e.touches.length===1) picsTouchState = picsZoom>1 ? {mode:"pan", lastX:e.touches[0].clientX, lastY:e.touches[0].clientY} : null;
-  else if(e.touches.length>=2) rebasePicsPinch(e.touches);
-});
-// Doppeltipp setzt Zoom/Verschub zurück (übliche Geste, schnellerer Weg zurück zur Normalansicht als Kneifen).
-let picsLastTapAt = 0;
-picsWrapEl.addEventListener("touchend", e=>{
-  if(e.touches.length>0) return;
-  const now = Date.now();
-  if(now - picsLastTapAt < 300) resetPicsTransform();
-  picsLastTapAt = now;
-});
+  function applyTransform(){
+    const img = wrapEl.querySelector(imgSelector);
+    if(img) img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  }
+  function reset(){ zoom = 1; panX = 0; panY = 0; applyTransform(); }
+  function rebasePinch(touches){
+    const d = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY);
+    touchState = {mode:"pinch", dist:d, zoomStart:zoom};
+  }
+  wrapEl.addEventListener("touchstart", e=>{
+    if(e.touches.length>=2){ rebasePinch(e.touches); }
+    else if(e.touches.length===1 && zoom>1){ touchState = {mode:"pan", lastX:e.touches[0].clientX, lastY:e.touches[0].clientY}; }
+  }, {passive:true});
+  wrapEl.addEventListener("touchmove", e=>{
+    if(!touchState) return;
+    if(touchState.mode==="pinch" && e.touches.length===2){
+      e.preventDefault();
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      zoom = clampZoom(touchState.zoomStart * (d/touchState.dist));
+      clampPan();
+      applyTransform();
+    }else if(touchState.mode==="pan" && e.touches.length===1){
+      e.preventDefault();
+      const dx = e.touches[0].clientX - touchState.lastX, dy = e.touches[0].clientY - touchState.lastY;
+      panX += dx; panY += dy;
+      touchState.lastX = e.touches[0].clientX; touchState.lastY = e.touches[0].clientY;
+      clampPan();
+      applyTransform();
+    }
+  }, {passive:false});
+  wrapEl.addEventListener("touchend", e=>{
+    if(e.touches.length===0) touchState = null;
+    else if(e.touches.length===1) touchState = zoom>1 ? {mode:"pan", lastX:e.touches[0].clientX, lastY:e.touches[0].clientY} : null;
+    else if(e.touches.length>=2) rebasePinch(e.touches);
+  });
+  // Doppeltipp setzt Zoom/Verschub zurück (übliche Geste, schnellerer Weg zurück zur Normalansicht als Kneifen).
+  let lastTapAt = 0;
+  wrapEl.addEventListener("touchend", e=>{
+    if(e.touches.length>0) return;
+    const now = Date.now();
+    if(now - lastTapAt < 300) reset();
+    lastTapAt = now;
+  });
+  return {reset};
+}
+const picsZoomCtl = createPinchZoomController(document.getElementById("pics-wrap"), "img");
+function resetPicsTransform(){ picsZoomCtl.reset(); }
+const photoZoomCtl = createPinchZoomController(document.getElementById("photo-modal-body"), "img");
+const graphsZoomCtl = createPinchZoomController(document.getElementById("graphs-modal-body"), "img");
 
 /* ---- Pics: Info-Button - weiterführende Links zu Objekt/Sternbild (Wikipedia EN, bei Messier-Objekten
    zusätzlich die SEDS-Messier-Datenbank) ---- */
@@ -12887,10 +12943,7 @@ function renderStatsSubExposures(){
   const pts = [];
   DB.objects.forEach(o=>o.sessions.forEach(s=>{
     if(!s.dateStart || !s.exposureSec) return;
-    // objId/idx werden mitgeführt, damit ein Tap/Klick auf den Punkt (s.u.) die zugehörige Session-
-    // Detailansicht öffnen kann - vorher gab es dafür nur ein <title>-Tooltip, das auf dem Handy per
-    // Antippen gar nicht erscheint ("Antippen zeigt Details" stimmte also nicht).
-    pts.push({date:s.dateStart, sec:s.exposureSec, frames:s.frames||0, name:o.displayName||"", objId:o.id, idx:o.sessions.indexOf(s)});
+    pts.push({date:s.dateStart, sec:s.exposureSec, frames:s.frames||0, name:o.displayName||""});
   }));
   if(!pts.length){ wrap.innerHTML = `<div class="stats-empty-msg">Noch keine Sessions mit Einzelbelichtungszeit vorhanden.</div>`; return; }
   pts.sort((a,b)=>a.date.localeCompare(b.date));
@@ -12919,35 +12972,18 @@ function renderStatsSubExposures(){
     xTickEls += `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${H-padB}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,2"/>`;
     xTickEls += `<text x="${x.toFixed(1)}" y="${H-padB+14}" text-anchor="middle" font-size="9" fill="var(--text-faint)">${escapeHtml(y)}</text>`;
   });
-  const dots = pts.map((p,i)=>{
+  const dots = pts.map(p=>{
     const r = Math.max(2.5, Math.min(9, Math.sqrt(p.frames||1)*1.3));
     const title = `${fmtDate(p.date)} · ${p.name} · ${fmtExposure(p.sec)} × ${p.frames||"?"}`;
-    // tabindex/role="button" + aria-label machen den Punkt zusätzlich per Tastatur bedienbar (nicht nur
-    // Maus/Touch) - <title> bleibt als zusätzlicher Hover-Tooltip für Desktop-Mäuse erhalten.
-    return `<circle data-idx="${i}" cx="${xOf(new Date(p.date).getTime()).toFixed(1)}" cy="${yOf(p.sec).toFixed(1)}" r="${r.toFixed(1)}" fill="var(--accent)" fill-opacity=".65" stroke="var(--accent)" stroke-width="1" tabindex="0" role="button" aria-label="${escapeHtml(title)}"><title>${escapeHtml(title)}</title></circle>`;
+    return `<circle cx="${xOf(new Date(p.date).getTime()).toFixed(1)}" cy="${yOf(p.sec).toFixed(1)}" r="${r.toFixed(1)}" fill="var(--accent)" fill-opacity=".65" stroke="var(--accent)" stroke-width="1"><title>${escapeHtml(title)}</title></circle>`;
   }).join("");
   wrap.innerHTML = `
-    <div class="stats-subs-hint">Jeder Punkt ist eine Session: waagerecht wann fotografiert wurde, senkrecht die Einzelbelichtungszeit pro Bild. Größere Punkte = mehr Einzelbilder. Antippen zeigt Details.</div>
+    <div class="stats-subs-hint">Jeder Punkt ist eine Session: waagerecht wann fotografiert wurde, senkrecht die Einzelbelichtungszeit pro Bild. Größere Punkte = mehr Einzelbilder.</div>
     <svg viewBox="0 0 ${W} ${H}" class="stats-subs-svg" preserveAspectRatio="xMidYMid meet">
       ${yTickEls}${xTickEls}
       <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--text-faint)" stroke-width="1"/>
       ${dots}
     </svg>`;
-  // Bisher fehlte hier jeglicher Klick-/Tap-Handler - der Hinweistext "Antippen zeigt Details" versprach
-  // also etwas, das gar nicht implementiert war. Antippen/Klicken öffnet jetzt die normale Session-
-  // Detailansicht (wie ein Tabellen-Auge-Icon); das Statistik-Popup wird vorher geschlossen, sonst läge es
-  // (später im DOM, optisch obenauf) weiter über der Detailansicht - gleiches Muster wie showStatsDrilldown.
-  wrap.querySelectorAll("circle[data-idx]").forEach(circle=>{
-    const p = pts[+circle.dataset.idx];
-    const activate = ()=>{
-      closeModal("stats-modal");
-      openSessionDetailModal(p.objId, p.idx);
-    };
-    circle.addEventListener("click", activate);
-    circle.addEventListener("keydown", e=>{
-      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); activate(); }
-    });
-  });
 }
 // Balkenliste je Aufnahmeort: eine Zeile pro Ort, sortiert nach Gesamtbelichtungszeit absteigend. Der Balken
 // zeigt die Belichtungszeit (Hauptkriterium), die Bilderanzahl steht als Zahl daneben - zwei parallele
@@ -13012,15 +13048,20 @@ function altDesignations(o){
   if(o.commonName) parts.push(o.commonName);
   return parts.length ? parts.join(", ") : "–";
 }
-function sessionDateRangeLabel(s){
+// Start/Ende der Aufnahme werden in der Detailansicht bewusst als ZWEI GETRENNTE Zeilen dargestellt
+// (statt wie vorher als ein einziger "Zeitraum"-Wert "Start – Ende") - das war auf einen Blick schwerer
+// auseinanderzuhalten, welcher Teil Start und welcher Ende war, besonders wenn nur eine Uhrzeit fehlte.
+function sessionStartLabel(s){
   let out = fmtDate(s.dateStart);
   if(s.timeStart) out += " " + s.timeStart + " Uhr";
-  if(s.dateEnd){
-    out += " – " + fmtDate(s.dateEnd);
-    if(s.timeEnd) out += " " + s.timeEnd + " Uhr";
-  }else if(s.timeEnd){
-    out += " – " + s.timeEnd + " Uhr";
-  }
+  return out;
+}
+function sessionEndLabel(s){
+  if(!s.dateEnd && !s.timeEnd) return null; // kein Ende erfasst -> Zeile wird gar nicht angezeigt
+  // Ist nur die Enduhrzeit (ohne eigenes Enddatum) gesetzt, war die Aufnahme in derselben Nacht zu Ende -
+  // dann wird das Startdatum als Datum mit angezeigt, damit die Zeile trotzdem ein vollständiges Datum+Zeit zeigt.
+  let out = fmtDate(s.dateEnd || s.dateStart);
+  if(s.timeEnd) out += " " + s.timeEnd + " Uhr";
   return out;
 }
 function calibrationLabel(calib){
@@ -13043,21 +13084,23 @@ function openSessionDetailModal(objId, idx){
     ["Name", escapeHtml(o.displayName)],
     ["Alternative Bezeichnungen", escapeHtml(altDesignations(o))],
     ["Sternbild", escapeHtml(o.constellation || "–")],
-    ["Zeitraum der Aufnahme", escapeHtml(sessionDateRangeLabel(s))],
     ["Aufnahmeort", escapeHtml(s.location || "–")],
+    ["Start der Aufnahme", escapeHtml(sessionStartLabel(s))],
+    ...(sessionEndLabel(s) ? [["Ende der Aufnahme", escapeHtml(sessionEndLabel(s))]] : []),
+    ["Belichtungszeit", escapeHtml(fmtExposure(s.exposureSec))],
+    ["Anzahl Fotos", s.frames ?? "–"],
+    ["Gesamtbelichtungszeit", escapeHtml(fmtHours(totalSec))],
     ["Teleskop", escapeHtml(sessionTelescopeLabelFull(s))],
     ["Brennweite", escapeHtml(fmtFocal(sessionFocalLength(s)))],
-    ["Nachführung", escapeHtml(sessionMountLabel(s))],
     ["Kamera", escapeHtml(sessionCameraLabelFull(s))],
-    ...(s.lens ? [["Objektiv", escapeHtml(s.lens)]] : []),
-    ["Filter", escapeHtml(s.filter || "–")],
-    ["Anzahl Fotos", s.frames ?? "–"],
-    ["Belichtungszeit", escapeHtml(fmtExposure(s.exposureSec))],
-    ["Gesamtbelichtungszeit", escapeHtml(fmtHours(totalSec))],
-    ["Kalibrierbilder", escapeHtml(calibrationLabel(s.calibration))],
     ["ISO", s.iso ?? "–"],
+    ["Kalibrierbilder", escapeHtml(calibrationLabel(s.calibration))],
+    ...(s.lens ? [["Objektiv", escapeHtml(s.lens)]] : []),
+    ["Nachführung", escapeHtml(sessionMountLabel(s))],
+    ["Filter", escapeHtml(s.filter || "–")],
   ];
   if(s.mosaicPanels) rows.push(["Mosaik-Panels", s.mosaicPanels]);
+  rows.push(["Rohdatei „results_xxxx.fit\" vorhanden", s.rawFitExists === false ? "Nein" : "Ja"]);
   rows.push(["Kommentar", escapeHtml(s.notes || "–")]);
   document.getElementById("sd-fields").innerHTML = rows.map(([label,val])=>
     `<tr><th scope="row" style="color:var(--text-dim);font-weight:400">${label}</th><td>${val}</td></tr>`
@@ -13078,6 +13121,14 @@ function fmtDate(d){
   if(parts.length===2) return `${parts[1]}/${parts[0]} (Monat)`;
   return d;
 }
+// Nur für die schmale Datum-Spalte in den Sessions-Tabellen (siehe td.col-date): fmtDate() liefert ein
+// einziges "Wort" ohne Leerzeichen (z.B. "24.08.2026"), das bei knappem Platz (Handy) nicht an einer
+// sinnvollen Stelle umbrechen konnte - overflow-wrap:break-word (siehe CSS) musste daher zur Not
+// MITTEN in einer Zahl umbrechen (z.B. "24.08.2" / "026"), was zwar nichts abschneidet, aber unschön
+// aussieht. <wbr> markiert stattdessen die Punkte als bevorzugte, saubere Umbruchstellen ("24." /
+// "08.2026" statt mitten in der Jahreszahl). fmtDate() liefert ausschließlich Ziffern/Punkte/– (keine
+// Zeichen, die HTML-escaped werden müssten), daher ist die direkte HTML-Einfügung hier sicher.
+function fmtDateWbr(d){ return fmtDate(d).replace(/\./g, ".<wbr>"); }
 function totalIntegrationSeconds(obj){
   return obj.sessions.reduce((a,s)=> a + (s.frames||0) * (s.exposureSec||0), 0);
 }
@@ -13227,7 +13278,8 @@ function photoCellHtml(o, idx, s){
   const graphBtn = hasGraphs
     ? `<button class="graph-btn" onclick="event.stopPropagation();openGraphsViewer(${jsAttr(o.id)},${idx})" title="Graph${graphs.length>1?'en':''} anzeigen" aria-label="Graph${graphs.length>1?'en':''} anzeigen">${GRAPH_ICON_SVG}</button>`
     : "";
-  return `<td class="col-photo">${camBtn}${graphBtn}</td>`;
+  // Reihenfolge von links: Graph, Foto, (Auge folgt in eigener Spalte danach) - siehe Nutzeranforderung.
+  return `<td class="col-photo">${graphBtn}${camBtn}</td>`;
 }
 function newEquipmentId(cat){ return cat + "-" + Math.random().toString(36).slice(2,9); }
 function renderEquipmentList(cat){
@@ -13453,7 +13505,7 @@ function renderObjectItem(o){
       ? `<tr class="needs-review"><td colspan="6" style="white-space:normal;overflow:visible"><div class="review-panel"><span>${escapeHtml(s.reviewNote||'Bitte prüfen.')}</span><button class="small" onclick="event.stopPropagation();dismissSessionReview(${jsAttr(o.id)}, ${realIdx})">OK, geprüft</button><button class="small" onclick="event.stopPropagation();openSessionEditModal(${jsAttr(o.id)}, ${realIdx})">Bearbeiten</button></div></td></tr>` : '';
     return `
     <tr class="session-row${s.needsReview?' needs-review':''}" data-obj-id="${escapeHtml(o.id)}" data-idx="${realIdx}">
-      <td class="col-date">${fmtDate(s.dateStart)}${s.dateEnd?(' – '+fmtDate(s.dateEnd)):''}</td>
+      <td class="col-date">${fmtDateWbr(s.dateStart)}</td>
       <td class="col-loc">${escapeHtml(s.location||"")}</td>
       <td class="col-scope">${escapeHtml(sessionTelescopeBrand(s))}</td>
       <td class="col-camera">${escapeHtml(sessionCameraShort(s))}</td>
@@ -13666,7 +13718,7 @@ function sessionRowsTableHtml(rows){
       return `
     <tr class="session-row" data-obj-id="${escapeHtml(r.o.id)}" data-idx="${r.idx}">
       <td class="col-obj">${escapeHtml(r.o.displayName)}</td>
-      <td class="col-date">${fmtDate(r.s.dateStart)}${r.s.dateEnd?(' – '+fmtDate(r.s.dateEnd)):''}</td>
+      <td class="col-date">${fmtDateWbr(r.s.dateStart)}</td>
       <td class="col-loc">${escapeHtml(r.s.location||"")}</td>
       <td class="col-scope">${escapeHtml(sessionTelescopeBrand(r.s))}</td>
       <td class="col-camera">${escapeHtml(sessionCameraShort(r.s))}</td>
@@ -14074,6 +14126,7 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
       flats: parseInt(document.getElementById("s-calib-flats").value) || null,
       biases: parseInt(document.getElementById("s-calib-biases").value) || null,
     } : { used: false, darks: null, flats: null, biases: null },
+    rawFitExists: document.getElementById("s-rawfit").value === "true",
     notes: document.getElementById("s-notes").value.trim() || null,
     rawFolderName: `${dateStart.replace(/-/g,"")}_${location}_${frames} pcs_${exposureSec}"_${iso}`,
     needsReview: document.getElementById("s-review").checked,
@@ -14148,6 +14201,7 @@ function clearAddForm(){
   document.getElementById("s-telescope").value = "";
   document.getElementById("s-mount").value = (DB.equipment.mounts.find(m=>m.id==="mount-none")||DB.equipment.mounts[0]||{}).id || "";
   document.getElementById("s-filter").value = DEFAULT_FILTER;
+  document.getElementById("s-rawfit").value = "true";
   searchInput.value = "";
   document.getElementById("s-review").checked = false;
   document.getElementById("s-calib-used").checked = false;
