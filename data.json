@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-23T12:21:52.538Z",
-  "objectCount": 35,
-  "sessionCount": 70,
+  "generatedAt": "2026-08-24T06:33:10.329Z",
+  "objectCount": 36,
+  "sessionCount": 71,
   "objects": [
     {
       "id": "wasp33b",
@@ -2861,6 +2861,58 @@
           },
           "notes": null,
           "rawFolderName": "20250501_Bundesplatz_352 pcs_30\"_800",
+          "needsReview": false,
+          "reviewNote": null
+        }
+      ]
+    },
+    {
+      "id": "toi-4463-a-b",
+      "displayName": "TOI-4463 A b",
+      "catalog": {
+        "messier": null,
+        "ngc": null,
+        "ic": null,
+        "other": []
+      },
+      "commonName": null,
+      "type": "exoplanet",
+      "constellation": "Sagitta",
+      "ra": null,
+      "dec": null,
+      "magnitude": null,
+      "angularSize": null,
+      "distanceLy": null,
+      "description": "Hauptstern 11.0 mag, Überdeckung 1.31%, Dauer 1.85 h, Höhe 26°–49°, Azimuth 234°→261°",
+      "needsReview": true,
+      "reviewNote": "Neu angelegt ohne vollständige RA/Dec-Koordinaten – für Sternkarte bitte ergänzen.",
+      "sessions": [
+        {
+          "dateStart": "2026-08-23",
+          "dateEnd": "2026-08-24",
+          "timeStart": "23:48",
+          "timeEnd": "02:10",
+          "location": "Bundesplatz",
+          "telescopeId": "tel-omegon-72432",
+          "cameraId": "cam-default",
+          "mountId": "mount-ioptron-skyguider",
+          "focalLengthMm": 432,
+          "camera": null,
+          "filter": null,
+          "lens": null,
+          "frames": 140,
+          "exposureSec": 60,
+          "iso": 640,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": true,
+            "darks": 20,
+            "flats": 20,
+            "biases": 20
+          },
+          "notes": null,
+          "rawFolderName": "20260823_Bundesplatz_140 pcs_60\"_640",
           "needsReview": false,
           "reviewNote": null
         }
