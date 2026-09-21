@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T14:00:19.241Z",
+  "generatedAt": "2026-09-21T14:11:11.282Z",
   "objectCount": 36,
-  "sessionCount": 76,
+  "sessionCount": 77,
   "objects": [
     {
       "id": "wasp33b",
@@ -1565,6 +1565,40 @@
             "biases": null
           },
           "rawFitExists": true
+        },
+        {
+          "photoPath": "images/orion-constellation-20260910-k87hqc.jpg",
+          "photoSha": "5be87375521973618b876b9195c76f3c40499b63",
+          "photoDataUrl": null,
+          "graphImages": [],
+          "dateStart": "2026-09-10",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "Făgăraș",
+          "telescopeId": null,
+          "cameraId": "cam-default",
+          "mountId": "mount-none",
+          "focalLengthMm": null,
+          "camera": null,
+          "filter": null,
+          "lens": "12mm",
+          "frames": 1,
+          "exposureSec": 6.5,
+          "iso": 4000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "rawFitExists": false,
+          "notes": null,
+          "rawFolderName": "20260910_Făgăraș_1 pcs_6.5\"_4000",
+          "needsReview": false,
+          "reviewNote": null
         }
       ]
     },
