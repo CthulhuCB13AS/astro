@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-24T12:26:14.517Z",
+  "generatedAt": "2026-09-21T13:02:18.428Z",
   "objectCount": 36,
-  "sessionCount": 71,
+  "sessionCount": 72,
   "objects": [
     {
       "id": "wasp33b",
@@ -72,7 +72,8 @@
               "sha": "99d133dc4e86bb27ef99fb74076b184c4e8b88b7",
               "dataUrl": null
             }
-          ]
+          ],
+          "rawFitExists": true
         }
       ]
     },
@@ -144,7 +145,8 @@
               "sha": "3c92efa30b0453c13cce5fa5e5d04f0bd20f1d7a",
               "dataUrl": null
             }
-          ]
+          ],
+          "rawFitExists": true
         }
       ]
     },
@@ -197,7 +199,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-01-06",
@@ -227,7 +230,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-18",
@@ -254,7 +258,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-08-23",
@@ -281,7 +286,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -334,7 +340,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -387,7 +394,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -440,7 +448,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-04-30",
@@ -467,7 +476,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -520,7 +530,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -570,7 +581,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -620,7 +632,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -673,7 +686,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -725,7 +739,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-01-18",
@@ -754,7 +769,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "photoPath": "images/milkyway-20250920-54rg2w.jpg",
@@ -786,7 +802,8 @@
           "notes": null,
           "rawFolderName": "20250920_Ebenreuth_1 pcs_20\"_3200",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "rawFitExists": true
         },
         {
           "photoPath": "images/milkyway-20250923-lj68nd.jpg",
@@ -818,7 +835,8 @@
           "notes": null,
           "rawFolderName": "20250923_Madlitz_1 pcs_25\"_3200",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "rawFitExists": true
         },
         {
           "photoPath": "images/milkyway-20250923-fu5c8d.jpg",
@@ -850,7 +868,8 @@
           "notes": null,
           "rawFolderName": "20250923_Madlitz_1 pcs_25\"_3200",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "rawFitExists": true
         },
         {
           "photoPath": "images/milkyway-20250923-1zm27e.jpg",
@@ -881,6 +900,41 @@
           },
           "notes": null,
           "rawFolderName": "20250923_Madlitz_30 pcs_60\"_800",
+          "needsReview": false,
+          "reviewNote": null,
+          "rawFitExists": true
+        },
+        {
+          "photoPath": "images/milkyway-20260905-3dazzj.jpg",
+          "photoSha": "d1fa632c7e7f64c5d3ec9ae3543a19ac77000a29",
+          "photoDataUrl": null,
+          "graphImages": [],
+          "dateStart": "2026-09-05",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "Făgăraș",
+          "telescopeId": null,
+          "cameraId": "cam-default",
+          "mountId": "mount-none",
+          "focalLengthMm": null,
+          "camera": null,
+          "filter": null,
+          "lens": "12mm",
+          "frames": 1,
+          "exposureSec": 20,
+          "iso": 4000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "rawFitExists": false,
+          "notes": null,
+          "rawFolderName": "20260905_Făgăraș_1 pcs_20\"_4000",
           "needsReview": false,
           "reviewNote": null
         }
@@ -935,7 +989,8 @@
           },
           "photoPath": "images/ngc4725-20260525-6n29pq.jpg",
           "photoSha": "388bbce2d33444a55ae6d1ed13eb7bc95081a59e",
-          "photoDataUrl": null
+          "photoDataUrl": null,
+          "rawFitExists": true
         }
       ]
     },
@@ -990,7 +1045,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1043,7 +1099,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1095,7 +1152,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1147,7 +1205,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-12-16",
@@ -1174,7 +1233,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1224,7 +1284,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2024-12-23",
@@ -1251,7 +1312,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2024-12-24",
@@ -1281,7 +1343,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-12-11",
@@ -1311,7 +1374,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1363,7 +1427,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1416,7 +1481,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-12-15",
@@ -1443,7 +1509,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-12-15",
@@ -1470,7 +1537,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1520,7 +1588,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "photoPath": "images/moon-20250809-n6vkys.jpg",
@@ -1552,7 +1621,8 @@
           "notes": null,
           "rawFolderName": "20250809_Mahlsdorf_1 pcs_0.005\"_120",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "rawFitExists": true
         },
         {
           "photoPath": "images/moon-20241224-rci3ga.jpg",
@@ -1584,7 +1654,8 @@
           "notes": null,
           "rawFolderName": "20241224_La Gomera_1 pcs_0.005\"_120",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "rawFitExists": true
         }
       ]
     },
@@ -1637,7 +1708,8 @@
             "flats": null,
             "biases": null
           },
-          "mountId": "mount-ioptron-skyguider"
+          "mountId": "mount-ioptron-skyguider",
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-03",
@@ -1667,7 +1739,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-08",
@@ -1694,7 +1767,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-16",
@@ -1724,7 +1798,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-17",
@@ -1754,7 +1829,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-19",
@@ -1784,7 +1860,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1837,7 +1914,8 @@
           "mountId": "mount-ioptron-skyguider",
           "photoPath": "images/ic410-20250308-73kpr7.jpg",
           "photoSha": "b764c398fc95852484ba3beee254d3fbaaadf06c",
-          "photoDataUrl": null
+          "photoDataUrl": null,
+          "rawFitExists": true
         }
       ]
     },
@@ -1887,7 +1965,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2026-03-10",
@@ -1914,7 +1993,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -1964,7 +2044,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2024-12-30",
@@ -1991,7 +2072,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2024-12-31",
@@ -2021,7 +2103,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2074,7 +2157,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2127,7 +2211,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2180,7 +2265,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-15",
@@ -2210,7 +2296,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-02-16",
@@ -2237,7 +2324,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2290,7 +2378,8 @@
           },
           "photoPath": "images/ngc1499-20250310-nmcin4.jpg",
           "photoSha": "9618c9f48350c1195702aaaa6ed015af4f2cbe38",
-          "photoDataUrl": null
+          "photoDataUrl": null,
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-03-22",
@@ -2317,7 +2406,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-03-28",
@@ -2344,7 +2434,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2397,7 +2488,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-03-21",
@@ -2424,7 +2516,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2477,7 +2570,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2532,7 +2626,8 @@
           },
           "photoPath": "images/ngc6992-20251018-jrlh0n.jpg",
           "photoSha": "f2b8962faa055d0cbfbe155a8380574bff1d110b",
-          "photoDataUrl": null
+          "photoDataUrl": null,
+          "rawFitExists": true
         }
       ]
     },
@@ -2587,7 +2682,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2024-12-30",
@@ -2616,7 +2712,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-08-30",
@@ -2646,7 +2743,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2025-09-12",
@@ -2676,7 +2774,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2026-08-13",
@@ -2708,7 +2807,8 @@
           },
           "telescopeId": "tel-sw-n2001000",
           "cameraId": "cam-default",
-          "mountId": "mount-sw-eq6r"
+          "mountId": "mount-sw-eq6r",
+          "rawFitExists": true
         }
       ]
     },
@@ -2761,7 +2861,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         },
         {
           "dateStart": "2026-07-25",
@@ -2788,7 +2889,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2841,7 +2943,8 @@
             "darks": null,
             "flats": null,
             "biases": null
-          }
+          },
+          "rawFitExists": true
         }
       ]
     },
@@ -2896,7 +2999,8 @@
           "notes": null,
           "rawFolderName": "20250501_Bundesplatz_352 pcs_30\"_800",
           "needsReview": false,
-          "reviewNote": null
+          "reviewNote": null,
+          "rawFitExists": true
         }
       ]
     },
@@ -2963,7 +3067,8 @@
               "sha": "fd65b19408ccc7e5e7ec7277c91f527d463c04b1",
               "dataUrl": null
             }
-          ]
+          ],
+          "rawFitExists": true
         }
       ]
     }
