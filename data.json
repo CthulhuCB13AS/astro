@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T13:50:14.218Z",
+  "generatedAt": "2026-09-21T14:00:19.241Z",
   "objectCount": 36,
-  "sessionCount": 75,
+  "sessionCount": 76,
   "objects": [
     {
       "id": "wasp33b",
@@ -1037,6 +1037,40 @@
           "rawFitExists": false,
           "notes": null,
           "rawFolderName": "20260909_Făgăraș_1 pcs_20\"_4000",
+          "needsReview": false,
+          "reviewNote": null
+        },
+        {
+          "photoPath": "images/milkyway-20260909-jq3sps.jpg",
+          "photoSha": "bddb0f90b62392eda0b4418b85ae7367339d4ea7",
+          "photoDataUrl": null,
+          "graphImages": [],
+          "dateStart": "2026-09-09",
+          "dateEnd": null,
+          "timeStart": null,
+          "timeEnd": null,
+          "location": "Făgăraș",
+          "telescopeId": null,
+          "cameraId": "cam-default",
+          "mountId": "mount-none",
+          "focalLengthMm": null,
+          "camera": null,
+          "filter": null,
+          "lens": "12mm",
+          "frames": 1,
+          "exposureSec": 10,
+          "iso": 4000,
+          "mosaicPanels": null,
+          "isMosaicSummary": false,
+          "calibration": {
+            "used": false,
+            "darks": null,
+            "flats": null,
+            "biases": null
+          },
+          "rawFitExists": false,
+          "notes": null,
+          "rawFolderName": "20260909_Făgăraș_1 pcs_10\"_4000",
           "needsReview": false,
           "reviewNote": null
         }
