@@ -3,14 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <!-- maximum-scale=1/user-scalable=no wurden entfernt (WCAG 1.4.4 "Resize text" verlangt, dass Nutzer per
-     Pinch-Zoom vergrößern können - das komplett zu unterbinden war ein a11y-Kritisch-Fund). Das war ursprünglich
-     gedacht, um Konflikte mit der eigenen Pinch-Zoom-Geste auf Sternkarte/AR-Ansicht zu vermeiden - diese
-     ruft aber bereits selbst e.preventDefault() in ihrem touchmove-Handler auf (siehe mapWrapEl-Listener),
-     blockiert die native Seiten-Zoomgeste dort also unabhängig vom Meta-Tag. Außerhalb von Karte/AR darf
-     die Seite jetzt regulär per Pinch gezoomt werden. -->
+     Pinch-Zoom vergrößern können). Bildansichten mit eigener Pinch-Zoom-Geste rufen selbst
+     e.preventDefault() in ihrem touchmove-Handler auf. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Astro-Logbuch</title>
-<meta name="description" content="Persönliches Astrofotografie-Logbuch mit Sternkarte">
+<meta name="description" content="Persönliches Astrofotografie-Logbuch">
 <style>
 :root{
   color-scheme:dark; /* native Formularelemente (Datum/Uhrzeit-Picker, Checkboxen) sollen im dunklen
@@ -350,54 +347,21 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 .banner.ok{background:#123324;color:var(--ok)}
 .banner.info{background:var(--accent-bg);color:var(--accent)}
 
-#map-wrap{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;aspect-ratio:1/1;max-width:520px;margin:0 auto;touch-action:none}
-/* Temporäres Diagnose-Panel für die AR-Fehlersuche (Rohsensordaten + Sprung-Log) - siehe onDeviceOrientation/drawARFrame */
-#ar-debug-toggle,#ar-calibrate-btn{position:absolute;top:8px;z-index:5;width:2.2em;height:2.2em;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:#fff;font-size:1.1rem;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0}
-#ar-debug-toggle{right:8px}
-#ar-calibrate-btn{right:58px}
-#ar-debug-toggle.visible,#ar-calibrate-btn.visible{display:flex}
-#ar-debug-panel{position:fixed;left:8px;right:8px;bottom:8px;max-height:70vh;overflow-y:auto;background:rgba(0,0,0,.9);color:#7CFC7C;font:11px/1.45 ui-monospace,monospace;padding:.7em;border-radius:10px;z-index:1000;white-space:pre-wrap;border:1px solid rgba(255,255,255,.25)}
-#skyCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
-#skyCanvas.dragging{cursor:grabbing}
-#arVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;touch-action:none}
-#arCanvas{position:absolute;inset:0;width:100%;height:100%;display:none;touch-action:none}
-/* Immer EINE Zeile (nicht mehr flex-wrap:wrap): "Standort ermitteln", Datum/Uhrzeit und "Jetzt" brachen auf
-   schmalen Handys (z.B. iPhone) trotz reservierter Häkchen-Breite (s.u.) auf zwei Zeilen um, sobald die
-   Summe der Breiten knapp über den verfügbaren Platz kam - je nach Gerät/Systemschrift/Datumsformat war
-   das nicht zuverlässig vorherzusagen. Fix: nowrap erzwingt eine Zeile; reicht der Platz auf einem sehr
-   schmalen Gerät trotz der verkleinerten Schrift unten (@media) nicht ganz, scrollt die Zeile horizontal
-   statt umzubrechen - optisch bleibt es immer eine Zeile.
-*/
-.map-controls{display:flex;gap:.6em;flex-wrap:nowrap;justify-content:center;margin:.8em 0;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-.map-controls>*{flex:none;min-height:2.6em;box-sizing:border-box;white-space:nowrap}
-.map-time-row{display:flex;gap:.4em;flex:none}
-.map-time-row input[type=datetime-local]{width:auto;min-width:0;max-width:11em;font-size:.78rem;padding:.55em .5em}
-@media (max-width:480px){
-  .map-controls{gap:.4em;justify-content:flex-start}
-  .map-controls #btn-geo{padding:.3em .5em;font-size:.74rem}
-  .map-time-row{gap:.3em}
-  .map-time-row input[type=datetime-local]{max-width:9.5em;font-size:.72rem;padding:.5em .4em}
-  .map-time-row #btn-map-now{padding:.3em .55em;font-size:.74rem}
-}
-/* visibility:hidden statt display:none (per [hidden]-Attribut) - das Häkchen bleibt dadurch layout-technisch
-   IMMER an derselben Stelle reserviert, auch wenn (noch) unsichtbar. So ändert sich beim Ein-/Ausblenden
-   nicht die Breite des Buttons "Standort ermitteln", was sonst dazu führte, dass "Standort ermitteln",
-   Datum/Uhrzeit-Feld und "Jetzt"-Button auf dem Handy von einer auf zwei Zeilen umbrachen. */
-.geo-check{color:var(--accent);font-weight:700;margin-left:.4em;visibility:hidden}
-.geo-check.visible{visibility:visible}
-
 /* ---- Pics-Galerie ---- */
 /* sr-only: für Screenreader lesbar, visuell aber unsichtbar (z.B. Positionsangabe "3 von 12" statt des
    entfernten sichtbaren "x/6"-Zählers - barrierefrei, ohne optisch Platz zu beanspruchen). */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-/* #view-pics bekommt negative Margins passend zu main's Padding (siehe main{padding:1em}), damit das Foto
-   randlos (volle Breite) angezeigt werden kann statt mit Rand wie die übrigen Ansichten - "maximalen Platz
-   auf dem Bildschirm". Die Höhe wird über den Viewport abzüglich der ungefähren Höhe von Header (sticky)
-   und Fußnavigation (fixed, body hat dafür bereits 70px padding-bottom reserviert) berechnet. */
+/* Pics-Galerie: #pics-wrap wird in der Pics-Ansicht FIXIERT exakt zwischen Kopfzeile und Fußnavigation
+   eingepasst. Deren tatsächliche Höhen werden per JS gemessen (--topbar-h / --tabbar-h, s. syncChromeHeights())
+   statt wie früher geschätzt (100svh - 130px): auf Geräten mit Notch/Home-Indikator (safe-area-insets) oder
+   größerer Systemschrift waren Kopf-/Fußzeile höher als geschätzt, so dass die Bildunterschrift unten hinter der
+   Fußnavigation verschwand. Die Fallback-Werte greifen nur, bis das erste Mal gemessen wurde. */
+:root{--topbar-h:calc(64px + env(safe-area-inset-top));--tabbar-h:calc(58px + env(safe-area-inset-bottom))}
 #view-pics{margin:-1em -1em 0}
 #pics-wrap{
-  position:relative;background:#000;overflow:hidden;width:100%;
-  height:calc(100svh - 130px);min-height:340px;
+  position:fixed;left:0;right:0;top:var(--topbar-h);bottom:var(--tabbar-h);
+  max-width:920px;margin:0 auto;
+  background:#000;overflow:hidden;
   display:flex;align-items:center;justify-content:center;touch-action:none;
 }
 #pics-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block;touch-action:none}
@@ -415,7 +379,7 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 #pics-next{right:.5em}
 /* Beschriftung als Overlay unten links IM Bild: durchgehender Verlaufs-Scrim über die volle Breite sorgt
    für ausreichenden Kontrast (barrierefrei) auch über hellen Bildbereichen, Text selbst ist linksbündig.
-   -webkit-line-clamp begrenzt auf max. 2 Zeilen, überschüssiger Text wird mit "…" abgeschnitten. */
+   Kein Zeilen-Limit mehr: die Beschriftung wird immer vollständig angezeigt (bricht bei Bedarf um). */
 #pics-caption{
   position:absolute;left:0;right:0;bottom:0;z-index:1;
   padding:2.2em .9em .7em;
@@ -424,7 +388,7 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
      - über einem hellen Bildbereich war der weiße Text dort nicht mehr zuverlässig lesbar (WCAG-Kontrast). */
   background:linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.6) 55%, rgba(0,0,0,0) 100%);
   color:#fff;font-size:.78rem;line-height:1.4;text-align:left;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  white-space:normal;overflow-wrap:break-word;
   pointer-events:none;
   text-shadow:0 1px 3px rgba(0,0,0,.8);
 }
@@ -682,31 +646,6 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
     </div>
   </section>
 
-  <section class="view" id="view-map">
-    <h2>Sternkarte</h2>
-    <div class="toolbar" style="justify-content:center">
-      <button type="button" class="chip active" data-mapmode="2d" aria-pressed="true">2D-Himmelskarte</button>
-      <button type="button" class="chip" data-mapmode="ar" aria-pressed="false">AR-Kamera</button>
-    </div>
-    <div id="map-status" class="banner info" style="max-width:520px;margin:0 auto .8em"></div>
-    <div id="map-wrap">
-      <canvas id="skyCanvas" width="600" height="600" tabindex="0" aria-label="Interaktive Sternkarte. Mit den Pfeiltasten verschieben, mit Plus/Minus zoomen."></canvas>
-      <video id="arVideo" autoplay playsinline muted></video>
-      <canvas id="arCanvas"></canvas>
-      <button type="button" id="ar-calibrate-btn" title="Kompass kalibrieren (Handy Richtung Horizont halten)" aria-label="Kompass kalibrieren">🧭</button>
-      <button type="button" id="ar-debug-toggle" title="Debug-Infos ein/ausblenden" aria-label="Debug-Infos ein/ausblenden">🐞</button>
-    </div>
-    <div id="ar-debug-panel" hidden></div>
-    <div class="map-controls">
-      <button class="small" id="btn-geo">Standort ermitteln<span id="geo-check" class="geo-check">✓</span></button>
-      <div class="map-time-row">
-        <input type="datetime-local" id="map-time" class="small" aria-label="Datum und Uhrzeit für die Sternkarte">
-        <button class="small" id="btn-map-now">Jetzt</button>
-      </div>
-    </div>
-    <div id="map-object-info" class="card" hidden></div>
-  </section>
-
   <section class="view" id="view-pics">
     <div id="pics-wrap" role="group" aria-roledescription="Bildergalerie" aria-label="Fotos aus dem Logbuch">
       <button class="pics-nav-btn" id="pics-prev" title="Vorheriges Foto" aria-label="Vorheriges Foto">
@@ -725,7 +664,6 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
 
 <nav class="tabbar" aria-label="Hauptnavigation">
   <button data-view="overview" class="active" aria-current="page">Home</button>
-  <button data-view="map">Karte</button>
   <button data-view="pics">Pics</button>
 </nav>
 
@@ -752,9 +690,6 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
       </div>
       <div id="sync-test-result" class="sync-status"></div>
       <hr style="border-color:var(--border);margin:1.2em 0">
-      <h3 style="margin-top:0">Astronomy Picture of the Day</h3>
-      <div class="field"><label for="cfg-nasa-key">NASA API-Key (optional, sonst gemeinsamer DEMO_KEY mit Limit)</label><input id="cfg-nasa-key" placeholder="z.B. von api.nasa.gov/signup"></div>
-      <hr style="border-color:var(--border);margin:1.2em 0">
       <h3 style="margin-top:0">Manueller Export / Import</h3>
       <p>Alternative bzw. Backup zum automatischen Sync: JSON-Datei exportieren und z.B. manuell im Repo ersetzen, oder eine Datei importieren.</p>
       <div class="row">
@@ -762,9 +697,6 @@ table.sessions tr.session-row:hover{background:rgba(110,168,254,.07)}
         <button id="btn-import-trigger">JSON importieren</button>
         <input type="file" id="import-file" accept="application/json" hidden aria-label="JSON-Datei importieren">
       </div>
-      <hr style="border-color:var(--border);margin:1.2em 0">
-      <h3 style="margin-top:0">Sichtbare Objekte in der Kamera-Ansicht</h3>
-      <div class="field"><label for="cfg-fov">Kamera-Sichtfeld (° horizontal, ungefähr)</label><input type="number" id="cfg-fov" value="65"></div>
       <hr style="border-color:var(--border);margin:1.2em 0">
       <h3 style="margin-top:0">Ausrüstung</h3>
       <p style="font-size:.8rem;color:var(--text-dim)">Kameras, Teleskope und Nachführungen, die beim Bearbeiten einer Session per Dropdown ausgewählt werden können.</p>
@@ -12129,9 +12061,8 @@ document.getElementById("btn-save-object-edit").addEventListener("click", async 
   const oeRa = document.getElementById("oe-ra").value.trim() || null;
   const oeDec = document.getElementById("oe-dec").value.trim() || null;
   // Ohne diese Prüfung machte ein Tippfehler oder ein Wert außerhalb des gültigen Bereichs das Objekt
-  // stillschweigend unsichtbar auf der Sternkarte (parseRaToDeg/parseDecToDeg liefern dann null und
-  // getPhotographedTargets() filtert es einfach heraus) bzw. plottete es an einer unmöglichen Position –
-  // beides ohne jede Rückmeldung beim Speichern.
+  // stillschweigend unbrauchbar für die Lage-/Sichtbarkeitsangaben im Info-Text (parseRaToDeg/parseDecToDeg
+  // liefern dann null) – ohne jede Rückmeldung beim Speichern.
   if(oeRa!=null){
     const raDeg = parseRaToDeg(oeRa);
     if(raDeg==null || raDeg<0 || raDeg>360){
@@ -12662,41 +12593,407 @@ function resetPicsTransform(){ picsZoomCtl.reset(); }
 const photoZoomCtl = createPinchZoomController(document.getElementById("photo-modal-body"), "img");
 const graphsZoomCtl = createPinchZoomController(document.getElementById("graphs-modal-body"), "img");
 
-/* ---- Pics: Info-Button - weiterführende Links zu Objekt/Sternbild (Wikipedia EN, bei Messier-Objekten
-   zusätzlich die SEDS-Messier-Datenbank) ---- */
-// Sternbildnamen in data.json sind laut Doku "Latein/Deutsch gemischt, informell" - statt eine exakte
-// Wikipedia-Artikel-URL zu raten (die bei Groß-/Kleinschreibung, Sprache oder Klammerzusätzen wie
-// "(constellation)" leicht danebenliegen kann), wird die Wikipedia-EIGENE Suche verlinkt: die leitet bei
-// eindeutigem Treffer automatisch zum richtigen Artikel weiter und zeigt sonst eine Trefferliste - robust
-// unabhängig von Schreibweise/Sprache des gespeicherten Namens.
-function wikipediaSearchUrl(term){
-  return `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(term)}&title=Special:Search&fulltext=1`;
+/* ---- Pics: Info-Button - Kurzbeschreibung zu Objekt und Lage am Himmel (ohne externe Links) ----
+   Reihenfolge der Quellen für den Text:
+   1. OBJECT_INFO: kuratierte Kurztexte (Objekt + Lage) für alle Bestandsobjekte und viele beliebte
+      Astrofoto-Ziele. Zuordnung über id, Messier/NGC/IC-Bezeichnung, sonstige Katalognamen oder Namen.
+   2. Für alle anderen (neu angelegten) Objekte wird der Text automatisch aus den gespeicherten Daten
+      erzeugt: Objekttyp, eigene Beschreibung, Helligkeit/Größe/Entfernung, Sternbild (CONSTELLATION_INFO)
+      und - falls RA/Dec gesetzt - Sichtbarkeit von Mitteleuropa aus (max. Höhe, zirkumpolar, Saison). */
+const INFO_LAT = 51; // geografische Breite Mitteleuropa (Mitte Deutschlands) für die Sichtbarkeitsangaben
+function infoKey(str){
+  return String(str||"").toLowerCase()
+    .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^a-z0-9]/g,"");
 }
-function sedsMessierUrl(messier){
-  // z.B. "M31" -> "m031" (SEDS nummeriert dreistellig mit führenden Nullen)
-  const num = String(messier).replace(/\D/g, "");
-  if(!num) return null;
-  return `http://www.messier.seds.org/m/m${num.padStart(3,"0")}.html`;
+const OBJECT_INFO = [
+  /* ---------- Bestandsobjekte ---------- */
+  {keys:["wasp33b","wasp33"],
+   obj:"WASP-33 b ist ein sogenannter ultraheißer Jupiter: ein Gasriese, der seinen Stern in nur rund 1,2 Tagen umrundet. Seine Tagseite erreicht über 3000 °C. Ungewöhnlich ist die rückläufige Bahn – der Planet läuft entgegengesetzt zur Rotation seines schnell rotierenden, leicht pulsierenden Muttersterns. Bei jedem Transit sinkt die Helligkeit des Sterns um etwa 1 %.",
+   lage:"Der 8 mag helle Mutterstern liegt im östlichen Teil der Andromeda, einige Grad südöstlich von Alamak (γ Andromedae), und ist damit ein typisches Herbst- und Winterziel."},
+  {keys:["xo1b","xo1"],
+   obj:"XO-1 b ist ein heißer Jupiter mit knapp der Masse Jupiters, der einen sonnenähnlichen Stern in knapp vier Tagen umkreist. Er wurde 2006 mit dem kleinen XO-Teleskop auf Hawaii über die Transitmethode entdeckt – ein Beleg dafür, dass schon bescheidene Optiken Exoplaneten nachweisen können.",
+   lage:"Der rund 11 mag schwache Mutterstern steht im Sternbild Nördliche Krone, nahe der Grenze zum Herkules – ein Ziel für Frühsommernächte."},
+  {keys:["m31","ngc224","andromedagalaxie","andromedagalaxy","andromedanebel"],
+   obj:"Die Andromedagalaxie ist die größte Galaxie der Lokalen Gruppe und mit rund 2,5 Millionen Lichtjahren das fernste Objekt, das man mit bloßem Auge sehen kann. Sie enthält etwa eine Billion Sterne und wird von den Begleitgalaxien M32 und M110 umkreist. Sie bewegt sich mit rund 110 km/s auf die Milchstraße zu; in etwa 4–5 Milliarden Jahren werden beide verschmelzen.",
+   lage:"Im Sternbild Andromeda: Von Mirach (β And) über μ Andromedae nach Nordwesten weitergehen. Bei dunklem Himmel als länglicher Nebelfleck freiäugig sichtbar, am besten von August bis Januar."},
+  {keys:["m51","ngc5194","whirlpoolgalaxie","whirlpoolgalaxy"],
+   obj:"Die Whirlpool-Galaxie ist eine fast genau von oben sichtbare Spiralgalaxie in etwa 23–30 Millionen Lichtjahren Entfernung. Ihre kleine Begleitgalaxie NGC 5195 zieht an einem Spiralarm und hat dort Sternentstehung ausgelöst. M51 war 1845 die erste Galaxie, an der Lord Rosse eine Spiralstruktur erkannte.",
+   lage:"Im Sternbild Jagdhunde, etwa 3,5° südwestlich von Alkaid (η UMa), dem letzten Deichselstern des Großen Wagens. Sie steht von Mitteleuropa aus fast das ganze Jahr hoch, ideal im Frühling."},
+  {keys:["m64","ngc4826","blackeyegalaxie","blackeyegalaxy","schwarzaugengalaxie"],
+   obj:"Die Black-Eye-Galaxie verdankt ihren Namen einem dunklen Staubband vor dem hellen Kern. Besonders: Das Gas in ihren Außenbereichen rotiert entgegengesetzt zu dem im Inneren – vermutlich die Folge einer Verschmelzung mit einer kleineren Galaxie vor langer Zeit. Entfernung rund 17–24 Millionen Lichtjahre.",
+   lage:"Im Sternbild Haar der Berenike, etwa 1° ostnordöstlich des Sterns 35 Comae Berenices; beste Zeit ist der Frühling."},
+  {keys:["m66group","leotriplet","leotriplett","m65m66"],
+   obj:"Das Leo-Triplett besteht aus den Spiralgalaxien M65, M66 und NGC 3628 („Hamburger-Galaxie“) in rund 35 Millionen Lichtjahren Entfernung. Die drei beeinflussen sich gravitativ: M66 wirkt verzerrt, und NGC 3628 zeigt einen langen, lichtschwachen Gezeitenschweif.",
+   lage:"Unter dem Hinterleib des Löwen, etwa auf halber Strecke zwischen Chertan (θ Leonis) und ι Leonis. Alle drei passen gemeinsam in ein Bildfeld von etwa 1°; beste Zeit März bis Mai."},
+  {keys:["m81","ngc3031","bodegalaxie","bodesgalaxy","bodesgalaxie"],
+   obj:"Die Bode-Galaxie ist eine große, helle Spiralgalaxie in rund 12 Millionen Lichtjahren Entfernung, 1774 von Johann Elert Bode entdeckt. Sie bildet mit der Zigarrengalaxie M82 und NGC 3077 eine wechselwirkende Gruppe – die Begegnung mit M81 hat in M82 einen Sternentstehungsausbruch ausgelöst.",
+   lage:"Im Großen Bären: Die Diagonale des Wagenkastens von Phecda (γ) über Dubhe (α) um die gleiche Strecke nach Nordwesten verlängern. Von Mitteleuropa aus zirkumpolar, also das ganze Jahr sichtbar, am höchsten im Frühjahr."},
+  {keys:["m87","ngc4486","virgoa"],
+   obj:"M87 ist eine riesige elliptische Galaxie im Zentrum des Virgo-Galaxienhaufens, etwa 53 Millionen Lichtjahre entfernt. Sie besitzt rund 12.000 Kugelsternhaufen und einen etwa 5000 Lichtjahre langen Materiestrahl (Jet). Ihr zentrales Schwarzes Loch mit rund 6,5 Milliarden Sonnenmassen wurde 2019 vom Event Horizon Telescope als erstes Schwarzes Loch überhaupt abgebildet.",
+   lage:"Im Sternbild Jungfrau nahe der Grenze zum Haar der Berenike, etwa in der Mitte zwischen Denebola (β Leonis) und Vindemiatrix (ε Virginis), mitten im galaxienreichen Virgo-Haufen; beste Zeit April/Mai."},
+  {keys:["m99","ngc4254","stcatherineswheel","pinwheelofcoma"],
+   obj:"M99 ist eine nahezu frontal sichtbare Spiralgalaxie im Virgo-Haufen, etwa 50 Millionen Lichtjahre entfernt. Einer ihrer Spiralarme ist auffällig ausgedehnt – vermutlich durch eine nahe Begegnung mit einer anderen Galaxie. In M99 wurden bereits mehrere Supernovae beobachtet.",
+   lage:"Im Sternbild Haar der Berenike, etwa 7° östlich von Denebola (β Leonis), am Nordwestrand des Virgo-Haufens; beste Zeit April/Mai."},
+  {keys:["m104","ngc4594","sombrerogalaxie","sombrerogalaxy"],
+   obj:"Die Sombrero-Galaxie zeigt sich fast genau von der Kante: ein heller, ausgedehnter Zentralbereich, durchzogen von einem markanten dunklen Staubring – daher die Hutform. Sie ist etwa 30 Millionen Lichtjahre entfernt und von über tausend Kugelsternhaufen umgeben.",
+   lage:"Im Süden der Jungfrau an der Grenze zum Raben, etwa 11° westlich von Spica. Von Mitteleuropa aus erreicht sie nur knapp 30° Höhe – am besten im April/Mai um Mitternacht in Richtung Süden."},
+  {keys:["milkyway","milchstrasse"],
+   obj:"Die Milchstraße ist unsere Heimatgalaxie: eine Balkenspiralgalaxie mit 100–400 Milliarden Sternen und rund 100.000 Lichtjahren Durchmesser. Die Sonne liegt etwa 26.000 Lichtjahre vom Zentrum entfernt in einem Nebenarm. Was wir als Lichtband sehen, ist der Blick in die Scheibe der Galaxie – durchzogen von dunklen Staubwolken.",
+   lage:"Das Band zieht sich einmal um den ganzen Himmel. Der hellste Teil mit dem galaktischen Zentrum im Schützen steht im Sommer tief im Süden; im Herbst und Winter verläuft die Milchstraße hoch über Kassiopeia, Perseus und Fuhrmann, im Sommer über den Schwan durch den Zenit."},
+  {keys:["ngc4725"],
+   obj:"NGC 4725 ist eine Balkenspiralgalaxie mit einer ungewöhnlichen Struktur: Statt zwei symmetrischer Arme dominiert ein einzelner, ringartig um den Kern laufender Spiralarm. Sie besitzt einen aktiven (Seyfert-)Kern und ist etwa 40 Millionen Lichtjahre entfernt.",
+   lage:"Im Sternbild Haar der Berenike, etwa 5° östlich des großen offenen Sternhaufens Melotte 111; beste Zeit im Frühling."},
+  {keys:["cometlemmon","c2025a6","c2025a6lemmon","kometlemmon"],
+   obj:"C/2025 A6 (Lemmon) wurde am 3. Januar 2025 von der Mount-Lemmon-Durchmusterung in Arizona entdeckt. Im Oktober 2025 wurde er mit rund 4 mag zu einem der schönsten Kometen des Jahres, mit grünlicher Koma und langem, strukturreichem Ionenschweif. Er ist ein langperiodischer Komet – seine nächste Wiederkehr liegt über tausend Jahre in der Zukunft.",
+   lage:"Als Komet hat er keine feste Position: Im Oktober 2025 stand er am Abendhimmel im Nordwesten bis Westen und zog dabei vom Großen Bären über die Jagdhunde in Richtung Bärenhüter. Erdnähe war am 21. Oktober 2025, Sonnennähe am 8. November 2025."},
+  {keys:["aurigamosaic","auriga","fuhrmann"],
+   obj:"Der Fuhrmann liegt mitten im Winterabschnitt der Milchstraße und ist reich an Nebeln und Sternhaufen: dem Flammensternnebel IC 405, dem Kaulquappennebel IC 410 sowie den drei hellen offenen Sternhaufen M36, M37 und M38. Ein Weitfeld-Mosaik zeigt, wie diese Objekte in ausgedehnte Wasserstoffwolken eingebettet sind.",
+   lage:"Der Fuhrmann ist ein großes Fünfeck mit dem hellen Stern Capella und steht im Winter fast im Zenit. Capella ist von Mitteleuropa aus zirkumpolar."},
+  {keys:["cepheus","kepheus"],
+   obj:"Kepheus, der König aus der Andromeda-Sage, hat die Form eines Hauses mit spitzem Dach. Hier liegt δ Cephei, der Namensgeber der Cepheiden – pulsierender Sterne, mit denen kosmische Entfernungen gemessen werden – sowie der tiefrote Granatstern μ Cephei und der große Emissionsnebel IC 1396 mit dem „Elefantenrüssel“.",
+   lage:"Zwischen Kassiopeia und Polarstern. Kepheus ist von Mitteleuropa aus zirkumpolar und steht im Herbst am höchsten."},
+  {keys:["cassiopeia","kassiopeia"],
+   obj:"Kassiopeia ist durch ihr markantes „W“ eines der bekanntesten Sternbilder. Sie liegt in einem dichten Abschnitt der Milchstraße mit vielen Fotozielen: Herz- und Seelennebel (IC 1805/IC 1848), Pacman-Nebel (NGC 281), Blasennebel (NGC 7635) und die Sternhaufen M52 und M103.",
+   lage:"Gegenüber dem Großen Wagen auf der anderen Seite des Polarsterns. Zirkumpolar – im Herbst und Winter abends hoch im Nordosten bis im Zenit."},
+  {keys:["m45","plejaden","siebengestirn","pleiades"],
+   obj:"Die Plejaden sind der bekannteste offene Sternhaufen: rund 1000 Sterne, etwa 440 Lichtjahre entfernt und erst rund 100 Millionen Jahre jung. Die blauen Schleier um die hellen Sterne sind ein Reflexionsnebel – eine Staubwolke, durch die der Haufen gerade zufällig hindurchzieht und deren Staub das blaue Sternlicht streut.",
+   lage:"Im Sternbild Stier, etwa 14° nordwestlich des rötlichen Aldebaran. Schon freiäugig als kleines Sternengrüppchen sichtbar; beste Zeit Oktober bis Februar."},
+  {keys:["orionconstellation","orion"],
+   obj:"Orion, der Himmelsjäger, ist das markanteste Wintersternbild: der rote Überriese Beteigeuze, der blauweiße Rigel, die drei Gürtelsterne und darunter das Schwert mit dem Orionnebel M42. Das ganze Gebiet gehört zu einem riesigen Molekülwolkenkomplex, in dem bis heute Sterne entstehen; auf Langzeitbelichtungen zeigt sich der große Bogen der Barnard-Schleife.",
+   lage:"Auf dem Himmelsäquator, daher von der ganzen Erde aus sichtbar. Von Mitteleuropa aus steht Orion von Dezember bis Februar abends im Süden."},
+  {keys:["polaris","polarstern","alphaursaeminoris"],
+   obj:"Der Polarstern ist ein gelber Überriese in rund 430 Lichtjahren Entfernung und Teil eines Mehrfachsternsystems. Er pulsiert als Cepheide mit sehr kleiner Helligkeitsschwankung. Weil er weniger als 1° vom Himmelsnordpol entfernt steht, scheint er sich nicht zu bewegen – alle anderen Sterne kreisen um ihn, was Strichspuraufnahmen eindrucksvoll zeigen.",
+   lage:"Im Kleinen Bären, am Ende der Deichsel des Kleinen Wagens. Zu finden, indem man die Hinterkante des Großen Wagens (Merak → Dubhe) etwa fünfmal verlängert. Seine Höhe über dem Nordhorizont entspricht der geografischen Breite – in Deutschland rund 47–55°."},
+  {keys:["moon","mond","erdmond"],
+   obj:"Der Mond ist mit 3474 km Durchmesser der fünftgrößte Mond im Sonnensystem und im Mittel 384.400 km entfernt. Er zeigt uns durch die gebundene Rotation stets dieselbe Seite. Die meisten Details – Krater, Gebirge, Rillen – sieht man entlang der Tag-Nacht-Grenze (Terminator), wo flach einfallendes Licht lange Schatten wirft.",
+   lage:"Der Mond wandert in rund 27,3 Tagen einmal durch die Tierkreissternbilder, etwa 13° pro Tag nach Osten. Ein vollständiger Phasenzyklus dauert 29,5 Tage."},
+  {keys:["ic405","flammensternnebel","flamingstarnebula"],
+   obj:"Der Flammensternnebel ist eine Mischung aus rot leuchtendem Emissions- und bläulichem Reflexionsnebel, etwa 1500 Lichtjahre entfernt. Er wird vom heißen Stern AE Aurigae beleuchtet – einem „Schnellläufer“, der vor rund 2,5 Millionen Jahren vermutlich aus der Orion-Region herausgeschleudert wurde und nur zufällig durch diese Gaswolke zieht.",
+   lage:"Im Fuhrmann, etwa 4° östlich von Hassaleh (ι Aurigae), nur gut 1° vom Kaulquappennebel IC 410 entfernt – beide passen oft in ein Bildfeld; beste Zeit Oktober bis März."},
+  {keys:["ic410","tadpolenebula","kaulquappennebel"],
+   obj:"IC 410 ist ein Emissionsnebel in rund 12.000 Lichtjahren Entfernung, der vom jungen, nur etwa 4 Millionen Jahre alten Sternhaufen NGC 1893 zum Leuchten angeregt wird. Seine Namensgeber, die „Kaulquappen“, sind zwei etwa 10 Lichtjahre lange Gasstrukturen, deren Schweife vom Sternwind der jungen Sterne weggeblasen werden.",
+   lage:"Im Fuhrmann, gut 1° südöstlich des Flammensternnebels IC 405; beste Zeit Oktober bis März."},
+  {keys:["ic443","quallennebel","jellyfishnebula"],
+   obj:"Der Quallennebel ist der Überrest einer Supernova, die vor einigen tausend bis mehreren zehntausend Jahren explodierte. Die Schockwelle stößt hier auf eine dichte Molekülwolke, was die feinen Filamente erzeugt. Im Inneren wurde ein Neutronenstern gefunden – der kollabierte Kern des explodierten Sterns. Entfernung etwa 5000 Lichtjahre.",
+   lage:"In den Zwillingen, unmittelbar östlich von Propus (η Geminorum) am „Fuß“ des Zwillings Kastor; beste Zeit Dezember bis März."},
+  {keys:["ic434","pferdekopfnebel","horseheadnebula","barnard33","b33"],
+   obj:"Der Pferdekopfnebel (Barnard 33) ist eine dunkle Staubwolke, die sich als Silhouette vor dem rot leuchtenden Emissionsnebel IC 434 abhebt. Er ist rund 1500 Lichtjahre entfernt und Teil des Orion-B-Molekülwolkenkomplexes. Ganz in der Nähe liegt der Flammennebel NGC 2024.",
+   lage:"Im Orion, gut ½° südlich von Alnitak, dem östlichsten der drei Gürtelsterne; beste Zeit Dezember bis Februar."},
+  {keys:["m42","ngc1976","orionnebel","orionnebula"],
+   obj:"Der Orionnebel ist das nächstgelegene große Sternentstehungsgebiet, etwa 1350 Lichtjahre entfernt und rund 24 Lichtjahre groß. In seinem Zentrum regen die vier hellen Trapez-Sterne das Gas zum Leuchten an. Mit bloßem Auge erscheint er als Nebelfleck im Schwert des Orion; direkt angrenzend liegt der kleine Nebel M43.",
+   lage:"Im Orion, mitten im „Schwert“ unterhalb der drei Gürtelsterne; beste Zeit Dezember bis Februar abends im Süden."},
+  {keys:["m57","ngc6720","ringnebel","ringnebula"],
+   obj:"Der Ringnebel ist ein planetarischer Nebel – die abgestoßene Gashülle eines sterbenden, sonnenähnlichen Sterns, erst wenige tausend Jahre alt. Im Zentrum sitzt ein heißer Weißer Zwerg, dessen UV-Strahlung das Gas leuchten lässt. Entfernung etwa 2300–2600 Lichtjahre; so wird in rund 5 Milliarden Jahren auch das Ende unserer Sonne aussehen.",
+   lage:"In der Leier, zwischen den Sternen Sheliak (β Lyrae) und Sulafat (γ Lyrae), etwas näher an Sheliak, unweit der hellen Wega. Im Sommer steht er nahe dem Zenit."},
+  {keys:["ngc281","pacmannebel","pacmannebula"],
+   obj:"Der Pacman-Nebel ist ein Emissionsnebel in etwa 9500 Lichtjahren Entfernung im Perseus-Arm der Milchstraße. Der junge Sternhaufen IC 1590 und der Mehrfachstern HD 5005 regen ihn zum Leuchten an. Die dunkle „Mundöffnung“ ist eine Staubwolke; dazu kommen kleine dunkle Bok-Globulen, in denen neue Sterne entstehen.",
+   lage:"In der Kassiopeia, knapp 2° östlich von Schedar (α Cassiopeiae). Zirkumpolar, beste Zeit August bis Januar."},
+  {keys:["ngc1499","kaliforniennebel","californianebula"],
+   obj:"Der Kaliforniennebel ist ein großer, aber lichtschwacher Emissionsnebel in rund 1000 Lichtjahren Entfernung. Mit etwa 2,5° Länge ist er fünfmal so lang wie der Vollmond breit. Er wird vom sehr heißen Stern Menkib (ξ Persei) ionisiert; visuell ist er kaum zu sehen, fotografisch mit Hα-Filter aber eindrucksvoll.",
+   lage:"Im südlichen Perseus, nördlich von Menkib (ξ Persei), nicht weit von den Plejaden; beste Zeit Oktober bis Februar."},
+  {keys:["ngc2174","affenkopfnebel","monkeyheadnebula"],
+   obj:"Der Affenkopfnebel ist eine Sternentstehungsregion in etwa 6400 Lichtjahren Entfernung. Der eingebettete junge Sternhaufen NGC 2175 bringt das Gas zum Leuchten und formt mit seinem Sternwind Staubsäulen und Höhlen, in denen sich weitere Sterne bilden.",
+   lage:"Im nördlichsten Orion an der Grenze zu den Zwillingen, rund 4° südlich des Sternhaufens M35; beste Zeit Dezember bis März."},
+  {keys:["ngc2237","ngc2244","rosettennebel","rosettenebula"],
+   obj:"Der Rosettennebel ist eine rund 130 Lichtjahre große Gasblase in etwa 5200 Lichtjahren Entfernung. Im Zentrum liegt der nur wenige Millionen Jahre junge Sternhaufen NGC 2244, dessen Strahlung und Sternwind das Innere leergefegt haben – so entstand die blütenartige Form.",
+   lage:"Im Einhorn, etwa 10° ostsüdöstlich von Beteigeuze, mitten in der Wintermilchstraße; beste Zeit Dezember bis März."},
+  {keys:["ngc6992","ngc6995","oestlicherschleiernebel","easternveilnebula","cirrusnebel"],
+   obj:"Der östliche Schleiernebel ist der hellste Teil des Cygnus-Loops, des Überrests einer Supernova, die vor rund 10.000–20.000 Jahren explodierte. Die Schockwelle bringt das interstellare Gas in feinen, verdrillten Filamenten zum Leuchten (rot: Wasserstoff, blaugrün: Sauerstoff). Entfernung etwa 2400 Lichtjahre.",
+   lage:"Im Schwan, rund 3° südöstlich von Gienah (ε Cygni). Der gesamte Ring misst etwa 3°; der westliche Teil (NGC 6960) liegt beim Stern 52 Cygni. Beste Zeit Juli bis Oktober."},
+  {keys:["ngc7000","nordamerikanebel","northamericanebula"],
+   obj:"Der Nordamerikanebel ist ein großer Emissionsnebel, dessen Umriss an den nordamerikanischen Kontinent erinnert – der „Golf von Mexiko“ ist eine vorgelagerte Dunkelwolke. Direkt daneben liegt der Pelikannebel IC 5070, der zur selben Gaswolke gehört. Entfernung etwa 2200–2600 Lichtjahre.",
+   lage:"Im Schwan, etwa 3° östlich von Deneb. Mit mehr als 2° Ausdehnung ein ideales Weitfeldziel; beste Zeit Juli bis Oktober, fast im Zenit."},
+  {keys:["m13","ngc6205","herculeskugelsternhaufen","herkuleskugelsternhaufen","herculesglobularcluster"],
+   obj:"M13 ist einer der hellsten Kugelsternhaufen am Nordhimmel: mehrere hunderttausend Sterne in einer Kugel von rund 150 Lichtjahren Durchmesser, etwa 22.000 Lichtjahre entfernt und rund 12 Milliarden Jahre alt. 1974 wurde die berühmte Arecibo-Botschaft in seine Richtung gesendet.",
+   lage:"Im Herkules, an der Westseite des „Schlusssteins“ (Keystone) zwischen ζ und η Herculis, etwa ein Drittel des Weges von η aus. Beste Zeit Mai bis September."},
+  {keys:["m35","ngc2168"],
+   obj:"M35 ist ein reicher offener Sternhaufen mit mehreren hundert Sternen, etwa 2800 Lichtjahre entfernt und rund 150 Millionen Jahre alt. Im selben Feld liegt der viel weiter entfernte (rund 11.000 Lichtjahre), ältere und kompaktere Haufen NGC 2158 – ein schöner Kontrast auf Fotos.",
+   lage:"In den Zwillingen, etwa 2° nordwestlich von Propus (η Geminorum) am „Fuß“ des Zwillings Kastor; beste Zeit Dezember bis März."},
+
+  /* ---------- weitere beliebte Ziele (für künftig neu angelegte Objekte) ---------- */
+  {keys:["m1","ngc1952","krebsnebel","crabnebula"],
+   obj:"Der Krebsnebel ist der Überrest einer Supernova, die im Jahr 1054 von chinesischen Astronomen als „Gaststern“ beobachtet wurde. In seinem Zentrum rotiert ein Pulsar 30-mal pro Sekunde. Entfernung etwa 6500 Lichtjahre.",
+   lage:"Im Stier, gut 1° nordwestlich von ζ Tauri, der Spitze des südlichen Stierhorns; beste Zeit November bis Februar."},
+  {keys:["m3","ngc5272"],
+   obj:"M3 ist ein großer, heller Kugelsternhaufen mit rund einer halben Million Sterne und besonders vielen veränderlichen Sternen, etwa 34.000 Lichtjahre entfernt.",
+   lage:"In den Jagdhunden, etwa auf halber Strecke zwischen Arktur und Cor Caroli; beste Zeit April bis Juli."},
+  {keys:["m8","ngc6523","lagunennebel","lagoonnebula"],
+   obj:"Der Lagunennebel ist ein großes Sternentstehungsgebiet in etwa 4000 Lichtjahren Entfernung, benannt nach einem dunklen Staubband, das ihn wie eine Lagune teilt. Er enthält den jungen Sternhaufen NGC 6530.",
+   lage:"Im Schützen, oberhalb der „Teekanne“; von Mitteleuropa aus nur tief im Süden (max. etwa 15° Höhe), beste Zeit Juli/August."},
+  {keys:["m16","ngc6611","adlernebel","eaglenebula"],
+   obj:"Der Adlernebel ist ein Sternentstehungsgebiet in rund 7000 Lichtjahren Entfernung. Berühmt wurde er durch die „Säulen der Schöpfung“ – Gas- und Staubsäulen, die das Hubble-Teleskop 1995 abbildete.",
+   lage:"Im Sternbild Schlange (Schwanz), an der Grenze zum Schützen und Schild; tief im Süden, beste Zeit Juli/August."},
+  {keys:["m17","ngc6618","omeganebel","omeganebula","schwanennebel","swannebula"],
+   obj:"Der Omega- oder Schwanennebel ist eine der hellsten Sternentstehungsregionen der Milchstraße, etwa 5500 Lichtjahre entfernt. Seine helle Hauptstruktur erinnert an einen Schwan oder den griechischen Buchstaben Omega.",
+   lage:"Im Schützen, nahe der Grenze zum Schild, knapp nördlich des Adlernebels M16; tief im Süden, beste Zeit Juli/August."},
+  {keys:["m20","ngc6514","trifidnebel","trifidnebula"],
+   obj:"Der Trifidnebel vereint drei Nebelarten: rot leuchtenden Emissionsnebel, blauen Reflexionsnebel und dunkle Staubbahnen, die ihn in drei Teile gliedern. Entfernung etwa 4000–5000 Lichtjahre.",
+   lage:"Im Schützen, gut 1,5° nordwestlich des Lagunennebels M8; tief im Süden, beste Zeit Juli/August."},
+  {keys:["m27","ngc6853","hantelnebel","dumbbellnebula"],
+   obj:"Der Hantelnebel war der erste entdeckte planetarische Nebel (Messier 1764): die abgestoßene Hülle eines sterbenden Sterns, rund 1300 Lichtjahre entfernt und groß sowie hell genug für kleine Teleskope.",
+   lage:"Im Füchschen, etwa 3° nördlich von γ Sagittae, der Spitze des Sternbilds Pfeil; beste Zeit Juli bis Oktober."},
+  {keys:["m33","ngc598","dreiecksgalaxie","triangulumgalaxy"],
+   obj:"Die Dreiecksgalaxie ist das drittgrößte Mitglied der Lokalen Gruppe, rund 2,7–3 Millionen Lichtjahre entfernt. Sie ist eine fast frontal sichtbare Spiralgalaxie mit großen Sternentstehungsgebieten wie NGC 604.",
+   lage:"Im Dreieck, etwa auf der Verlängerung von Mirach (β And) über die Andromedagalaxie hinaus in die Gegenrichtung, rund 7° südöstlich von Mirach; beste Zeit September bis Januar."},
+  {keys:["m44","ngc2632","praesepe","krippe","beehivecluster"],
+   obj:"Die Krippe (Praesepe) ist ein großer, heller offener Sternhaufen mit rund 1000 Sternen in etwa 580 Lichtjahren Entfernung – schon mit bloßem Auge als Nebelfleck sichtbar.",
+   lage:"Im Zentrum des unscheinbaren Sternbilds Krebs, zwischen Pollux und Regulus; beste Zeit Januar bis April."},
+  {keys:["m63","ngc5055","sonnenblumengalaxie","sunflowergalaxy"],
+   obj:"Die Sonnenblumengalaxie ist eine Spiralgalaxie mit vielen kurzen, flockigen Spiralarmen, etwa 29 Millionen Lichtjahre entfernt. Tiefe Aufnahmen zeigen lichtschwache Gezeitenschleifen um sie herum.",
+   lage:"In den Jagdhunden, etwa zwischen Cor Caroli und Alkaid; von Mitteleuropa aus fast zirkumpolar, beste Zeit März bis Juni."},
+  {keys:["m82","ngc3034","zigarrengalaxie","cigargalaxy"],
+   obj:"Die Zigarrengalaxie ist eine von der Kante gesehene Starburst-Galaxie: Die Begegnung mit M81 löste eine heftige Sternentstehung aus, deren Superwind rote Wasserstofffilamente aus der Scheibe treibt. Entfernung etwa 12 Millionen Lichtjahre.",
+   lage:"Im Großen Bären, nur etwa ½° nördlich der Bode-Galaxie M81 – beide passen in ein Bildfeld; zirkumpolar, am höchsten im Frühjahr."},
+  {keys:["m92","ngc6341"],
+   obj:"M92 ist einer der ältesten bekannten Kugelsternhaufen der Milchstraße, rund 27.000 Lichtjahre entfernt – oft im Schatten des bekannteren M13, aber kaum weniger eindrucksvoll.",
+   lage:"Im Herkules, etwa 9° nördlich des „Schlusssteins“; beste Zeit Mai bis September."},
+  {keys:["m97","ngc3587","eulennebel","owlnebula"],
+   obj:"Der Eulennebel ist ein planetarischer Nebel, dessen zwei dunkle Flecken wie Eulenaugen wirken. Entfernung etwa 2000 Lichtjahre.",
+   lage:"Im Großen Bären, etwa 2,5° südöstlich von Merak (β UMa), unweit der Galaxie M108; beste Zeit Februar bis Mai."},
+  {keys:["m101","ngc5457","feuerradgalaxie","pinwheelgalaxy"],
+   obj:"Die Feuerradgalaxie ist eine große, frontal sichtbare Spiralgalaxie mit fast doppeltem Milchstraßendurchmesser, etwa 21 Millionen Lichtjahre entfernt. 2023 leuchtete in ihr die helle Supernova SN 2023ixf auf.",
+   lage:"Im Großen Bären, etwa 5,5° östlich von Mizar und Alkaid, sodass beide mit ihr ein Dreieck bilden; zirkumpolar, beste Zeit März bis Juni."},
+  {keys:["m106","ngc4258"],
+   obj:"M106 ist eine Spiralgalaxie mit aktivem Kern in etwa 24 Millionen Lichtjahren Entfernung. Auf Hα-Aufnahmen zeigen sich zusätzlich „anomale Arme“ – vom zentralen Schwarzen Loch aufgeheiztes Gas.",
+   lage:"In den Jagdhunden, etwa auf halber Strecke zwischen Phecda (γ UMa) und Cor Caroli; beste Zeit März bis Juni."},
+  {keys:["ngc869","ngc884","hundchipersei","hchipersei","doppelsternhaufen","doublecluster"],
+   obj:"h und χ Persei sind zwei benachbarte, junge offene Sternhaufen in rund 7500 Lichtjahren Entfernung – schon mit bloßem Auge als Nebelfleck und im Fernglas als prächtiges Doppel sichtbar.",
+   lage:"Zwischen Perseus und Kassiopeia, auf der Verlängerung des „W“ der Kassiopeia; zirkumpolar, beste Zeit September bis Februar."},
+  {keys:["ic1805","herznebel","heartnebula"],
+   obj:"Der Herznebel ist ein großer Emissionsnebel in rund 7500 Lichtjahren Entfernung, ionisiert vom jungen Sternhaufen Melotte 15 in seinem Zentrum.",
+   lage:"In der Kassiopeia nahe der Grenze zur Giraffe, direkt neben dem Seelennebel IC 1848; zirkumpolar, beste Zeit September bis Februar."},
+  {keys:["ic1848","seelennebel","soulnebula"],
+   obj:"Der Seelennebel ist ein Emissionsnebel mit eingebetteten jungen Sternhaufen, etwa 7500 Lichtjahre entfernt. Zusammen mit dem Herznebel bildet er ein beliebtes Weitfeldpaar.",
+   lage:"In der Kassiopeia, rund 2,5° östlich des Herznebels IC 1805; zirkumpolar, beste Zeit September bis Februar."},
+  {keys:["ngc7635","blasennebel","bubblenebula"],
+   obj:"Der Blasennebel ist eine fast kugelrunde Gasblase, die der Sternwind eines sehr massereichen Sterns in die umgebende Wolke bläst. Entfernung etwa 7000–11.000 Lichtjahre.",
+   lage:"In der Kassiopeia, etwa ½° südwestlich des Sternhaufens M52; zirkumpolar, beste Zeit August bis Dezember."},
+  {keys:["ngc6888","mondsichelnebel","crescentnebula"],
+   obj:"Der Mondsichelnebel ist eine von einem Wolf-Rayet-Stern (WR 136) ausgeblasene Gasschale, etwa 5000 Lichtjahre entfernt; mit Hα- und OIII-Filtern zeigt er eine feine, schalenartige Struktur.",
+   lage:"Im Schwan, etwa 2,5° südwestlich von Sadr (γ Cygni); beste Zeit Juli bis Oktober."},
+  {keys:["ic1396","elefantenruessel","elephantstrunk"],
+   obj:"IC 1396 ist ein riesiger Emissionsnebel mit Sternhaufen, rund 2400–3000 Lichtjahre entfernt. Berühmt ist die dunkle, gewundene Staubsäule „Elefantenrüssel“, in der neue Sterne entstehen.",
+   lage:"Im Kepheus, südlich des Granatsterns μ Cephei; zirkumpolar, beste Zeit August bis Dezember."},
+  {keys:["ngc6960","westlicherschleiernebel","westernveilnebula","hexenbesen","witchsbroom"],
+   obj:"Der westliche Schleiernebel („Hexenbesen“) ist Teil des Cygnus-Loops, des Überrests einer vor rund 10.000–20.000 Jahren explodierten Supernova, etwa 2400 Lichtjahre entfernt.",
+   lage:"Im Schwan, direkt am Stern 52 Cygni, der scheinbar mitten im Nebel steht; beste Zeit Juli bis Oktober."},
+  {keys:["ic5070","pelikannebel","pelicannebula"],
+   obj:"Der Pelikannebel ist ein Emissionsnebel mit aktiver Sternentstehung und gehört zur selben Gaswolke wie der benachbarte Nordamerikanebel.",
+   lage:"Im Schwan, direkt westlich des Nordamerikanebels NGC 7000, etwa 3° östlich von Deneb; beste Zeit Juli bis Oktober."},
+  {keys:["ngc891"],
+   obj:"NGC 891 ist eine exakt von der Kante gesehene Spiralgalaxie mit markantem Staubband, etwa 30 Millionen Lichtjahre entfernt – sie gilt als gutes Abbild dessen, wie unsere Milchstraße von der Seite aussähe.",
+   lage:"In der Andromeda, etwa 3,5° östlich von Alamak (γ Andromedae); beste Zeit September bis Januar."},
+  {keys:["ngc2264","weihnachtsbaumhaufen","christmastreecluster","konusnebel","conenebula"],
+   obj:"NGC 2264 umfasst den Weihnachtsbaumhaufen, den dunklen Konusnebel und den Fuchspelznebel – ein junges Sternentstehungsgebiet in rund 2700 Lichtjahren Entfernung.",
+   lage:"Im Einhorn, nahe der Grenze zu den Zwillingen, etwa 6° nordöstlich des Rosettennebels; beste Zeit Dezember bis März."},
+  {keys:["m78","ngc2068"],
+   obj:"M78 ist der hellste Reflexionsnebel am Himmel, Teil des Orion-B-Molekülwolkenkomplexes in etwa 1350 Lichtjahren Entfernung; seine bläuliche Farbe stammt von gestreutem Sternlicht.",
+   lage:"Im Orion, etwa 2,5° nordöstlich von Alnitak, dem östlichen Gürtelstern; beste Zeit Dezember bis Februar."},
+  {keys:["ngc2024","flammennebel","flamenebula"],
+   obj:"Der Flammennebel ist ein Emissionsnebel mit dunklen Staubbahnen, ionisiert durch einen hinter Staub verborgenen jungen Sternhaufen; Entfernung rund 1350 Lichtjahre.",
+   lage:"Im Orion, unmittelbar östlich von Alnitak, nur etwa ½° vom Pferdekopfnebel entfernt; beste Zeit Dezember bis Februar."},
+  {keys:["m15","ngc7078"],
+   obj:"M15 ist einer der dichtesten Kugelsternhaufen der Milchstraße, etwa 33.000 Lichtjahre entfernt; in ihm liegt sogar ein planetarischer Nebel (Pease 1).",
+   lage:"Im Pegasus, etwa 4° nordwestlich von Enif (ε Pegasi), der „Nase“ des Pegasus; beste Zeit August bis November."},
+  {keys:["m5","ngc5904"],
+   obj:"M5 ist ein großer, heller und sehr alter Kugelsternhaufen in etwa 24.500 Lichtjahren Entfernung.",
+   lage:"Im Sternbild Schlange (Kopf), nahe der Grenze zur Jungfrau; beste Zeit Mai bis Juli."},
+  {keys:["m52","ngc7654"],
+   obj:"M52 ist ein reicher offener Sternhaufen mit rund 200 Sternen, etwa 5000 Lichtjahre entfernt.",
+   lage:"In der Kassiopeia, auf der Verlängerung der Linie Schedar → Caph; zirkumpolar, beste Zeit August bis Dezember."}
+];
+const OBJECT_INFO_INDEX = new Map();
+OBJECT_INFO.forEach(e=>e.keys.forEach(k=>{ const n = infoKey(k); if(n && !OBJECT_INFO_INDEX.has(n)) OBJECT_INFO_INDEX.set(n, e); }));
+
+const CONSTELLATION_INFO = [
+  {names:["Andromeda"], de:"Andromeda", text:"Die Andromeda schließt sich nordöstlich an das Pegasus-Quadrat an, mit dem sie sich den Stern Sirrah teilt.", season:"Herbst"},
+  {names:["Aquarius","Wassermann"], de:"Wassermann", text:"Der Wassermann ist ein ausgedehntes, lichtschwaches Tierkreissternbild südlich des Pegasus.", season:"Herbst (tief im Süden)"},
+  {names:["Aquila","Adler"], de:"Adler", text:"Der Adler mit seinem Hauptstern Atair bildet die südliche Ecke des Sommerdreiecks und liegt mitten in der Milchstraße.", season:"Sommer"},
+  {names:["Aries","Widder"], de:"Widder", text:"Der Widder ist ein kleines Tierkreissternbild zwischen Plejaden und Andromeda.", season:"Herbst und Winter"},
+  {names:["Auriga","Fuhrmann"], de:"Fuhrmann", text:"Der Fuhrmann ist ein großes Fünfeck mit der hellen Capella und liegt in der Wintermilchstraße.", season:"Winter (nahe Zenit)"},
+  {names:["Bootes","Boötes","Bärenhüter","Ochsentreiber"], de:"Bärenhüter", text:"Der Bärenhüter hat die Form eines Drachens bzw. einer Eiswaffel mit dem orangen Arktur an der Spitze – zu finden über den verlängerten Deichselbogen des Großen Wagens.", season:"Frühling und Frühsommer"},
+  {names:["Camelopardalis","Giraffe"], de:"Giraffe", text:"Die Giraffe ist ein großes, sehr lichtschwaches Sternbild zwischen Polarstern, Kassiopeia und Fuhrmann.", season:"ganzjährig (zirkumpolar)"},
+  {names:["Cancer","Krebs"], de:"Krebs", text:"Der Krebs ist ein unscheinbares Tierkreissternbild zwischen Zwillingen und Löwe, bekannt für den Sternhaufen Krippe (M44).", season:"Spätwinter und Frühling"},
+  {names:["Canes Venatici","Jagdhunde"], de:"Jagdhunde", text:"Die Jagdhunde liegen direkt unterhalb der Deichsel des Großen Wagens und sind reich an Galaxien.", season:"Frühling (fast zirkumpolar)"},
+  {names:["Canis Major","Großer Hund"], de:"Großer Hund", text:"Der Große Hund liegt südöstlich des Orion und enthält Sirius, den hellsten Stern des Nachthimmels.", season:"Winter (tief im Süden)"},
+  {names:["Canis Minor","Kleiner Hund"], de:"Kleiner Hund", text:"Der Kleine Hund besteht im Wesentlichen aus Prokyon und bildet eine Ecke des Wintersechsecks.", season:"Winter"},
+  {names:["Capricornus","Steinbock"], de:"Steinbock", text:"Der Steinbock ist ein dreieckiges Tierkreissternbild südlich des Adlers.", season:"Spätsommer (tief im Süden)"},
+  {names:["Cassiopeia","Kassiopeia"], de:"Kassiopeia", text:"Die Kassiopeia ist am markanten „W“ zu erkennen und liegt gegenüber dem Großen Wagen auf der anderen Seite des Polarsterns, mitten in der Milchstraße.", season:"ganzjährig (zirkumpolar), am höchsten im Herbst"},
+  {names:["Cepheus","Kepheus"], de:"Kepheus", text:"Der Kepheus hat die Form eines Hauses mit spitzem Dach und liegt zwischen Kassiopeia und Polarstern.", season:"ganzjährig (zirkumpolar), am höchsten im Herbst"},
+  {names:["Cetus","Walfisch"], de:"Walfisch", text:"Der Walfisch ist ein großes, lichtschwaches Sternbild südlich von Widder und Fischen.", season:"Herbst (im Süden)"},
+  {names:["Coma Berenices","Haar der Berenike"], de:"Haar der Berenike", text:"Das Haar der Berenike liegt zwischen Löwe und Bärenhüter und grenzt an den Virgo-Galaxienhaufen – eine der galaxienreichsten Regionen des Himmels.", season:"Frühling"},
+  {names:["Corona Borealis","Nördliche Krone"], de:"Nördliche Krone", text:"Die Nördliche Krone ist ein kleiner, auffälliger Halbkreis aus Sternen zwischen Bärenhüter und Herkules.", season:"Frühsommer"},
+  {names:["Corvus","Rabe"], de:"Rabe", text:"Der Rabe ist ein kleines Viereck südwestlich von Spica.", season:"Frühling (tief im Süden)"},
+  {names:["Cygnus","Schwan"], de:"Schwan", text:"Der Schwan (auch „Kreuz des Nordens“) liegt mitten in der Sommermilchstraße; sein Hauptstern Deneb bildet die nördliche Ecke des Sommerdreiecks.", season:"Sommer und Herbst (nahe Zenit)"},
+  {names:["Delphinus","Delfin"], de:"Delfin", text:"Der Delfin ist ein kleines, kompaktes Sternbild östlich von Atair.", season:"Sommer und Herbst"},
+  {names:["Draco","Drache"], de:"Drache", text:"Der Drache windet sich zwischen Großem und Kleinem Wagen bis in die Nähe der Wega.", season:"ganzjährig (zirkumpolar)"},
+  {names:["Eridanus"], de:"Eridanus", text:"Der Eridanus ist ein langer Fluss aus Sternen, der bei Rigel im Orion beginnt und sich weit nach Süden schlängelt.", season:"Winter (tief im Süden)"},
+  {names:["Gemini","Zwillinge"], de:"Zwillinge", text:"Die Zwillinge mit Kastor und Pollux liegen nordöstlich des Orion am Rand der Wintermilchstraße.", season:"Winter"},
+  {names:["Hercules","Herkules"], de:"Herkules", text:"Der Herkules liegt zwischen Wega und Nördlicher Krone; sein Mittelteil bildet das Viereck des „Schlusssteins“.", season:"Sommer"},
+  {names:["Hydra","Wasserschlange"], de:"Wasserschlange", text:"Die Wasserschlange ist das größte Sternbild des Himmels und zieht sich südlich von Krebs, Löwe und Jungfrau entlang.", season:"Frühling (tief im Süden)"},
+  {names:["Lacerta","Eidechse"], de:"Eidechse", text:"Die Eidechse ist ein kleines Zickzack-Sternbild zwischen Schwan und Kassiopeia in der Milchstraße.", season:"Herbst"},
+  {names:["Leo","Löwe"], de:"Löwe", text:"Der Löwe mit Regulus und Denebola ist das markanteste Frühlingssternbild; seine „Sichel“ bildet Kopf und Mähne.", season:"Frühling"},
+  {names:["Leo Minor","Kleiner Löwe"], de:"Kleiner Löwe", text:"Der Kleine Löwe ist ein lichtschwaches Sternbild zwischen Löwe und Großem Bären.", season:"Frühling"},
+  {names:["Lepus","Hase"], de:"Hase", text:"Der Hase liegt direkt südlich des Orion.", season:"Winter (tief im Süden)"},
+  {names:["Libra","Waage"], de:"Waage", text:"Die Waage ist ein Tierkreissternbild zwischen Jungfrau und Skorpion.", season:"Frühsommer (tief im Süden)"},
+  {names:["Lynx","Luchs"], de:"Luchs", text:"Der Luchs ist ein lichtschwaches, langgestrecktes Sternbild zwischen Fuhrmann und Großem Bären.", season:"Winter und Frühling"},
+  {names:["Lyra","Leier"], de:"Leier", text:"Die Leier ist klein, enthält aber die helle Wega, die westliche Ecke des Sommerdreiecks.", season:"Sommer (nahe Zenit)"},
+  {names:["Monoceros","Einhorn"], de:"Einhorn", text:"Das Einhorn ist ein lichtschwaches Sternbild innerhalb des Wintersechsecks östlich des Orion, durchzogen von der Wintermilchstraße.", season:"Winter"},
+  {names:["Ophiuchus","Schlangenträger"], de:"Schlangenträger", text:"Der Schlangenträger ist ein großes Sternbild oberhalb des Skorpions, reich an Kugelsternhaufen.", season:"Sommer"},
+  {names:["Orion"], de:"Orion", text:"Orion ist das markanteste Wintersternbild mit Beteigeuze, Rigel und den drei Gürtelsternen; der Himmelsäquator verläuft durch den Gürtel.", season:"Winter"},
+  {names:["Pegasus"], de:"Pegasus", text:"Der Pegasus ist am großen „Herbstviereck“ zu erkennen.", season:"Herbst"},
+  {names:["Perseus"], de:"Perseus", text:"Der Perseus liegt in der Milchstraße zwischen Kassiopeia und Fuhrmann; bekannt ist der veränderliche Stern Algol.", season:"Herbst und Winter"},
+  {names:["Pisces","Fische"], de:"Fische", text:"Die Fische sind ein lichtschwaches Tierkreissternbild, das sich südlich und östlich um das Pegasus-Quadrat legt.", season:"Herbst"},
+  {names:["Sagitta","Pfeil"], de:"Pfeil", text:"Der Pfeil ist ein kleines, pfeilförmiges Sternbild im Sommerdreieck.", season:"Sommer"},
+  {names:["Sagittarius","Schütze"], de:"Schütze", text:"Im Schützen (Form einer „Teekanne“) liegt das Zentrum der Milchstraße mit zahlreichen Nebeln und Sternhaufen.", season:"Sommer (tief im Süden)"},
+  {names:["Scorpius","Skorpion"], de:"Skorpion", text:"Der Skorpion mit dem roten Antares gehört zu den schönsten Sternbildern, steht von Mitteleuropa aus aber nur knapp über dem Südhorizont.", season:"Frühsommer (sehr tief im Süden)"},
+  {names:["Scutum","Schild"], de:"Schild", text:"Der Schild ist ein kleines Sternbild in einer der hellsten Wolken der Milchstraße.", season:"Sommer (im Süden)"},
+  {names:["Serpens","Schlange"], de:"Schlange", text:"Die Schlange ist zweigeteilt – Kopf und Schwanz – und wird vom Schlangenträger gehalten.", season:"Frühsommer und Sommer"},
+  {names:["Taurus","Stier"], de:"Stier", text:"Der Stier mit Aldebaran, dem V-förmigen Haufen der Hyaden und den Plejaden liegt nordwestlich des Orion.", season:"Herbst und Winter"},
+  {names:["Triangulum","Dreieck"], de:"Dreieck", text:"Das Dreieck ist ein kleines Sternbild zwischen Andromeda und Widder.", season:"Herbst"},
+  {names:["Ursa Major","Großer Bär","Großer Wagen"], de:"Großer Bär", text:"Der Große Bär ist mit dem Großen Wagen der bekannteste Wegweiser am Nordhimmel.", season:"ganzjährig (zirkumpolar), am höchsten im Frühling"},
+  {names:["Ursa Minor","Kleiner Bär","Kleiner Wagen"], de:"Kleiner Bär", text:"Der Kleine Bär (Kleiner Wagen) endet mit dem Polarstern am Himmelsnordpol.", season:"ganzjährig (zirkumpolar)"},
+  {names:["Virgo","Jungfrau"], de:"Jungfrau", text:"Die Jungfrau mit der hellen Spica ist das zweitgrößte Sternbild; ihr nördlicher Teil beherbergt den Virgo-Galaxienhaufen.", season:"Frühling"},
+  {names:["Vulpecula","Füchschen"], de:"Füchschen", text:"Das Füchschen ist ein lichtschwaches Sternbild im Sommerdreieck, mitten in der Milchstraße.", season:"Sommer und Herbst"}
+];
+const CONSTELLATION_INDEX = new Map();
+CONSTELLATION_INFO.forEach(c=>c.names.forEach(n=>CONSTELLATION_INDEX.set(infoKey(n), c)));
+function findConstellationInfo(name){
+  if(!name) return null;
+  const k = infoKey(name);
+  if(CONSTELLATION_INDEX.has(k)) return CONSTELLATION_INDEX.get(k);
+  // informelle Schreibweisen ("Orion/Zwillinge", "Sternbild Schwan") - erstes passendes Teilwort nehmen
+  const parts = String(name).split(/[\/,;()]+| und | bzw\. /i).map(s=>s.replace(/sternbild/i,"").trim()).filter(Boolean);
+  for(const p of parts){ const c = CONSTELLATION_INDEX.get(infoKey(p)); if(c) return c; }
+  return null;
+}
+function findObjectInfo(o){
+  const cands = [o.id];
+  const c = o.catalog || {};
+  const addSplit = (v, prefix)=>{
+    if(!v) return;
+    cands.push(v);
+    String(v).split(/[\/,;]+/).forEach(t=>{
+      t = t.trim(); if(!t) return;
+      cands.push(/^\d+$/.test(t) && prefix ? prefix + t : t);
+    });
+  };
+  addSplit(c.messier, "M"); addSplit(c.ngc, "NGC"); addSplit(c.ic, "IC");
+  (c.other||[]).forEach(v=>addSplit(v, null));
+  cands.push(o.commonName, o.displayName, String(o.displayName||"").replace(/\(.*?\)/g,""));
+  for(const cand of cands){
+    const k = infoKey(cand);
+    if(k && OBJECT_INFO_INDEX.has(k)) return OBJECT_INFO_INDEX.get(k);
+  }
+  return null;
+}
+const MONTHS_DE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+function fmtNumDe(n, digits){ return Number(n).toLocaleString("de-DE", {maximumFractionDigits: digits==null?0:digits}); }
+function fmtDistanceLy(ly){
+  if(ly==null || !isFinite(ly) || ly<=0) return null;
+  if(ly < 0.01) return `${fmtNumDe(ly*63241*149.6, 0)} Mio. km`;
+  if(ly >= 1e9) return `${fmtNumDe(ly/1e9, 1)} Mrd. Lichtjahre`;
+  if(ly >= 1e6) return `${fmtNumDe(ly/1e6, 1)} Mio. Lichtjahre`;
+  return `${fmtNumDe(ly, 0)} Lichtjahre`;
+}
+// Sichtbarkeit von Mitteleuropa (INFO_LAT) aus: maximale Höhe über dem Horizont und Monat, in dem das Objekt
+// gegen Mitternacht am höchsten steht (Opposition zur Sonne: RA 0h um den 22. September, je 2h RA ≈ 1 Monat später).
+function visibilityText(raDeg, decDeg){
+  if(decDeg==null || !isFinite(decDeg)) return null;
+  const parts = [];
+  let maxAlt = 90 - INFO_LAT + decDeg; if(maxAlt > 90) maxAlt = 180 - maxAlt;
+  if(maxAlt <= 0) return "Von Mitteleuropa aus geht dieses Objekt nicht über dem Horizont auf.";
+  if(decDeg >= 90 - INFO_LAT) parts.push(`Von Mitteleuropa aus ist es zirkumpolar, geht also nie unter, und erreicht bis zu ${Math.round(maxAlt)}° Höhe.`);
+  else if(maxAlt < 20) parts.push(`Von Mitteleuropa aus steigt es höchstens ${Math.round(maxAlt)}° über den Südhorizont – ein freier Blick nach Süden und klare Luft sind nötig.`);
+  else parts.push(`Von Mitteleuropa aus erreicht es im Süden bis zu ${Math.round(maxAlt)}° Höhe.`);
+  if(raDeg!=null && isFinite(raDeg)){
+    const dayOfYear = (265 + (raDeg/15) * 365.25/24) % 365.25;
+    const midnightMonth = Math.min(11, Math.floor(dayOfYear / 30.44));
+    const eveningMonth = (midnightMonth + 1) % 12;
+    parts.push(`Gegen Mitternacht steht es im ${MONTHS_DE[midnightMonth]} am höchsten, zur Abendbeobachtung (ca. 22 Uhr) im ${MONTHS_DE[eveningMonth]}.`);
+  }
+  return parts.join(" ");
+}
+const TYPE_INTRO = {
+  galaxy:"eine Galaxie – ein eigenständiges Sternsystem aus Milliarden Sternen weit außerhalb der Milchstraße",
+  galaxy_group:"eine Gruppe gravitativ verbundener Galaxien",
+  nebula:"ein Gasnebel, in dem häufig neue Sterne entstehen",
+  planetary_nebula:"ein planetarischer Nebel – die abgestoßene Gashülle eines sterbenden, sonnenähnlichen Sterns",
+  supernova_remnant:"der Überrest einer Supernova-Explosion, deren Schockwelle das umgebende Gas zum Leuchten bringt",
+  open_cluster:"ein offener Sternhaufen – eine Gruppe junger Sterne, die gemeinsam aus einer Gaswolke entstanden sind",
+  globular_cluster:"ein Kugelsternhaufen – eine dichte, sehr alte Ansammlung von hunderttausenden Sternen im Halo der Milchstraße",
+  constellation:"ein Sternbild",
+  mosaic:"ein Weitfeld-Mosaik aus mehreren Einzelfeldern",
+  milkyway:"ein Ausschnitt der Milchstraße, unserer Heimatgalaxie",
+  comet:"ein Komet – ein Eis- und Staubkörper, der bei Annäherung an die Sonne Koma und Schweif entwickelt",
+  exoplanet:"ein Planet außerhalb des Sonnensystems, nachgewiesen über die Helligkeitsabnahme seines Sterns beim Transit",
+  moon:"der Erdmond",
+  planet:"ein Planet des Sonnensystems",
+  star:"ein Stern",
+  double_star:"ein Doppelstern – zwei Sterne, die am Himmel dicht beieinander stehen",
+  asterism:"ein Asterismus – eine auffällige Sternfigur, die kein offizielles Sternbild ist",
+  other:"ein astronomisches Objekt"
+};
+function generatedObjectText(o){
+  const name = o.commonName && o.commonName !== o.displayName ? `${o.displayName} (${o.commonName})` : o.displayName;
+  const intro = TYPE_INTRO[o.type] || TYPE_INTRO.other;
+  let t = `${name} ist ${intro}.`;
+  if(o.description) t += " " + String(o.description).trim().replace(/([^.!?])$/, "$1.");
+  const facts = [];
+  const dist = fmtDistanceLy(o.distanceLy);
+  if(dist) facts.push(`etwa ${dist} entfernt`);
+  if(o.magnitude!=null && isFinite(o.magnitude)) facts.push(`scheinbare Helligkeit ${fmtNumDe(o.magnitude,1)} mag`);
+  if(o.angularSize && /\d/.test(o.angularSize)) facts.push(`scheinbare Größe ${o.angularSize}`);
+  if(facts.length) t += ` Das Objekt ist ${facts.join(", ")}.`;
+  return t;
+}
+function generatedLocationText(o, cons){
+  const parts = [];
+  if(o.type === "comet") parts.push("Als Komet hat dieses Objekt keine feste Position am Himmel – es wandert von Nacht zu Nacht vor den Sternen weiter.");
+  else if(o.type === "planet") parts.push("Planeten wandern im Laufe von Wochen und Monaten durch die Tierkreissternbilder; ihre Position hängt vom Aufnahmedatum ab.");
+  if(cons){
+    const inName = o.type === "constellation" ? "" : `Es liegt im Sternbild ${cons.de}. `;
+    parts.push(inName + cons.text);
+  }else if(o.constellation && !/wechselnd|diverse/i.test(o.constellation)){
+    parts.push(`Es liegt im Sternbild ${o.constellation}.`);
+  }
+  return parts.join(" ");
+}
+function buildObjectInfo(o){
+  const curated = findObjectInfo(o);
+  const cons = findConstellationInfo(o.constellation);
+  const raDeg = parseRaToDeg(o.ra), decDeg = parseDecToDeg(o.dec);
+  const isFixed = !["comet","moon","planet","milkyway"].includes(o.type);
+  const vis = isFixed && o.type !== "constellation" && o.type !== "mosaic" ? visibilityText(raDeg, decDeg) : null;
+  const objText = curated ? curated.obj : generatedObjectText(o);
+  let lageText = curated ? curated.lage : generatedLocationText(o, cons);
+  // Bei generierten Texten zusätzlich die berechnete Sichtbarkeit; ohne Koordinaten die Saison des Sternbilds.
+  let visText = null;
+  if(!curated){
+    if(vis) visText = vis;
+    else if(cons && cons.season && isFixed) visText = `Beste Beobachtungszeit für das Sternbild: ${cons.season}.`;
+  }
+  const facts = [];
+  if(o.ra && o.dec) facts.push(`RA ${o.ra} · Dec ${o.dec}`);
+  if(o.constellation) facts.push(`Sternbild: ${cons ? cons.de + (infoKey(cons.de)!==infoKey(o.constellation) ? " ("+o.constellation+")" : "") : o.constellation}`);
+  const dist = fmtDistanceLy(o.distanceLy); if(dist) facts.push(`Entfernung: ca. ${dist}`);
+  if(o.magnitude!=null && isFinite(o.magnitude)) facts.push(`Helligkeit: ${fmtNumDe(o.magnitude,1)} mag`);
+  if(o.angularSize) facts.push(`Größe: ${o.angularSize}`);
+  return {objText, lageText, visText, facts};
 }
 function renderPicsInfo(o){
   const content = document.getElementById("pics-info-content");
-  const designation = objectCatalogDesignation(o) || o.commonName || o.displayName;
-  const objectLinks = [];
-  if(o.catalog && o.catalog.messier){
-    const seds = sedsMessierUrl(o.catalog.messier);
-    if(seds) objectLinks.push(`<a href="${seds}" target="_blank" rel="noopener">SEDS Messier-Datenbank (EN): ${escapeHtml(o.catalog.messier)}</a>`);
-  }
-  objectLinks.push(`<a href="${wikipediaSearchUrl(designation + (o.commonName ? " " + o.commonName : ""))}" target="_blank" rel="noopener">Wikipedia EN: ${escapeHtml(designation)}${o.commonName ? " ("+escapeHtml(o.commonName)+")" : ""}</a>`);
-  const constellationLinks = o.constellation
-    ? [`<a href="${wikipediaSearchUrl(o.constellation + " constellation")}" target="_blank" rel="noopener">Wikipedia EN: ${escapeHtml(o.constellation)}</a>`]
-    : [];
+  const info = buildObjectInfo(o);
   content.innerHTML = `
     <p><strong>${escapeHtml(o.displayName)}</strong>${o.type ? " · " + escapeHtml(typeMeta(o.type).label) : ""}</p>
-    ${o.description ? `<p>${escapeHtml(o.description)}</p>` : ""}
-    <h3>Objekt</h3>
-    <p>${objectLinks.join("<br>")}</p>
-    ${o.constellation ? `<h3>Sternbild: ${escapeHtml(o.constellation)}</h3><p>${constellationLinks.join("<br>")}</p>` : ""}
-    <p style="color:var(--text-faint);font-size:.78rem">Externe Links öffnen in einem neuen Tab. Wikipedia-Suche statt fester Artikel-URL, da der gespeicherte Name nicht immer exakt dem Artikeltitel entspricht.</p>
+    <h3>Über das Objekt</h3>
+    <p>${escapeHtml(info.objText)}</p>
+    ${(info.lageText || info.visText) ? `<h3>Lage am Himmel</h3>
+    ${info.lageText ? `<p>${escapeHtml(info.lageText)}</p>` : ""}
+    ${info.visText ? `<p>${escapeHtml(info.visText)}</p>` : ""}` : ""}
+    ${info.facts.length ? `<p style="color:var(--text-faint);font-size:.78rem">${info.facts.map(escapeHtml).join("<br>")}</p>` : ""}
   `;
 }
 document.getElementById("pics-info-btn").addEventListener("click", ()=>{
@@ -14130,7 +14427,7 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
     let suffix = 2;
     while(DB.objects.some(o=>o.id===targetObjId)){ targetObjId = `${baseId}-${suffix++}`; }
     // Ohne diese Prüfung machte ein Tippfehler oder ein Wert außerhalb des gültigen Bereichs das Objekt
-    // stillschweigend unsichtbar auf der Sternkarte, ohne jede Rückmeldung beim Speichern.
+    // stillschweigend unbrauchbar für die Lage-/Sichtbarkeitsangaben, ohne jede Rückmeldung beim Speichern.
     const noRa = document.getElementById("no-ra").value.trim();
     const noDec = document.getElementById("no-dec").value.trim();
     if(noRa){
@@ -14248,7 +14545,7 @@ document.getElementById("btn-save-session").addEventListener("click", async ()=>
       reviewNote: null,
       sessions: []
     };
-    if(targetObj.needsReview) targetObj.reviewNote = "Neu angelegt ohne vollständige RA/Dec-Koordinaten – für Sternkarte bitte ergänzen.";
+    if(targetObj.needsReview) targetObj.reviewNote = "Neu angelegt ohne vollständige RA/Dec-Koordinaten – für Lage-/Sichtbarkeitsangaben bitte ergänzen.";
     DB.objects.push(targetObj);
   }
   targetObj.sessions.push(session);
@@ -14310,24 +14607,11 @@ function clearAddForm(){
 
 /* ======================= NAV / VIEWS ======================= */
 function switchView(name){
-  // Verlässt der Nutzer die Karten-Ansicht über die Hauptnavigation (statt über den 2D/AR-Umschalter),
-  // lief die Kamera + Sensor-Listener + requestAnimationFrame-Schleife bisher unbemerkt im Hintergrund
-  // weiter (Akku-/CPU-Verbrauch, Kamera-Indikator bleibt an) – switchView prüfte mapMode nie.
-  if(name!=="map" && mapMode==='ar'){
-    // Kamera/Sensoren/Zeichenschleife stoppen UND sauber auf 2D zurückschalten (Video/Canvas-Sichtbarkeit,
-    // Umschalter-Chip), damit beim nächsten Öffnen der Karte kein kaputter Zwischenzustand übrig bleibt
-    // und drawARFrame()s requestAnimationFrame-Schleife (die sich nur über mapMode!=='ar' selbst beendet)
-    // nicht unbemerkt endlos weiterläuft.
-    document.querySelectorAll('[data-mapmode]').forEach(c=>setChipPressed(c, c.dataset.mapmode==='2d'));
-    mapMode = '2d';
-    setMapMode('2d');
-  }
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav.tabbar button").forEach(b=>{ b.classList.remove("active"); b.removeAttribute("aria-current"); });
   document.getElementById("view-"+name).classList.add("active");
   const navBtn = document.querySelector(`nav.tabbar button[data-view="${name}"]`);
   if(navBtn){ navBtn.classList.add("active"); navBtn.setAttribute("aria-current", "page"); }
-  if(name==="map") initMapViewOnce();
   if(name==="search" && searchResultsStale){ runFieldSearch(); searchResultsStale = false; }
   if(name==="pics") openPicsGallery();
   // Der globale Sync-Status-Banner ("Verbunden mit GitHub …", ganz unten im body, s. #banner-area) wird
@@ -14341,10 +14625,29 @@ function switchView(name){
   // einem bestimmten Gerät/Browser nicht exakt, würde die Seite sonst insgesamt minimal scrollbar, wodurch
   // die unten im Bild liegende Beschriftung teilweise aus dem sichtbaren Bereich rutschen kann).
   document.body.classList.toggle("pics-active", name==="pics");
+  if(name==="pics"){ window.scrollTo(0,0); syncChromeHeights(); }
 }
 document.querySelectorAll("nav.tabbar button").forEach(b=>{
   b.addEventListener("click", ()=>switchView(b.dataset.view));
 });
+// Tatsächliche Höhe von Kopfzeile und Fußnavigation messen (inkl. safe-area-insets, Systemschriftgröße,
+// Zeilenumbrüchen) und als CSS-Variablen bereitstellen - #pics-wrap wird damit exakt zwischen beiden
+// eingepasst, so dass die Bildunterschrift nie mehr hinter der Fußnavigation verschwindet.
+function syncChromeHeights(){
+  const header = document.querySelector("header.topbar");
+  const tabbar = document.querySelector("nav.tabbar");
+  const root = document.documentElement.style;
+  if(header) root.setProperty("--topbar-h", Math.ceil(header.getBoundingClientRect().height) + "px");
+  if(tabbar) root.setProperty("--tabbar-h", Math.ceil(tabbar.getBoundingClientRect().height) + "px");
+}
+syncChromeHeights();
+window.addEventListener("resize", syncChromeHeights);
+window.addEventListener("orientationchange", syncChromeHeights);
+if(window.visualViewport) window.visualViewport.addEventListener("resize", syncChromeHeights);
+if(window.ResizeObserver){
+  const chromeRO = new ResizeObserver(syncChromeHeights);
+  ["header.topbar","nav.tabbar"].forEach(sel=>{ const el = document.querySelector(sel); if(el) chromeRO.observe(el); });
+}
 
 // Barrierefreies Fokus-Management für alle Modals (Einstellungen/Statistik/Doku/Objekt-/Session-Bearbeiten/
 // -Detail/Foto): beim Öffnen wandert der Fokus in den Dialog, beim Schließen zurück zum auslösenden Element
@@ -14398,8 +14701,6 @@ document.getElementById("btn-settings").addEventListener("click", ()=>{
   document.getElementById("cfg-repo").value = CFG.repo||"";
   document.getElementById("cfg-branch").value = CFG.branch||"main";
   document.getElementById("cfg-token").value = CFG.token||"";
-  document.getElementById("cfg-fov").value = CFG.fov||65;
-  document.getElementById("cfg-nasa-key").value = CFG.nasaKey||"";
   renderAllEquipmentLists();
   openModal("settings-modal");
 });
@@ -14432,8 +14733,6 @@ function readCfgForm(){
     repo: document.getElementById("cfg-repo").value.trim(),
     branch: document.getElementById("cfg-branch").value.trim() || "main",
     token: document.getElementById("cfg-token").value.trim(),
-    fov: parseFloat(document.getElementById("cfg-fov").value) || 65,
-    nasaKey: document.getElementById("cfg-nasa-key").value.trim(),
   };
 }
 document.getElementById("btn-save-sync").addEventListener("click", async ()=>{
@@ -14578,112 +14877,15 @@ document.getElementById("docs-content").innerHTML = `<p><strong>Astro-Logbuch �
 <h3>9. Datenqualität (<code>needsReview</code>)</h3>
 <p>Unsichere/unvollständige Altdaten (Objekt- oder Session-Ebene) sind mit <code>needsReview: true</code> + erklärendem <code>reviewNote</code> markiert (gelbes Warndreieck in der UI). "OK, geprüft" setzt <code>needsReview</code> auf <code>false</code> und löscht <code>reviewNote</code>. Katalogdaten für Messier/NGC/IC-Objekte stammen aus allgemein bekannten astronomischen Referenzwerten, nicht aus einer angebundenen Datenbank – für professionelle Zwecke gegen SIMBAD/VizieR/Stellarium verifizieren.</p>
 
-<h3>10. Sternkarte / AR-Kamera</h3>
-<p>2D-Karte und AR-Kamera-Ansicht projizieren Objekte mit gesetztem RA/Dec sowie einen eingebetteten Sternkatalog (HYG-Datenbank + vereinfachte Konstellationsfiguren nach Dominic Ford) anhand von Standort/Zeit bzw. Kompass+Neigungssensor. Das ist eine <strong>Näherung</strong> (Kompass-Kalibrierung, Sensor-Rauschen, keine Objektiv-Verzeichniskorrektur) für grobe Orientierung, nicht für exaktes Teleskop-Pointing.</p>
+<h3>10. Objekt-Infotexte (i-Button in "Pics")</h3>
+<p>Der i-Button in der Pics-Galerie zeigt eine Kurzbeschreibung zu Objekt und Lage am Himmel – ohne externe Links. Für Bestandsobjekte und viele beliebte Ziele (Messier/NGC/IC) sind kuratierte Texte im Code hinterlegt (<code>OBJECT_INFO</code>, Zuordnung über <code>id</code>, Katalogbezeichnung oder Namen). Für alle anderen Objekte wird der Text automatisch aus <code>type</code>, <code>description</code>, <code>distanceLy</code>, <code>magnitude</code>, <code>angularSize</code>, <code>constellation</code> (Sternbild-Beschreibungen in <code>CONSTELLATION_INFO</code>) und – falls gesetzt – <code>ra</code>/<code>dec</code> (Sichtbarkeit von Mitteleuropa, ca. 51° N) erzeugt. Je vollständiger diese Felder ausgefüllt sind, desto aussagekräftiger der Text.</p>
 
 <h3>11. Hinweis für KI-Assistenten</h3>
 <p><code>data.json</code> ist das <em>single source of truth</em>-Dokument, Objekte eindeutig über <code>id</code> referenzierbar. Aggregate (Gesamtbelichtungszeit etc.) ergeben sich aus <code>sessions[].frames * sessions[].exposureSec</code>. Bei Unsicherheit über den korrekten Wert eines strukturierten Felds ist <code>rawFolderName</code> die Primärquelle, da alle strukturierten Felder ursprünglich daraus geparst wurden. UI-Verhalten (Layout, Spaltenbreiten, Touch-Gesten etc.) ist absichtlich NICHT hier dokumentiert, sondern als Kommentar direkt im jeweiligen Code-Abschnitt – dort nachsehen statt hier zu suchen. Diese Doku (Abschnitt-Struktur, Länge) bei Bedarf selbst aktuell und knapp halten: nur ergänzen/ändern, was für das Verständnis der Datenstruktur bzw. zentraler Mechanismen wirklich nötig ist.</p>
 `;
 
 
-/* ======================= STAR MAP ======================= */
-let mapMode = "2d";
-let userLat = null, userLon = null;
-let mapTimeOverride = null;
-let mapInited = false;
-let mapZoom = 1, mapPanX = 0, mapPanY = 0;
-
-document.querySelectorAll('[data-mapmode]').forEach(chip=>{
-  chip.addEventListener('click', ()=>{
-    document.querySelectorAll('[data-mapmode]').forEach(c=>setChipPressed(c, c===chip));
-    mapMode = chip.dataset.mapmode;
-    setMapMode(mapMode);
-  });
-});
-
-function setMapMode(mode){
-  const video = document.getElementById('arVideo');
-  const arCanvas = document.getElementById('arCanvas');
-  const skyCanvas = document.getElementById('skyCanvas');
-  if(mode === 'ar'){
-    skyCanvas.style.display = 'none';
-    video.style.display = 'block';
-    arCanvas.style.display = 'block';
-    startAR();
-  }else{
-    skyCanvas.style.display = 'block';
-    video.style.display = 'none';
-    arCanvas.style.display = 'none';
-    stopAR();
-    drawSky2D();
-  }
-}
-
-function initMapViewOnce(){
-  if(mapInited) return;
-  mapInited = true;
-  const mapStatus = document.getElementById('map-status');
-  mapStatus.textContent = "Standort noch nicht ermittelt – Standard: Berlin. Für genauere Anzeige 'Standort ermitteln' klicken.";
-  userLat = 52.5200; userLon = 13.4050;
-  drawSky2D();
-  document.getElementById('skyCanvas').addEventListener('click', onSkyCanvasClick);
-}
-
-function formatDatetimeLocal(date){
-  const pad = n => String(n).padStart(2,'0');
-  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-document.getElementById('btn-geo').addEventListener('click', ()=>{
-  if(!navigator.geolocation){ alert('Geolocation wird von diesem Browser nicht unterstützt.'); return; }
-  document.getElementById('geo-check').classList.remove('visible');
-  document.getElementById('map-status').textContent = 'Standort wird ermittelt …';
-  navigator.geolocation.getCurrentPosition(pos=>{
-    userLat = pos.coords.latitude; userLon = pos.coords.longitude;
-    document.getElementById('map-status').textContent = `Standort: ${userLat.toFixed(3)}, ${userLon.toFixed(3)}`;
-    document.getElementById('geo-check').classList.add('visible');
-    if(mapMode==='2d') drawSky2D();
-  }, err=>{
-    document.getElementById('map-status').textContent = 'Standort konnte nicht ermittelt werden: ' + err.message + ' (nutze Berlin als Standard).';
-    document.getElementById('geo-check').classList.remove('visible');
-  });
-});
-document.getElementById('btn-map-now').addEventListener('click', ()=>{
-  mapTimeOverride = null;
-  document.getElementById('map-time').value = formatDatetimeLocal(new Date());
-  if(mapMode==='2d') drawSky2D();
-});
-document.getElementById('map-time').addEventListener('change', e=>{
-  mapTimeOverride = e.target.value ? new Date(e.target.value) : null;
-  if(mapMode==='2d') drawSky2D();
-});
-
-/* ---- Astronomie-Hilfsfunktionen ---- */
-function deg2rad(d){ return d*Math.PI/180; }
-function rad2deg(r){ return r*180/Math.PI; }
-function julianDate(date){
-  return date.getTime()/86400000 + 2440587.5;
-}
-function gmstDeg(date){
-  const jd = julianDate(date);
-  const T = (jd - 2451545.0)/36525.0;
-  let gmst = 280.46061837 + 360.98564736629*(jd-2451545.0) + 0.000387933*T*T - (T*T*T)/38710000.0;
-  gmst = gmst % 360; if(gmst<0) gmst += 360;
-  return gmst;
-}
-function raDecToAltAz(raDeg, decDeg, lat, lon, date){
-  const lst = (gmstDeg(date) + lon) % 360;
-  let H = lst - raDeg; H = ((H+540)%360)-180; // -180..180
-  const Hr = deg2rad(H), latr = deg2rad(lat), decr = deg2rad(decDeg);
-  const sinAlt = Math.sin(latr)*Math.sin(decr) + Math.cos(latr)*Math.cos(decr)*Math.cos(Hr);
-  const alt = Math.asin(Math.max(-1,Math.min(1,sinAlt)));
-  const cosA = (Math.sin(decr) - Math.sin(alt)*Math.sin(latr)) / (Math.cos(alt)*Math.cos(latr) || 1e-9);
-  const sinA = -Math.sin(Hr)*Math.cos(decr) / (Math.cos(alt) || 1e-9);
-  let az = rad2deg(Math.atan2(sinA, cosA)); // 0 = Nord, 90 = Ost
-  az = (az+360)%360;
-  return {alt: rad2deg(alt), az};
-}
-function currentMapDate(){ return mapTimeOverride || new Date(); }
-
+/* ======================= KOORDINATEN-HILFSFUNKTIONEN ======================= */
 function parseRaToDeg(ra){
   if(ra==null) return null;
   const m = String(ra).match(/(\d+)h\s*(\d+)?m?\s*([\d.]+)?s?/i);
@@ -14701,848 +14903,35 @@ function parseDecToDeg(dec){
   return sign*(d + mi/60 + se/3600);
 }
 
-// Ergebnis wird nach DB.generatedAt (von persist() bei jeder Änderung hochgezählt) gecacht: die AR-Ansicht
-// ruft diese Funktion sonst bei ~60 Bildern/Sekunde auf und parst dabei jedes Mal erneut alle RA/Dec-Strings
-// per Regex neu – unnötige Arbeit, da sich raDeg/decDeg zwischen zwei Datenänderungen nie ändern (nur die
-// daraus abgeleitete Alt/Az-Position ändert sich pro Frame, und die wird an anderer Stelle live berechnet).
-let _photographedTargetsCache = null, _photographedTargetsCacheKey = null;
-// Cache-Key kombiniert generatedAt mit Objektanzahl + Repo-Identität statt nur generatedAt allein: die
-// eingebauten SEED_DATA haben ein fest einkompiliertes, nie aktualisiertes generatedAt - ein Wechsel zu
-// einem anderen, ebenfalls nie gespeicherten Datensatz (z.B. Demo-Repo ohne Sync) mit zufällig demselben
-// Zeitstempel hätte sonst die alten (falschen) Ziele weiterverwendet. Der zusammengesetzte Key macht eine
-// echte Kollision praktisch ausgeschlossen, ohne die Cache-Logik selbst zu verkomplizieren.
-function getPhotographedTargets(){
-  const key = `${DB.generatedAt}|${DB.objects.length}|${DB.repoOwner||''}|${DB.repoName||''}`;
-  if(_photographedTargetsCache && _photographedTargetsCacheKey === key) return _photographedTargetsCache;
-  _photographedTargetsCache = DB.objects.filter(o=>o.ra && o.dec).map(o=>{
-    const raDeg = parseRaToDeg(o.ra), decDeg = parseDecToDeg(o.dec);
-    return {obj:o, raDeg, decDeg};
-  }).filter(t=>t.raDeg!=null && t.decDeg!=null);
-  _photographedTargetsCacheKey = key;
-  return _photographedTargetsCache;
-}
-
-/* ---- 2D Fisheye-Himmelskarte (Zenit = Mitte, Horizont = Rand) ---- */
-function drawSky2D(){
-  const canvas = document.getElementById('skyCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const R = Math.min(W,H)/2 - 10;
-  const cx = W/2, cy = H/2;
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle = '#05060a'; ctx.fillRect(0,0,W,H);
-  ctx.setTransform(mapZoom,0,0,mapZoom, cx*(1-mapZoom)+mapPanX, cy*(1-mapZoom)+mapPanY);
-  ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.strokeStyle='#262c3a'; ctx.stroke();
-
-  function project(alt, az){
-    const r = (90-alt)/90 * R;
-    const a = deg2rad(az - 90); // Norden oben
-    return {x: cx + r*Math.cos(a), y: cy + r*Math.sin(a)};
-  }
-
-  // Horizont-Ring-Beschriftung
-  ctx.fillStyle = '#5c6579'; ctx.font = '12px sans-serif'; ctx.textAlign='center';
-  const dirs = [['N',0],['O',90],['S',180],['W',270]];
-  dirs.forEach(([lbl,az])=>{
-    const p = project(-2, az);
-    ctx.fillText(lbl, p.x, p.y);
-  });
-
-  const date = currentMapDate();
-  if(userLat==null){ ctx.setTransform(1,0,0,1,0,0); return; }
-
-  // Sterne + Linien
-  const starPos = {};
-  STAR_CATALOG.stars.forEach(st=>{
-    const {alt,az} = raDecToAltAz(st.ra, st.dec, userLat, userLon, date);
-    starPos[st.name] = {alt,az};
-    if(alt>0){
-      const p = project(alt,az);
-      const r = Math.max(0.6, 2.6 - st.mag*0.5);
-      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7);
-      ctx.fillStyle = '#c9d3e6'; ctx.fill();
-    }
-  });
-  ctx.strokeStyle = 'rgba(90,110,150,.35)'; ctx.lineWidth = 1;
-  STAR_CATALOG.lines.forEach(([a,b])=>{
-    const pa = starPos[a], pb = starPos[b];
-    if(!pa||!pb||pa.alt<0||pb.alt<0) return;
-    const p1 = project(pa.alt,pa.az), p2 = project(pb.alt,pb.az);
-    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
-  });
-
-  // fotografierte Objekte
-  // WICHTIG: getPhotographedTargets() nur EINMAL aufrufen und dasselbe Array für Klick-Hittest
-  // wiederverwenden – es erzeugt bei jedem Aufruf neue Objekt-Instanzen, daher ging die hier gesetzte
-  // t._screen-Position beim zweiten Aufruf (für window._mapTargets) verloren und Klicks auf Objekte
-  // in der Sternkarte taten dadurch nie etwas.
-  const targets = getPhotographedTargets();
-  targets.forEach(t=>{
-    const {alt,az} = raDecToAltAz(t.raDeg, t.decDeg, userLat, userLon, date);
-    if(alt < -5) return;
-    const p = project(Math.max(alt,-5), az);
-    const color = t.obj.needsReview ? '#f5c451' : '#6ea8fe';
-    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,7);
-    ctx.fillStyle = color+'cc'; ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.fillStyle = '#e8ecf4'; ctx.font='10px sans-serif'; ctx.textAlign='left';
-    ctx.fillText(t.obj.displayName.split(' (')[0], p.x+7, p.y+3);
-    t._screen = p;
-  });
-  window._mapTargets = targets;
-  ctx.setTransform(1,0,0,1,0,0);
-}
-
-function onSkyCanvasClick(e){
-  if(suppressNextSkyClick){ suppressNextSkyClick = false; return; }
-  const canvas = e.target;
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX-rect.left) * (canvas.width/rect.width);
-  const y = (e.clientY-rect.top) * (canvas.height/rect.height);
-  const cx = canvas.width/2, cy = canvas.height/2;
-  const bx = (x - (cx*(1-mapZoom)+mapPanX)) / mapZoom;
-  const by = (y - (cy*(1-mapZoom)+mapPanY)) / mapZoom;
-  let best=null, bestD=18/mapZoom;
-  (window._mapTargets||[]).forEach(t=>{
-    if(!t._screen) return;
-    const d = Math.hypot(t._screen.x-bx, t._screen.y-by);
-    if(d<bestD){ bestD=d; best=t; }
-  });
-  const info = document.getElementById('map-object-info');
-  if(best){
-    info.hidden=false;
-    info.innerHTML = `<h3>${escapeHtml(best.obj.displayName)}</h3>
-      <div class="obj-desc">${escapeHtml(best.obj.description||'')}</div>
-      <div>${best.obj.sessions.length} Session(s) · ${fmtHours(totalIntegrationSeconds(best.obj))} Gesamtbelichtung</div>`;
-  }else{ info.hidden=true; }
-}
-setInterval(()=>{ if(mapMode==='2d' && document.getElementById('view-map').classList.contains('active')) drawSky2D(); }, 60000);
-
-/* ---- Zoom & Pan (Maus-Rad am Desktop, Pinch/Pan per Touch am Handy) ---- */
-function clampMapZoom(z){ return Math.max(1, Math.min(6, z)); }
-// Verhindert, dass die Sternkarte durch wiederholtes Verschieben komplett aus dem sichtbaren Bereich
-// wandert (es gibt keine "Ansicht zurücksetzen"-Taste) – ohne Begrenzung wäre die Karte dann nur noch
-// per Reload wiederherstellbar.
-function clampMapPan(px, py){
-  const canvas = document.getElementById('skyCanvas');
-  // Die Karte füllt bei mapZoom=1 exakt die Canvas-Fläche [0,W]x[0,H]. Nach der
-  // zentrierten Skalierung um (cx,cy) ragt der Karteninhalt pro Achse um genau
-  // Breite*(Zoom-1)/2 bzw. Höhe*(Zoom-1)/2 über den Rand hinaus - das ist der
-  // maximale Verschiebeweg, bei dem die Karte den Bildschirm gerade noch komplett
-  // ausfüllt. Bei Zoom=1 ist der Spielraum also 0 (kein Verschieben ohne vorheriges
-  // Einzoomen), vorher konnte man die Karte komplett aus dem sichtbaren Bereich ziehen.
-  const maxPanX = canvas.width * (mapZoom - 1) / 2;
-  const maxPanY = canvas.height * (mapZoom - 1) / 2;
-  return { x: Math.max(-maxPanX, Math.min(maxPanX, px)), y: Math.max(-maxPanY, Math.min(maxPanY, py)) };
-}
-function zoomMapAt(px, py, factor){
-  const canvas = document.getElementById('skyCanvas');
-  const cx = canvas.width/2, cy = canvas.height/2;
-  const newZoom = clampMapZoom(mapZoom * factor);
-  if(newZoom === mapZoom) return;
-  const baseX = (px - (cx*(1-mapZoom)+mapPanX)) / mapZoom;
-  const baseY = (py - (cy*(1-mapZoom)+mapPanY)) / mapZoom;
-  mapPanX = px - newZoom*baseX - cx*(1-newZoom);
-  mapPanY = py - newZoom*baseY - cy*(1-newZoom);
-  mapZoom = newZoom;
-  const clamped = clampMapPan(mapPanX, mapPanY);
-  mapPanX = clamped.x; mapPanY = clamped.y;
-  drawSky2D();
-}
-function mapCanvasPoint(canvas, clientX, clientY){
-  const rect = canvas.getBoundingClientRect();
-  return {x:(clientX-rect.left)*(canvas.width/rect.width), y:(clientY-rect.top)*(canvas.height/rect.height)};
-}
-const skyCanvasEl = document.getElementById('skyCanvas');
-skyCanvasEl.addEventListener('wheel', e=>{
-  if(mapMode!=='2d') return;
-  e.preventDefault();
-  const p = mapCanvasPoint(skyCanvasEl, e.clientX, e.clientY);
-  zoomMapAt(p.x, p.y, e.deltaY < 0 ? 1.15 : (1/1.15));
-}, {passive:false});
-
-// Tastatur-Bedienung der 2D-Sternkarte (barrierefrei) - vorher war Pan/Zoom ausschließlich per Maus/Touch
-// möglich. Pfeiltasten verschieben, +/-/= zoomen, jeweils zentriert auf die Canvas-Mitte.
-skyCanvasEl.addEventListener('keydown', e=>{
-  if(mapMode!=='2d') return;
-  const step = 40;
-  if(e.key==='ArrowLeft' || e.key==='ArrowRight' || e.key==='ArrowUp' || e.key==='ArrowDown'){
-    e.preventDefault();
-    const dx = e.key==='ArrowLeft' ? step : e.key==='ArrowRight' ? -step : 0;
-    const dy = e.key==='ArrowUp' ? step : e.key==='ArrowDown' ? -step : 0;
-    const clamped = clampMapPan(mapPanX+dx, mapPanY+dy);
-    mapPanX = clamped.x; mapPanY = clamped.y;
-    drawSky2D();
-  }else if(e.key==='+' || e.key==='=' ){
-    e.preventDefault();
-    zoomMapAt(skyCanvasEl.width/2, skyCanvasEl.height/2, 1.2);
-  }else if(e.key==='-' || e.key==='_'){
-    e.preventDefault();
-    zoomMapAt(skyCanvasEl.width/2, skyCanvasEl.height/2, 1/1.2);
-  }
-});
-
-let mapTouchState = null;
-skyCanvasEl.addEventListener('touchstart', e=>{
-  if(mapMode!=='2d') return;
-  if(e.touches.length===2){
-    const p0 = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
-    const p1 = mapCanvasPoint(skyCanvasEl, e.touches[1].clientX, e.touches[1].clientY);
-    mapTouchState = {mode:'pinch', dist: Math.hypot(p0.x-p1.x, p0.y-p1.y), mid:{x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2}};
-  }else if(e.touches.length===1){
-    mapTouchState = {mode:'pan', last: mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY)};
-  }
-}, {passive:true});
-skyCanvasEl.addEventListener('touchmove', e=>{
-  if(mapMode!=='2d' || !mapTouchState) return;
-  e.preventDefault();
-  if(mapTouchState.mode==='pinch' && e.touches.length===2){
-    const p0 = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
-    const p1 = mapCanvasPoint(skyCanvasEl, e.touches[1].clientX, e.touches[1].clientY);
-    const newDist = Math.hypot(p0.x-p1.x, p0.y-p1.y);
-    const mid = {x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2};
-    zoomMapAt(mid.x, mid.y, newDist / mapTouchState.dist);
-    mapTouchState.dist = newDist;
-  }else if(mapTouchState.mode==='pan' && e.touches.length===1){
-    const p = mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY);
-    const clamped = clampMapPan(mapPanX + (p.x - mapTouchState.last.x), mapPanY + (p.y - mapTouchState.last.y));
-    mapPanX = clamped.x; mapPanY = clamped.y;
-    mapTouchState.last = p;
-    drawSky2D();
-  }
-}, {passive:false});
-skyCanvasEl.addEventListener('touchend', e=>{
-  if(e.touches.length===0) mapTouchState = null;
-  else if(e.touches.length===1) mapTouchState = {mode:'pan', last: mapCanvasPoint(skyCanvasEl, e.touches[0].clientX, e.touches[0].clientY)};
-});
-
-/* ---- Verschieben (Pan) am Desktop per Maus-Drag ---- */
-let sky2DDrag = null;
-let suppressNextSkyClick = false;
-skyCanvasEl.addEventListener('mousedown', e=>{
-  if(mapMode!=='2d') return;
-  sky2DDrag = { last: mapCanvasPoint(skyCanvasEl, e.clientX, e.clientY), moved:false };
-});
-window.addEventListener('mousemove', e=>{
-  if(!sky2DDrag || mapMode!=='2d') return;
-  const p = mapCanvasPoint(skyCanvasEl, e.clientX, e.clientY);
-  const dx = p.x - sky2DDrag.last.x, dy = p.y - sky2DDrag.last.y;
-  if(Math.abs(dx) > 1 || Math.abs(dy) > 1){
-    if(!sky2DDrag.moved){ sky2DDrag.moved = true; skyCanvasEl.classList.add('dragging'); }
-    const clamped = clampMapPan(mapPanX + dx, mapPanY + dy);
-    mapPanX = clamped.x; mapPanY = clamped.y;
-    sky2DDrag.last = p;
-    drawSky2D();
-  }
-});
-window.addEventListener('mouseup', ()=>{
-  if(sky2DDrag){
-    if(sky2DDrag.moved) suppressNextSkyClick = true;
-    skyCanvasEl.classList.remove('dragging');
-  }
-  sky2DDrag = null;
-});
-
-/* ---- AR Kamera-Overlay ---- */
-let arStream = null, arOrientationHandler = null;
-let deviceHeading = null, devicePitch = null;
-
-let arStarting = false; // verhindert, dass ein zweiter (z.B. Doppeltipp-ausgelöster) startAR()-Aufruf
-                         // vor Abschluss des ersten (während der Berechtigungsabfrage) läuft und dabei
-                         // dessen Kamera-Stream verwaist bzw. eine zweite requestAnimationFrame-Schleife startet
-let arLoopRunning = false; // stellt sicher, dass drawARFrame() nur eine einzige rAF-Kette am Laufen hat
-let arStartedAt = 0; // Zeitpunkt (performance.now()) des letzten startAR() – für die Kompass-Kalibrierungswarnung (s. drawARFrame)
-async function startAR(){
-  if(arStarting) return;
-  arStarting = true;
-  console.log('[AR] Schritt 0: startAR() aufgerufen');
-  const status = document.getElementById('map-status');
-  if(userLat==null){ userLat=52.52; userLon=13.405; }
-  resetArTransform();
-  // Sensor-Historie/Status eines evtl. vorherigen AR-Laufs verwerfen: sonst könnte z.B. ein Winkel-
-  // Unwrap im Median-Filter (s.u.) noch auf Werten der letzten Sitzung aufbauen, oder eine bereits erfolgte
-  // Kompass-Kalibrierung würde fälschlich auch für diesen (neuen) Start als gegeben angenommen.
-  resetArSensorState();
-  deviceHeading = null; devicePitch = null;
-  document.getElementById('ar-debug-toggle').classList.add('visible');
-  document.getElementById('ar-calibrate-btn').classList.add('visible');
-  try{
-    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
-      const perm = await DeviceOrientationEvent.requestPermission();
-      console.log('[AR] Bewegungssensor-Berechtigung:', perm);
-      if(perm !== 'granted') throw new Error('Bewegungssensor-Zugriff verweigert.');
-    }
-    arStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
-    document.getElementById('arVideo').srcObject = arStream;
-    arOrientationHandler = onDeviceOrientation;
-    window.addEventListener('deviceorientationabsolute', arOrientationHandler, true);
-    window.addEventListener('deviceorientation', arOrientationHandler, true);
-    arStartedAt = performance.now();
-    console.log('[AR] Kamera-Stream erhalten, Sensor-Listener registriert – warte auf erstes Sensor-Event …');
-    status.className = 'banner ok';
-    status.textContent = 'AR aktiv – zum Ausrichten Handy kurz Richtung Horizont halten und 🧭 antippen, danach frei in den Himmel halten. Mit zwei Fingern zoomen, mit einem Finger verschieben.';
-    if(!arLoopRunning){ arLoopRunning = true; requestAnimationFrame(drawARFrame); }
-  }catch(e){
-    console.error('[AR] startAR() fehlgeschlagen:', e);
-    status.className = 'banner warn';
-    status.textContent = 'AR nicht verfügbar: ' + e.message + ' (Kamera/Sensor-Zugriff nötig, funktioniert nur über HTTPS auf dem Handy).';
-    document.querySelector('[data-mapmode="2d"]').click();
-  }finally{
-    arStarting = false;
-  }
-}
-function stopAR(){
-  document.getElementById('ar-debug-toggle').classList.remove('visible');
-  document.getElementById('ar-calibrate-btn').classList.remove('visible');
-  document.getElementById('ar-debug-panel').hidden = true;
-  if(arStream){ arStream.getTracks().forEach(t=>t.stop()); arStream=null; }
-  if(arOrientationHandler){
-    window.removeEventListener('deviceorientationabsolute', arOrientationHandler, true);
-    window.removeEventListener('deviceorientation', arOrientationHandler, true);
-    arOrientationHandler = null;
-  }
-  resetArTransform();
-}
-
-/* ---- AR Zoom & Pan (CSS-Transform auf Video + Overlay-Canvas, Zwei-Finger-Pinch/Pan) ---- */
-let arZoom = 1, arPanX = 0, arPanY = 0;
-function clampArZoom(z){ return Math.max(1, Math.min(4, z)); }
-function applyArTransform(){
-  const t = `translate(${arPanX}px, ${arPanY}px) scale(${arZoom})`;
-  const v = document.getElementById('arVideo'), c = document.getElementById('arCanvas');
-  v.style.transform = t; c.style.transform = t;
-}
-function resetArTransform(){ arZoom=1; arPanX=0; arPanY=0; applyArTransform(); }
-
-let arTouchState = null;
-const mapWrapEl = document.getElementById('map-wrap');
-// Baseline für den Pinch-Zoom neu berechnen (aus den ERSTEN beiden aktuell aktiven Fingern). Wird bei
-// jedem Wechsel der Fingeranzahl auf >=2 aufgerufen (nicht nur beim allerersten touchstart) – sonst blieb
-// die Basis-Distanz stehen, wenn z.B. ein 3. Finger dazukam und danach einer der ursprünglichen beiden
-// abgehoben wurde: die nächste touchmove-Berechnung verglich dann zwei Finger, die nie zusammen die
-// Ausgangsdistanz gebildet hatten -> sichtbarer Zoom-Sprung.
-function rebaseArPinch(touches){
-  const d = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY);
-  arTouchState = {mode:'pinch', dist:d, zoomStart:arZoom};
-}
-mapWrapEl.addEventListener('touchstart', e=>{
-  if(mapMode!=='ar') return;
-  if(e.touches.length>=2){
-    rebaseArPinch(e.touches);
-  }else if(e.touches.length===1){
-    arTouchState = {mode:'pan', lastX:e.touches[0].clientX, lastY:e.touches[0].clientY};
-  }
-}, {passive:true});
-mapWrapEl.addEventListener('touchmove', e=>{
-  if(mapMode!=='ar' || !arTouchState) return;
-  e.preventDefault();
-  if(arTouchState.mode==='pinch' && e.touches.length===2){
-    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
-    arZoom = clampArZoom(arTouchState.zoomStart * (d/arTouchState.dist));
-    applyArTransform();
-  }else if(arTouchState.mode==='pan' && e.touches.length===1){
-    const dx = e.touches[0].clientX - arTouchState.lastX, dy = e.touches[0].clientY - arTouchState.lastY;
-    arPanX += dx; arPanY += dy;
-    arTouchState.lastX = e.touches[0].clientX; arTouchState.lastY = e.touches[0].clientY;
-    applyArTransform();
-  }
-}, {passive:false});
-mapWrapEl.addEventListener('touchend', e=>{
-  if(e.touches.length===0) arTouchState = null;
-  else if(e.touches.length===1) arTouchState = {mode:'pan', lastX:e.touches[0].clientX, lastY:e.touches[0].clientY};
-  else if(e.touches.length>=2) rebaseArPinch(e.touches); // z.B. 3->2 Finger: Basis auf verbliebenes Paar neu setzen
-});
-document.getElementById('ar-debug-toggle').addEventListener('click', ()=>{
-  arDebug.enabled = !arDebug.enabled;
-  document.getElementById('ar-debug-panel').hidden = !arDebug.enabled;
-  if(arDebug.enabled) renderArDebugPanel();
-});
-// Manuelle Kalibrierung (🧭-Button): siehe großer Kommentar in onDeviceOrientation - der Magnetkompass
-// wird bewusst NICHT mehr laufend automatisch eingemischt, weil er bei starker Neigung nachweislich für
-// Sekunden einen um ~180° falschen, aber stabilen Wert liefern kann. Stattdessen richtet man die Anzeige
-// wie bei Stellarium einmalig aus: Handy Richtung Horizont halten, Button antippen - danach läuft die
-// Ausrichtung rein über die (nachweislich stabile) Bewegungsverfolgung weiter, bis erneut kalibriert wird.
-function calibrateArHeading(){
-  const status = document.getElementById('map-status');
-  if(lastCalibratedHeadingSample == null){
-    status.className = 'banner warn';
-    status.textContent = 'Noch kein Kompasswert empfangen - kurz warten und erneut versuchen.';
-    return;
-  }
-  if(devicePitch != null && Math.abs(devicePitch) > COMPASS_TRUST_MAX_PITCH_DEG){
-    status.className = 'banner warn';
-    status.textContent = `Für eine genaue Kalibrierung das Handy näher zum Horizont halten (aktuelle Neigung: ${devicePitch.toFixed(0)}°, empfohlen unter ${COMPASS_TRUST_MAX_PITCH_DEG}°) und erneut antippen.`;
-    return;
-  }
-  deviceHeading = lastCalibratedHeadingSample;
-  arLastCalibratedAt = performance.now();
-  console.log('[AR] manuell kalibriert auf', deviceHeading.toFixed(1)+'°');
-  status.className = 'banner ok';
-  status.textContent = 'Kompass kalibriert. Handy jetzt frei in den Himmel halten - die Ausrichtung folgt der Bewegung.';
-}
-document.getElementById('ar-calibrate-btn').addEventListener('click', calibrateArHeading);
-// Baut das Diagnose-Panel neu auf (Rohdaten + Sprung-Log) - wird aus drawARFrame heraus aufgerufen,
-// aber nur wenn arDebug.enabled ist, um im Normalbetrieb keine unnötige Arbeit pro Frame zu verursachen.
-function renderArDebugPanel(){
-  const el = document.getElementById('ar-debug-panel');
-  if(!el || el.hidden) return;
-  const ev = arDebug.lastEvent;
-  const fmt = v => (v==null ? '–' : (typeof v==='number' ? v.toFixed(1) : String(v)));
-  let html = 'AR-DIAGNOSE (zum Schließen 🐞 erneut antippen)\n\n';
-  html += '--- Rohe Sensordaten (letztes Event) ---\n';
-  if(ev){
-    html += `Event-Typ: ${ev.type}\n`;
-    html += `absolute: ${ev.absolute}\n`;
-    html += `alpha: ${fmt(ev.alpha)}°  beta: ${fmt(ev.beta)}°  gamma: ${fmt(ev.gamma)}°\n`;
-    html += `webkitCompassHeading: ${fmt(ev.webkitCompassHeading)}\n`;
-  }else{
-    html += '(noch kein Sensor-Event erhalten)\n';
-  }
-  html += `\n--- Berechnete/angezeigte Werte ---\n`;
-  html += `Kompasswert schon mal empfangen: ${arHeadingIsCalibrated}\n`;
-  html += `zuletzt empfangener Kompasswert (für 🧭-Button): ${fmt(lastCalibratedHeadingSample)}°\n`;
-  html += `letzte Kalibrierung: ${arLastCalibratedAt ? Math.round((performance.now()-arLastCalibratedAt)/1000)+'s her' : 'noch nie'}\n`;
-  html += `zuletzt berechneter Bewegungs-Kompass (gyroHeading): ${fmt(lastGyroHeading)}°\n`;
-  html += `angezeigter Kompass (deviceHeading): ${fmt(deviceHeading)}°\n`;
-  html += `angezeigte Neigung (devicePitch): ${fmt(devicePitch)}°\n`;
-  html += `\n--- Sprung-Log (letzte ${arDebug.jumpLog.length} von max. 15, neueste zuerst) ---\n`;
-  if(!arDebug.jumpLog.length){
-    html += '(noch kein Sprung >' + AR_JUMP_THRESHOLD_DEG + '° aufgezeichnet)\n';
-  }else{
-    arDebug.jumpLog.forEach(j=>{
-      html += `${j.t}  ${j.kind}: ${j.from}° -> ${j.to}°\n    raw: ${JSON.stringify(j.raw)}\n`;
-    });
-  }
-  el.textContent = html;
-}
-// Korrekte Kompass-Umrechnung aus alpha/beta/gamma (statt der naiven "360-alpha"-Formel,
-// die nur stimmt, wenn das Handy flach auf dem Tisch liegt). Beim AR-Modus wird das Handy
-// aber typischerweise hochkant Richtung Himmel gehalten (beta≈70-160°) – dort führt die
-// naive Formel zu spürbar falschen/instabilen Werten genau dann, wenn man das Handy bewegt/kippt,
-// was sich als "Hakeln" der Sterne äußert. Diese Formel berücksichtigt die volle Lage des Geräts.
-function computeCompassHeading(alpha, beta, gamma){
-  const aRad = alpha*Math.PI/180, bRad = beta*Math.PI/180, gRad = gamma*Math.PI/180;
-  const cA = Math.cos(aRad), sA = Math.sin(aRad);
-  const cB = Math.cos(bRad), sB = Math.sin(bRad);
-  const cG = Math.cos(gRad), sG = Math.sin(gRad);
-  const rA = -cA*sG - sA*sB*cG;
-  const rB = -sA*sG + cA*sB*cG;
-  // Vorher: Math.atan(rA/rB) plus manueller Quadranten-Korrektur (+PI/+2PI je nach Vorzeichen). Das ist
-  // mathematisch äquivalent zu atan2, aber die explizite Division rA/rB ist numerisch instabil, sobald rB
-  // nahe 0 liegt (auch OHNE dass beide gleichzeitig exakt 0 sind, was der frühere Guard nur für den
-  // Extremfall abfing) - schon kleinstes Sensorrauschen ließ die Division dort kurzzeitig stark
-  // schwanken, was sich als der gemeldete seitliche "Sprung" beim Neigen des Handys zeigte (reproduzierbar
-  // bei bestimmten Kombinationen aus Neigung UND seitlicher Verdrehung, nicht nur bei einem festen Winkel).
-  // Math.atan2(y,x) berechnet denselben Winkel direkt und OHNE die Division, ist für alle Vorzeichen-
-  // kombinationen (auch rB=0) wohldefiniert und numerisch robust - der bisherige Sonderfall-Guard sowie
-  // die manuelle Quadranten-Korrektur entfallen dadurch vollständig.
-  const deg = Math.atan2(rA, rB) * 180/Math.PI;
-  return (deg + 360) % 360;
-}
-// Neigung (Pitch) NICHT naiv aus dem rohen beta-Winkel allein ableiten (frühere Formel: beta-90).
-// Grund für den gemeldeten Sprung bei ca. 46-47° Neigung: alpha/beta/gamma sind Euler-Winkel und damit
-// KEINE eindeutige Darstellung derselben physischen Ausrichtung - je nach Kombination aus Neigung UND
-// seitlicher Verdrehung (gamma) kann derselbe reale Blickwinkel von Sensor/Browser mit unterschiedlichen
-// beta-Werten berichtet werden. Naives "beta-90" sprang dadurch bei bestimmten Ausrichtungen unstetig,
-// obwohl sich das Handy nur stetig weitergedreht hat. Robuster Fix, analog zu computeCompassHeading:
-// die Höhe wird aus der VOLLEN Rotationsmatrix bestimmt, nämlich als vertikale Komponente der tatsäch-
-// lichen Kamera-Blickrichtung (Rückkamera zeigt in Geräte-lokalen Koordinaten Richtung -Z; die World-Z-
-// Komponente davon ist -R33 = -cos(beta)*cos(gamma) der Rotationsmatrix Rz(alpha)*Rx(beta)*Ry(gamma)).
-// Diese Größe ist eine stetige Funktion der TATSÄCHLICHEN Ausrichtung und daher unabhängig davon, welche
-// von mehreren möglichen (alpha,beta,gamma)-Kombinationen der Browser gerade zur Beschreibung wählt.
-// Bei gamma≈0 (Handy nicht seitlich verdreht, der Normalfall) liefert die Formel exakt dieselben Werte
-// wie die alte Näherung (asin(-cos(beta)) ≡ beta-90 für beta in [0°,180°]) - der Unterschied greift also
-// nur genau dann, wenn er auch gebraucht wird.
-function computeDevicePitch(beta, gamma){
-  const bRad = beta*Math.PI/180, gRad = gamma*Math.PI/180;
-  const camUp = -Math.cos(bRad) * Math.cos(gRad);
-  return Math.asin(Math.max(-1, Math.min(1, camUp))) * 180/Math.PI;
-}
-function smoothLinear(prev, next, alpha){
-  if(prev==null || isNaN(prev)) return next;
-  return prev + (next-prev)*alpha;
-}
-function adaptiveSmoothingAlpha(diffDeg){
-  // Bisher lief die Glättung von Kompass/Neigung mit einem FEST verdrahteten alpha=0.25 - das dämpft
-  // Sensor-Rauschen im Stillstand zuverlässig, sorgt aber bei einer schnellen Schwenkbewegung dafür, dass
-  // die eingeblendeten Objekte dem tatsächlichen Handywinkel sichtbar "hinterherwandern" (gemeldet als
-  // "die Objekte bleiben nicht am gleichen Ort ... sondern wandern leicht verzögert mit"): Ein Tiefpass
-  // mit konstantem alpha braucht bei jeder Bewegung mehrere Frames, um dem Zielwert nachzulaufen, und
-  // dieser Nachlauf ist umso sichtbarer, je größer/schneller die Winkeländerung pro Frame ist.
-  // Fix: alpha wird abhängig von der Größe der Winkeländerung pro Event adaptiv gewählt (angelehnt an
-  // "One-Euro-Filter"-Ansätze) - kleine Änderungen (Sensor-Rauschen bei ruhig gehaltenem Handy) werden
-  // weiterhin stark geglättet, große Änderungen (aktives Schwenken) werden nahezu verzögerungsfrei
-  // übernommen, damit Objekte am tatsächlichen Zielpunkt "kleben" statt hinterherzuwandern.
-  // MIN_ALPHA von 0.25 auf 0.35 angehoben und LOW_DEG von 2 auf 1.5 gesenkt: Rückmeldung war, dass die
-  // Markierungen der Bewegung des Handys spürbar "verzögert nachwandern" - mit dem alten, niedrigeren
-  // MIN_ALPHA brauchte selbst eine ruhige, aber stetige Schwenkbewegung mehrere Frames, um aufzuholen.
-  const MIN_ALPHA = 0.35, MAX_ALPHA = 0.9, LOW_DEG = 1.5, HIGH_DEG = 15;
-  const t = Math.min(1, Math.max(0, (diffDeg - LOW_DEG) / (HIGH_DEG - LOW_DEG)));
-  return MIN_ALPHA + (MAX_ALPHA - MIN_ALPHA) * t;
-}
-let arHaveAbsolute = false; // sobald echte 'deviceorientationabsolute'-Events kommen, werden die (evtl. nur relativen) 'deviceorientation'-Events ignoriert
-let arHeadingIsCalibrated = false; // true, sobald mind. einmal ein ECHT nordkalibrierter Kompasswert einging (webkitCompassHeading ODER e.absolute===true) – siehe Kommentar unten
-let headingRawHistory = [];
-let pitchRawHistory = [];
-let lastGyroHeading = null; // letzter Bewegungs-Kompasswert (glatt, aber nicht zwingend nordkalibriert), s. onDeviceOrientation
-let lastCalibratedHeadingSample = null; // zuletzt empfangener ECHTER (Magnetkompass-)Wert, geglättet - Basis für den Kalibrieren-Button
-let arAutoCalibrated = false; // wurde die einmalige Auto-Kalibrierung beim AR-Start schon durchgeführt?
-let arLastCalibratedAt = 0; // performance.now() der letzten (auto. oder manuellen) Kalibrierung, für die HUD-Anzeige
-const COMPASS_TRUST_MAX_PITCH_DEG = 25; // s. Kommentar in calibrateArHeading()
-let arLoggedFirstEvent = false, arLoggedCalibrated = false, arLoggedFirstDraw = false; // je einmalige Debug-Meldungen, s.u.
-// ---- Diagnose-Panel (temporär, für die Fehlersuche) ----
-// Schreibt laufend die zuletzt empfangenen ROHEN Sensordaten mit UND protokolliert jeden "Sprung"
-// (großer Ausschlag zwischen zwei aufeinanderfolgenden ANGEZEIGTEN Werten) inkl. der zugehörigen Rohdaten,
-// jeweils auch als console.log/-warn (auf dem iPhone einsehbar via Mac: Safari -> Entwickler-Menü -> unter
-// dem iPhone-Namen die geöffnete Seite auswählen -> Web-Inspector -> Konsole). Zusätzlich über den
-// 🐞-Button direkt in der AR-Ansicht als Panel sichtbar (kein Mac nötig, auch als Screenshot festhaltbar).
-let arDebug = { enabled:false, lastEvent:null, jumpLog:[] };
-const AR_JUMP_THRESHOLD_DEG = 12; // ab dieser Differenz zwischen zwei angezeigten Werten gilt es als "Sprung"
-function arLogJump(kind, from, to, raw){
-  const entry = { t:new Date().toLocaleTimeString('de-DE'), kind, from:Math.round(from), to:Math.round(to), raw };
-  arDebug.jumpLog.unshift(entry);
-  if(arDebug.jumpLog.length>15) arDebug.jumpLog.length=15;
-  console.warn('[AR-SPRUNG]', kind, Math.round(from)+'°', '->', Math.round(to)+'°', raw);
-}
-function resetArSensorState(){
-  arHaveAbsolute = false;
-  arHeadingIsCalibrated = false;
-  headingRawHistory = [];
-  pitchRawHistory = [];
-  lastGyroHeading = null;
-  lastCalibratedHeadingSample = null;
-  arAutoCalibrated = false;
-  arLastCalibratedAt = 0;
-  arLoggedFirstEvent = false; arLoggedCalibrated = false; arLoggedFirstDraw = false;
-  arDebug.jumpLog = [];
-}
-
-// Median-Filter (letzte 3 rohe, noch UNGEGLÄTTETE Zielwerte) gegen einzelne Sensor-Ausreißer.
-function medianOf3(a,b,c){ return Math.max(Math.min(a,b), Math.min(Math.max(a,b), c)); }
-function medianFilterHeading(targetDeg){
-  // Vor dem Median müssen die Werte "entfaltet" (unwrapped) werden – sonst ergäbe z.B. 359°/1°/2° fälschlich
-  // einen Median um 180° statt der tatsächlich gemeinten ~0°.
-  const last = headingRawHistory.length ? headingRawHistory[headingRawHistory.length-1] : targetDeg;
-  const delta = ((targetDeg - ((last%360)+360)%360 + 540) % 360) - 180;
-  const unwrapped = last + delta;
-  headingRawHistory.push(unwrapped);
-  if(headingRawHistory.length > 3) headingRawHistory.shift();
-  const filtered = headingRawHistory.length === 3
-    ? medianOf3(headingRawHistory[0], headingRawHistory[1], headingRawHistory[2])
-    : unwrapped;
-  return ((filtered % 360) + 360) % 360;
-}
-function medianFilterPitch(targetDeg){
-  pitchRawHistory.push(targetDeg);
-  if(pitchRawHistory.length > 3) pitchRawHistory.shift();
-  return pitchRawHistory.length === 3
-    ? medianOf3(pitchRawHistory[0], pitchRawHistory[1], pitchRawHistory[2])
-    : targetDeg;
-}
-
-function onDeviceOrientation(e){
-  arDebug.lastEvent = { type:e.type, absolute:e.absolute, alpha:e.alpha, beta:e.beta, gamma:e.gamma, webkitCompassHeading:e.webkitCompassHeading };
-  if(!arLoggedFirstEvent){ arLoggedFirstEvent = true; console.log('[AR] Schritt 1: erstes Sensor-Event erhalten', arDebug.lastEvent); }
-
-  // Manche Android-Browser feuern 'deviceorientation' UND 'deviceorientationabsolute' parallel,
-  // teils mit unterschiedlichen Referenzrahmen (absolut vs. relativ zur Startausrichtung). Werden
-  // beide gemischt in dieselben Variablen geschrieben, springt der Kompasswert bei jeder Bewegung
-  // zwischen zwei widersprüchlichen Werten hin und her – genau das erzeugte das gemeldete "Hakeln".
-  // Fix: sobald einmal ein echtes 'deviceorientationabsolute'-Event ankam, gewinnt dieses immer.
-  if(e.type === 'deviceorientationabsolute'){ arHaveAbsolute = true; }
-  else if(arHaveAbsolute && !e.absolute){ return; }
-
-  const gyroHeadingNow = (e.alpha!=null && e.beta!=null && e.gamma!=null)
-    ? computeCompassHeading(e.alpha, e.beta, e.gamma) : null;
-
-  // NEU, ersetzt den vorherigen Ansatz komplett (Fix für "Ansicht spielt bei starker Neigung verrückt"):
-  // Per Diagnose-Log (zwei Nutzer-Screenshots) war bestätigt, dass Apples EIGENER, fertiger Kompasswert
-  // (webkitCompassHeading) zwischen zwei fast identischen Handy-Lagen um ~180° kippte (155°->340.9°),
-  // während unser bewegungsbasierter Wert (gyroHeadingNow) im selben Moment stabil blieb (357.4°->352.4°).
-  // Selbst eine nur LANGSAME, stark gedämpfte Korrektur Richtung Kompass (der vorherige Versuch) zieht die
-  // Anzeige über ein paar Sekunden trotzdem zum falschen Wert, sobald man die Neigung länger hält - der
-  // Magnetkompass ist bei der für AR nötigen starken Neigung schlicht nicht durchgehend vertrauenswürdig
-  // genug für eine automatische, laufende Korrektur.
-  // Neues Prinzip (wie vom Nutzer vorgeschlagen, entspricht dem Vorgehen von Stellarium & Co.): Kompass
-  // wird NICHT mehr laufend eingemischt. deviceHeading läuft ausschließlich über die Bewegung fort (Delta
-  // von computeCompassHeading(alpha,beta,gamma) zwischen zwei Events - das bleibt bei jeder Neigung glatt,
-  // da rein aus Gyroskop/Beschleunigungssensor, s. Doku-Kommentar bei computeCompassHeading). Die
-  // Nordausrichtung wird stattdessen EINMALIG hergestellt: automatisch beim ersten brauchbaren Kompasswert
-  // nach dem Start (nur, wenn das Handy dabei nicht zu stark geneigt ist) sowie jederzeit erneut über den
-  // 🧭-Button (calibrateArHeading()), wenn man das Handy kurz Richtung Horizont hält. Zwischen zwei
-  // Kalibrierungen kann die Richtung durch reine Sensordrift langsam abweichen (typisch: klein über
-  // mehrere Minuten) - das ist ein deutlich kleineres Problem als der 180°-Sprung und lässt sich jederzeit
-  // per Knopfdruck wieder korrigieren.
-  if(gyroHeadingNow != null){
-    if(deviceHeading == null){
-      deviceHeading = gyroHeadingNow; // Startwert (noch nicht nordkalibriert); wird unten ggf. sofort durch Auto-Kalibrierung ersetzt
-    }else if(lastGyroHeading != null){
-      const delta = ((gyroHeadingNow - lastGyroHeading + 540) % 360) - 180;
-      const prevHeading = deviceHeading;
-      deviceHeading = (deviceHeading + delta + 360) % 360;
-      if(Math.abs(delta) > AR_JUMP_THRESHOLD_DEG){
-        arLogJump('heading-bewegung', prevHeading, deviceHeading, {gyroHeadingNow:gyroHeadingNow.toFixed(1), lastGyroHeading:lastGyroHeading.toFixed(1), event:arDebug.lastEvent});
-      }
-    }
-    lastGyroHeading = gyroHeadingNow;
-  }
-
-  // Echten (kalibrierten) Kompasswert nur MERKEN (für Auto- und manuelle Kalibrierung) - siehe oben, wird
-  // nicht mehr automatisch laufend in deviceHeading eingemischt.
-  let calibratedHeading = null;
-  if(typeof e.webkitCompassHeading === 'number'){
-    calibratedHeading = e.webkitCompassHeading; // iOS Safari liefert bereits einen korrekten, kalibrierten Kompasswert
-  }else if(e.absolute===true && gyroHeadingNow!=null){
-    calibratedHeading = gyroHeadingNow;
-  }
-  if(calibratedHeading != null){
-    if(!arLoggedCalibrated){ arLoggedCalibrated = true; console.log('[AR] Schritt 2: kalibrierter Kompasswert erhalten', calibratedHeading.toFixed(1)+'°', typeof e.webkitCompassHeading==='number' ? '(webkitCompassHeading)' : '(alpha, absolute)'); }
-    arHeadingIsCalibrated = true;
-    lastCalibratedHeadingSample = medianFilterHeading((calibratedHeading+360)%360);
-    const pitchOkForCalibration = devicePitch == null || Math.abs(devicePitch) <= COMPASS_TRUST_MAX_PITCH_DEG;
-    if(!arAutoCalibrated && pitchOkForCalibration){
-      // Einmalige automatische Kalibrierung kurz nach dem Start, aber nur wenn das Handy dabei nicht schon
-      // stark geneigt ist (sonst warten wir lieber auf eine bessere Gelegenheit bzw. der Nutzer kalibriert
-      // manuell über den Button, sobald er das Handy Richtung Horizont hält).
-      arAutoCalibrated = true;
-      deviceHeading = lastCalibratedHeadingSample;
-      arLastCalibratedAt = performance.now();
-      console.log('[AR] Schritt 3: automatisch kalibriert auf', deviceHeading.toFixed(1)+'°');
-    }
-  }
-
-  if(e.beta!=null && e.gamma!=null){
-    const targetPitch = medianFilterPitch(computeDevicePitch(e.beta, e.gamma));
-    const pitchDiff = devicePitch==null ? 999 : Math.abs(targetPitch - devicePitch);
-    const prevPitch = devicePitch;
-    devicePitch = smoothLinear(devicePitch, targetPitch, adaptiveSmoothingAlpha(pitchDiff));
-    if(prevPitch!=null && Math.abs(devicePitch-prevPitch) > AR_JUMP_THRESHOLD_DEG){
-      arLogJump('neigung', prevPitch, devicePitch, {beta:e.beta.toFixed(1), gamma:e.gamma.toFixed(1), targetPitch:targetPitch.toFixed(1)});
-    }
-  }else if(e.beta!=null){
-    // Fallback ohne gamma (sollte praktisch nie vorkommen): alte, einfache Näherung.
-    const targetPitch = medianFilterPitch(e.beta - 90);
-    const pitchDiff = devicePitch==null ? 999 : Math.abs(targetPitch - devicePitch);
-    devicePitch = smoothLinear(devicePitch, targetPitch, adaptiveSmoothingAlpha(pitchDiff));
-  }
-}
-// Wandelt Alt/Az (Grad) in einen 3D-Einheitsvektor im lokalen Horizontsystem um: e=Ost, n=Nord, u=Oben.
-function altAzToVec(altDeg, azDeg){
-  const altR = deg2rad(altDeg), azR = deg2rad(azDeg);
-  const cosAlt = Math.cos(altR);
-  return { e: cosAlt*Math.sin(azR), n: cosAlt*Math.cos(azR), u: Math.sin(altR) };
-}
-// Baut die Kamera-Basis (Blickrichtung + Bildebenen-Achsen "rechts"/"oben" + Brennweite in Pixeln) für die
-// gnomonische Projektion einmal pro Frame auf (statt pro Objekt neu zu berechnen).
-function makeArCamera(headingDeg, pitchDeg, fovDeg, canvas){
-  const dir = altAzToVec(pitchDeg, headingDeg);
-  // "Rechts" = Kreuzprodukt aus Blickrichtung und Welt-"Oben" (0,0,1) - entspricht der Annahme, dass das
-  // Bild nicht um die Blickachse verdreht ist (kein Rollwinkel-Tracking, siehe Doku/Abschnitt 10).
-  const horizLen = Math.hypot(dir.e, dir.n); // = cos(pitch); nur direkt im Zenit/Nadir nahe 0 (Sonderfall unten)
-  let right;
-  if(horizLen < 1e-6){
-    // Blick (nahezu) exakt senkrecht nach oben/unten: "Rechts" lässt sich hier nicht mehr sinnvoll aus der
-    // Blickrichtung ableiten (Pol-Singularität) - Rückfall auf die reine Kompassrichtung.
-    const hr = deg2rad(headingDeg);
-    right = { e: Math.cos(hr), n: -Math.sin(hr), u: 0 };
-  }else{
-    right = { e: dir.n/horizLen, n: -dir.e/horizLen, u: 0 };
-  }
-  // "Oben" im Bild = rechtwinklig zu Blickrichtung UND Rechts-Vektor.
-  const up = {
-    e: right.n*dir.u - right.u*dir.n,
-    n: right.u*dir.e - right.e*dir.u,
-    u: right.e*dir.n - right.n*dir.e
-  };
-  const f = (canvas.width/2) / Math.tan(deg2rad(fovDeg)/2); // gemeinsame Brennweite (Pixel) für beide Achsen
-  return {dir, right, up, f};
-}
-// Projiziert eine Alt/Az-Richtung auf Bildschirmkoordinaten; liefert null, wenn das Ziel HINTER der Kamera
-// liegt (kann trotz alt>0 vorkommen, wenn das Objekt weit außerhalb des Blickfelds seitlich/hinter einem steht).
-function projectAltAz(cam, altDeg, azDeg, canvas){
-  const v = altAzToVec(altDeg, azDeg);
-  const camX = v.e*cam.right.e + v.n*cam.right.n + v.u*cam.right.u;
-  const camY = v.e*cam.up.e    + v.n*cam.up.n    + v.u*cam.up.u;
-  const camZ = v.e*cam.dir.e   + v.n*cam.dir.n   + v.u*cam.dir.u;
-  if(camZ <= 0.01) return null;
-  return { x: canvas.width/2 + (camX/camZ) * cam.f, y: canvas.height/2 - (camY/camZ) * cam.f };
-}
-function canvasPillPath(ctx, x, y, w, h, r){
-  // Kleine Hilfsfunktion, die nur den Pfad für ein abgerundetes "Pill" aufbaut (kein fill/stroke) -
-  // ctx.roundRect() ist auf älteren Android-WebViews (die in der AR-Ansicht als Kamera-Renderer laufen)
-  // nicht zuverlässig verfügbar, daher hier manuell per Pfad gezeichnet statt der nativen Canvas-Methode
-  // zu vertrauen. Aufrufer entscheiden selbst, ob/wie sie den Pfad füllen und/oder umranden.
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y,   x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x,   y+h, r);
-  ctx.arcTo(x,   y+h, x,   y,   r);
-  ctx.arcTo(x,   y,   x+w, y,   r);
-  ctx.closePath();
-}
-function drawARFrame(){
-  if(mapMode!=='ar'){ arLoopRunning = false; return; }
-  // Der komplette Zeichenkörper steckt in try/catch: eine unerwartete Exception mitten im Frame
-  // (z.B. defekte Sternkatalog-Daten, Canvas kurzzeitig ohne Kontext) durfte früher verhindern, dass
-  // das abschließende requestAnimationFrame(drawARFrame) überhaupt erreicht wird – die Schleife blieb
-  // dann endgültig stehen und arLoopRunning hing für immer auf true, sodass auch ein erneuter
-  // startAR()-Aufruf (Guard "if(!arLoopRunning)") die Schleife nie wieder in Gang setzte (nur ein
-  // vollständiger Seiten-Reload half). Jetzt wird die Schleife in jedem Fall (Erfolg oder Fehler)
-  // fortgesetzt, ein Fehler wird nur einmal in die Konsole geloggt statt die App stillzulegen.
-  try{
-  const canvas = document.getElementById('arCanvas');
-  const video = document.getElementById('arVideo');
-  // canvas.width/height nur bei tatsächlicher Änderung neu setzen: jede Zuweisung (auch auf denselben
-  // Wert) leert den Canvas-Speicher und zwingt den Browser zu einer Neuallokation – bei ~60 Aufrufen/s
-  // war das auf schwächeren Handys ein spürbarer Performance-Faktor (Ruckeln bei Bewegung).
-  const vw = video.videoWidth || canvas.clientWidth, vh = video.videoHeight || canvas.clientHeight;
-  if(canvas.width !== vw) canvas.width = vw;
-  if(canvas.height !== vh) canvas.height = vh;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  // WICHTIGER Skalierungsfaktor - vermutlich die eigentliche Ursache für "Kompass/Neigung kaum lesbar":
-  // der Zeichenpuffer des Canvas (canvas.width/height) folgt der tatsächlichen Kameraauflösung
-  // (video.videoWidth/videoHeight), die auf echten Handys oft weit über der tatsächlichen CSS-Anzeige-
-  // größe liegt (z.B. 1920×1080 Kamerabild in einem nur 390px breiten Container). Alle bisherigen
-  // Schriftgrößen/Radien/Linienbreiten waren als feste Pixelzahlen IM Zeichenpuffer angegeben - bei so
-  // einer Auflösungsdifferenz wurde selbst "14px" Text beim Herunterskalieren auf die Anzeigegröße nur
-  // wenige CSS-Pixel groß und damit praktisch unlesbar. uiScale gleicht das aus: alle Größen unten werden
-  // mit uiScale multipliziert, sodass sie unabhängig von der tatsächlichen Kameraauflösung stets in der
-  // gewünschten CSS-Pixel-Größe erscheinen.
-  const uiScale = canvas.clientWidth ? (canvas.width / canvas.clientWidth) : 1;
-  if(arDebug.enabled) renderArDebugPanel();
-  if(deviceHeading!=null && devicePitch!=null){
-    if(!arLoggedFirstDraw){ arLoggedFirstDraw = true; console.log('[AR] Schritt 3: erster Frame mit Sternen/Objekten gezeichnet', {deviceHeading, devicePitch}); }
-    const fov = CFG.fov || 65;
-    // Die AR-Ansicht zeigt das LIVE-Kamerabild - sie muss daher immer für "jetzt" rechnen, nie für eine im
-    // 2D-Kartenmodus evtl. gesetzte Zeitreise-Uhrzeit (mapTimeOverride, currentMapDate()). Vorher wurde
-    // hier dieselbe (globale) Zeitquelle wie die 2D-Karte verwendet: Wer im 2D-Modus vorher/nachher ein
-    // anderes Datum/Uhrzeit eingestellt hatte (Button "Jetzt" nicht erneut geklickt), bekam in der AR-
-    // Ansicht Sternpositionen für DIESEN fremden Zeitpunkt statt für den tatsächlichen Moment, den die
-    // Kamera gerade zeigt - der Himmel stand dadurch (je nach Zeitdifferenz) an einer komplett anderen
-    // Stelle als real zu sehen. Da der Sternhimmel sich messbar auch schon innerhalb von Minuten weiterdreht,
-    // wird die Uhrzeit hier zudem bei jedem Frame neu geholt statt einmalig gecacht.
-    const date = new Date();
-
-    // Perspektivisch korrekte (gnomonische) Projektion von Alt/Az auf den Bildschirm, statt der früheren
-    // naiven linearen Skalierung von (Objekt-Az − Kompass) und (Objekt-Alt − Neigung) in Bildschirmpixel:
-    // Die alte Methode behandelte Grad-Differenzen im Azimut wie Grad-Differenzen im Bildschirmabstand -
-    // das ignoriert, dass dieselbe Azimut-Differenz in der Nähe des Zenits einer viel KLEINEREN
-    // tatsächlichen Distanz am Himmel entspricht (die Meridiane laufen dort zusammen), und entspricht auch
-    // sonst nicht der Perspektive einer echten Lochkamera (die auf dem Tangens des Winkels beruht, nicht
-    // auf dem Winkel selbst). Ergebnis waren Objekte, die - vor allem hoch am Himmel bzw. nahe am Bildrand -
-    // an einer spürbar falschen Stelle im Kamerabild erschienen. Die gnomonische Projektion (Standard für
-    // Kamera-/Teleskop-Overlays) bildet jedes Objekt stattdessen über einen echten 3D-Richtungsvektor auf
-    // die Bildebene der (rollwinkel-freien, s. Doku) Kamera ab.
-    const cam = makeArCamera(deviceHeading, devicePitch, fov, canvas);
-    const margin = 40 * uiScale;
-    const outOfCanvas = p => !p || p.x < -margin || p.x > canvas.width+margin || p.y < -margin || p.y > canvas.height+margin;
-
-    // Sterne + Sternbildlinien
-    const starPos = {};
-    STAR_CATALOG.stars.forEach(st=>{
-      const {alt,az} = raDecToAltAz(st.ra, st.dec, userLat, userLon, date);
-      const p = alt>0 ? projectAltAz(cam, alt, az, canvas) : null;
-      const inView = !outOfCanvas(p);
-      starPos[st.name] = {p, alt, inView};
-      if(alt>0 && inView){
-        const r = Math.max(1, 3.2 - st.mag*0.5) * uiScale;
-        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7);
-        ctx.fillStyle = 'rgba(210,220,240,.85)'; ctx.fill();
-      }
-    });
-    ctx.strokeStyle = 'rgba(140,165,210,.5)'; ctx.lineWidth = 1.3 * uiScale;
-    STAR_CATALOG.lines.forEach(([a,b])=>{
-      const pa = starPos[a], pb = starPos[b];
-      if(!pa||!pb||!pa.p||!pb.p) return;
-      if(!pa.inView && !pb.inView) return;
-      ctx.beginPath(); ctx.moveTo(pa.p.x,pa.p.y); ctx.lineTo(pb.p.x,pb.p.y); ctx.stroke();
-    });
-
-    getPhotographedTargets().forEach(t=>{
-      const {alt,az} = raDecToAltAz(t.raDeg, t.decDeg, userLat, userLon, date);
-      if(alt<=0) return;
-      const p = projectAltAz(cam, alt, az, canvas);
-      if(outOfCanvas(p)) return;
-      const {x,y} = p;
-      const color = t.obj.needsReview ? '#f5c451' : '#6ea8fe';
-      ctx.globalAlpha = 0.55;
-      ctx.beginPath(); ctx.arc(x,y,22*uiScale,0,7); ctx.fillStyle=color; ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = color; ctx.lineWidth=2*uiScale; ctx.stroke();
-      // Objekt-Namensbeschriftung bekommt (wie schon die HUD-Anzeige weiter unten) einen dunklen Rand/
-      // Schatten HINTER dem weißen Text, statt reinen weißen Text direkt auf dem Live-Kamerabild zu
-      // zeichnen - ohne das war der Kontrast je nach Bildhintergrund (heller Himmel, Wolken, Fassaden)
-      // nicht garantiert lesbar (gleiches Grundproblem wie ursprünglich bei der Kompass/Neigung-Anzeige).
-      ctx.font=`${13*uiScale}px sans-serif`; ctx.textAlign='center';
-      const labelText = t.obj.displayName.split(' (')[0];
-      const labelX = x, labelY = y-28*uiScale;
-      ctx.lineWidth = 3*uiScale; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.lineJoin = 'round';
-      ctx.strokeText(labelText, labelX, labelY);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(labelText, labelX, labelY);
-    });
-    // Kompass/Neigung-Anzeige: vorher nur halbtransparenter (70%) weißer Text ohne jeden Hintergrund
-    // direkt über dem Kamerabild - bei hellem Himmel, Wolken oder Häuserfassaden praktisch unlesbar.
-    // Jetzt: volldeckender Text in größerer Schrift auf einem dunklen, abgerundeten Hintergrund-Pill,
-    // damit der Kontrast unabhängig vom Kamerabild dahinter immer ausreicht.
-    const hudText = `Kompass: ${deviceHeading.toFixed(0)}°   Neigung: ${devicePitch.toFixed(0)}°`;
-    const hudFontPx = 16 * uiScale;
-    ctx.font = `bold ${hudFontPx}px monospace`;
-    ctx.textAlign = 'left';
-    const hudTextW = ctx.measureText(hudText).width;
-    const hudPadX = 12*uiScale, hudPadY = 9*uiScale, hudTextH = hudFontPx;
-    const hudH = hudTextH + hudPadY*2, hudW = hudTextW + hudPadX*2;
-    const hudX = 8*uiScale, hudY = canvas.height - 10*uiScale - hudH;
-    canvasPillPath(ctx, hudX, hudY, hudW, hudH, 9*uiScale);
-    ctx.fillStyle = 'rgba(0,0,0,.72)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1*uiScale; ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(hudText, hudX+hudPadX, hudY+hudH/2+1*uiScale);
-    ctx.textBaseline = 'alphabetic';
-  }else{
-    // Unterscheidung zweier Wartezustände statt eines pauschalen "Warte auf Sensordaten": Kommen nach ein
-    // paar Sekunden zwar Neigungs- (devicePitch), aber nie kalibrierte Kompassdaten an (deviceHeading bleibt
-    // dauerhaft null, s. onDeviceOrientation), liefen die Sensoren zwar, aber ohne Nordreferenz - ein
-    // dauerhaftes "Warte…" wäre hier irreführend, da nie ein Bild erscheinen würde. Fix zeigt stattdessen
-    // einen konkreten Hinweis samt Lösungsansatz, statt (wie vor dem Fix) einfach falsch positionierte
-    // Sterne anzuzeigen.
-    const waitedMs = arStartedAt ? (performance.now() - arStartedAt) : 0;
-    const noCompass = devicePitch!=null && !arHeadingIsCalibrated && waitedMs > 4000;
-    const waitText = noCompass
-      ? 'Kein kalibrierter Kompass verfügbar – Sternüberlagerung nicht möglich. Handy in einer liegenden Acht bewegen (Kompass-Kalibrierung) oder Chrome für Android verwenden.'
-      : 'Warte auf Sensordaten … Handy bewegen.';
-    const waitFontPx = (noCompass ? 14 : 16) * uiScale;
-    ctx.font = `${waitFontPx}px sans-serif`;
-    const maxWidth = canvas.width * 0.8;
-    const words = waitText.split(' ');
-    const lines = [];
-    let line = '';
-    words.forEach(w=>{
-      const test = line ? line + ' ' + w : w;
-      if(ctx.measureText(test).width > maxWidth && line){ lines.push(line); line = w; }
-      else line = test;
-    });
-    if(line) lines.push(line);
-    const lineH = waitFontPx * 1.35;
-    const waitTextW = Math.max(...lines.map(l=>ctx.measureText(l).width));
-    const waitPadX = 14*uiScale, waitPadY = 10*uiScale;
-    const waitW = waitTextW + waitPadX*2, waitH = lines.length*lineH + waitPadY*2;
-    canvasPillPath(ctx, canvas.width/2 - waitW/2, canvas.height/2 - waitH/2, waitW, waitH, 10*uiScale);
-    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const firstLineY = canvas.height/2 - waitH/2 + waitPadY + lineH/2;
-    lines.forEach((l,i)=> ctx.fillText(l, canvas.width/2, firstLineY + i*lineH));
-    ctx.textBaseline = 'alphabetic';
-  }
-  }catch(err){
-    console.error('drawARFrame: Fehler im AR-Frame, Schleife läuft trotzdem weiter', err);
-  }
-  requestAnimationFrame(drawARFrame);
-}
-
 /* ======================= ASTRONOMY PICTURE OF THE DAY ======================= */
+// Die NASA-APOD ist am 29.09.2026 von apod.nasa.gov nach science.nasa.gov/apod umgezogen; die alte
+// api.nasa.gov/planetary/apod-Schnittstelle wurde dabei eingestellt. Neue Quelle ist der öffentliche
+// WordPress-Endpoint von science.nasa.gov (kein API-Key mehr nötig). Unterschiede zur alten API:
+//  - Antwort ist ein ARRAY (per_page=1 -> neuester Eintrag)
+//  - "url" zeigt jetzt auf die Artikelseite, das eigentliche Bild steckt in "hdurl"
+//  - explanation/credit/copyright enthalten HTML -> wird hier zu reinem Text reduziert
+const APOD_API_URL = 'https://science.nasa.gov/wp-json/wp/v2/apod-basic?per_page=1';
+const APOD_PAGE_URL = 'https://science.nasa.gov/apod/';
+function htmlToPlainText(html){
+  if(typeof html !== 'string' || !html) return '';
+  // DOMParser führt keine Skripte aus und lädt keine Ressourcen - sicher zum reinen Textextrahieren.
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+}
+function normalizeApod(raw){
+  const item = Array.isArray(raw) ? raw[0] : raw;
+  if(!item || typeof item !== 'object') return null;
+  return {
+    date: item.date || '',
+    title: htmlToPlainText(item.title) || 'Astronomy Picture of the Day',
+    media_type: item.media_type || 'image',
+    image: typeof item.hdurl === 'string' ? item.hdurl : '',
+    page: (typeof item.permalink === 'string' && item.permalink) || (typeof item.url === 'string' && item.url) || APOD_PAGE_URL,
+    explanation: htmlToPlainText(item.explanation),
+    credit: htmlToPlainText(item.credit || item.copyright),
+    alt: htmlToPlainText(item.alt)
+  };
+}
 async function loadApod(){
   const el = document.getElementById('apod-card');
   el.innerHTML = `<div style="padding:1em;color:var(--text-dim)">Astronomy Picture of the Day wird geladen …</div>`;
@@ -15552,24 +14941,25 @@ async function loadApod(){
   const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   try{
     let cached = null;
-    try{ cached = JSON.parse(localStorage.getItem('apod_cache_v1')||'null'); }catch(e){}
+    // Neuer Cache-Schlüssel (v2), da sich das Datenformat gegenüber der alten API geändert hat.
+    try{ cached = JSON.parse(localStorage.getItem('apod_cache_v2')||'null'); }catch(e){}
+    try{ localStorage.removeItem('apod_cache_v1'); }catch(e){}
     let apod;
     if(cached && cached.date===todayKey && cached.data){
       apod = cached.data;
     }else{
-      const key = CFG.nasaKey || 'DEMO_KEY';
       // Timeout, damit eine hängende (nicht fehlschlagende, sondern nie antwortende) Verbindung nicht
       // dauerhaft im "wird geladen …"-Zustand stecken bleibt.
       const controller = new AbortController();
       const timeoutId = setTimeout(()=>controller.abort(), 12000);
       let r;
       try{
-        r = await fetch(`https://api.nasa.gov/planetary/apod?api_key=${encodeURIComponent(key)}`, {signal: controller.signal});
+        r = await fetch(APOD_API_URL, {signal: controller.signal});
       }finally{ clearTimeout(timeoutId); }
       if(!r.ok) throw new Error('Abruf fehlgeschlagen (' + r.status + ')');
-      apod = await r.json();
-      if(!apod || typeof apod.url !== 'string') throw new Error('Unerwartete Antwort der NASA-API (kein Bild-URL enthalten).');
-      localStorage.setItem('apod_cache_v1', JSON.stringify({date:todayKey, data:apod}));
+      apod = normalizeApod(await r.json());
+      if(!apod || (!apod.image && apod.media_type !== 'video')) throw new Error('Unerwartete Antwort der NASA (kein Bild enthalten).');
+      try{ localStorage.setItem('apod_cache_v2', JSON.stringify({date:todayKey, data:apod})); }catch(e){}
     }
     renderApod(apod);
   }catch(e){
@@ -15579,16 +14969,16 @@ async function loadApod(){
 function safeMediaUrl(u){
   // Defense-in-depth: escapeHtml() schützt vor einem Escape aus dem Attribut, aber nicht vor
   // gefährlichen URL-Schemes wie "javascript:" (die keine HTML-Sonderzeichen enthalten müssen). Die
-  // NASA-APOD-API liefert normalerweise ausschließlich https-URLs - alles andere wird verworfen.
+  // NASA liefert normalerweise ausschließlich https-URLs - alles andere wird verworfen.
   if(typeof u === "string" && /^https:\/\//i.test(u)) return escapeHtml(u);
   return "";
 }
 function renderApod(apod){
   const el = document.getElementById('apod-card');
-  const url = safeMediaUrl(apod.url), hdurl = safeMediaUrl(apod.hdurl) || url;
-  const media = apod.media_type === 'video'
-    ? `<a href="${url}" target="_blank" rel="noopener" class="apod-media-link">Video ansehen: ${escapeHtml(apod.title)}</a>`
-    : `<a href="${hdurl}" target="_blank" rel="noopener"><img src="${url}" alt="${escapeHtml(apod.title)}" class="apod-img" loading="lazy" onerror="this.onerror=null;this.src=FALLBACK_APOD_IMG;"></a>`;
+  const img = safeMediaUrl(apod.image), page = safeMediaUrl(apod.page) || APOD_PAGE_URL;
+  const media = (apod.media_type === 'video' || !img)
+    ? `<a href="${page}" target="_blank" rel="noopener" class="apod-media-link">Video ansehen: ${escapeHtml(apod.title)}</a>`
+    : `<a href="${page}" target="_blank" rel="noopener"><img src="${img}" alt="${escapeHtml(apod.alt || apod.title)}" class="apod-img" loading="lazy" onerror="this.onerror=null;this.src=FALLBACK_APOD_IMG;"></a>`;
   el.innerHTML = `
     <div class="apod-head">
       <div class="apod-title">${escapeHtml(apod.title)}</div>
@@ -15597,7 +14987,7 @@ function renderApod(apod){
     ${media}
     <div class="apod-details" id="apod-details" hidden>
       <div class="apod-explain">${escapeHtml(apod.explanation||'')}</div>
-      <div class="apod-date">${escapeHtml(apod.date||'')} · Astronomy Picture of the Day (NASA) · <a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">Quelle</a></div>
+      <div class="apod-date">${escapeHtml(apod.date||'')}${apod.credit ? ' · ' + escapeHtml(apod.credit) : ''} · Astronomy Picture of the Day (NASA) · <a href="${page}" target="_blank" rel="noopener">Quelle</a></div>
     </div>
   `;
   const infoBtn = document.getElementById('apod-info-btn');
@@ -15616,7 +15006,7 @@ function renderApodFallback(reason){
     <img src="${FALLBACK_APOD_IMG}" alt="Astrofoto" class="apod-img">
     <div class="apod-details" id="apod-details" hidden>
       <div class="apod-explain">Astronomy Picture of the Day konnte nicht geladen werden${reason?(' ('+escapeHtml(reason)+')'):''} – stattdessen ein eigenes Astrofoto.</div>
-      <div class="apod-date"><a href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noopener">Trotzdem auf apod.nasa.gov ansehen</a></div>
+      <div class="apod-date"><a href="${APOD_PAGE_URL}" target="_blank" rel="noopener">Trotzdem auf science.nasa.gov/apod ansehen</a></div>
     </div>
   `;
   const infoBtn = document.getElementById('apod-info-btn');
